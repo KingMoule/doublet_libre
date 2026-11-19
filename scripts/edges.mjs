@@ -50,7 +50,9 @@ const server = spawn(process.execPath, [path.join(root, 'scripts/serve.mjs'), St
 await new Promise((ok) => server.stdout.once('data', ok));
 // One reused profile folder: Windows keeps it locked a while after the browser closes.
 const profile = path.join(tmpdir(), 'doublet-edges');
-spawn(browserPath, ['--headless=new', '--disable-gpu', `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`, 'about:blank']);
+// On CI's Linux machines Chrome's sandbox cannot start; it only loads our own local page there.
+const sandbox = process.env.CI ? ['--no-sandbox'] : [];
+spawn(browserPath, ['--headless=new', '--disable-gpu', ...sandbox, `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`, 'about:blank']);
 
 let failed = false;
 try {
