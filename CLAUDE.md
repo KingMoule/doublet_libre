@@ -12,6 +12,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Types : `npx -y -p typescript@5.6.3 tsc -p jsconfig.json` (aussi lancé par la CI)
 - Aperçu : `node scripts/serve.mjs` puis http://localhost:8765 (configuration `doublet` dans `.claude/launch.json`)
 - Image d'un document : `node scripts/snapshot.mjs doc.json out.png` (Edge ou Chrome sans fenêtre)
+- Bords de l'écran : `node scripts/edges.mjs` (Edge ou Chrome sans fenêtre, sort en erreur s'il trouve un problème)
 
 ## Façon de travailler
 
@@ -19,7 +20,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Une phase à la fois. Écrire d'abord le test qui échoue, puis le code qui le fait passer.
 - Une tâche est finie quand `node --test` passe, et que le rendu a été vu dans le navigateur si l'affichage a changé. Montrer la commande lancée et sa sortie.
 - Vérification visuelle : rejouer un scénario de vrais événements de pointeur et de clavier dans l'app, puis juger le SVG obtenu. Les tests ne voient pas le CSS, et les captures du navigateur intégré ne sont pas fiables quand la fenêtre est réduite.
-- Une fenêtre, un menu ou une barre se vérifient aux bords : ouvrir celui de l'élément le plus près du bord, sur tablette (768 × 1024 et 1024 × 768) et sur un écran bas (812 × 375). Rien ne doit sortir de l'écran ni devenir inaccessible.
+- Une fenêtre, un menu ou une barre se vérifient aux bords avec `node scripts/edges.mjs` : il ouvre chaque outil et chaque menu du haut sur six tailles d'écran (ordinateur, tablette, téléphone, debout et couchés) et signale ce qui sort de l'écran, cache son bouton ou devient inaccessible.
 - Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
 - Après avoir ouvert la PR, activer sa fusion automatique (squash) : GitHub la fusionne seulement quand le test `test` est vert. Si un test échoue, corriger plutôt que fusionner.

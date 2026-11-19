@@ -772,6 +772,16 @@ export function startEditor(root) {
   $('#btn-redo').addEventListener('click', doRedo);
   const refit = () => { userMovedView = false; fit(); };
   $('#btn-fit').addEventListener('click', refit);
+  // An open menu shifts just enough to stay on screen: the buttons wrap, so it may sit near either edge.
+  for (const d of root.querySelectorAll('.top details')) {
+    d.addEventListener('toggle', () => {
+      const m = d.querySelector(':scope > div');
+      if (!(d instanceof HTMLDetailsElement) || !d.open || !(m instanceof HTMLElement)) return;
+      m.style.left = '0px';
+      const r = m.getBoundingClientRect();
+      m.style.left = `${Math.max(8 - r.left, Math.min(0, innerWidth - 8 - r.right))}px`;
+    });
+  }
   /** @type {HTMLDetailsElement} */ const templatesMenu = $('#templates-menu');
   templatesMenu.addEventListener('click', (e) => {
     const key = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.template;
