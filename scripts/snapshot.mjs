@@ -1,11 +1,12 @@
 // Picture of a document (.doublet.json, or an SVG exported by the app), as the app exports it.
 // Usage: node scripts/snapshot.mjs <doc> <out.png>
 // Needs Edge or Chrome; set BROWSER to its path if it is not found.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { exportSVG, docFromText } from '../src/io.js';
+import { browserPath } from './browser.mjs';
 
 const [docPath, outPath] = process.argv.slice(2);
 const svg = exportSVG(docFromText(readFileSync(docPath, 'utf8')));
@@ -15,14 +16,7 @@ const html = path.resolve(outPath.replace(/\.png$/i, '') + '.html');
 writeFileSync(html, `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff">`
   + `${svg.replace(/width="[^"]+" height="[^"]+"/, `width="1000" height="${height}"`)}</body>`);
 
-const browser = [
-  process.env.BROWSER,
-  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/chromium',
-  '/usr/bin/google-chrome',
-].find((p) => p && existsSync(p));
+const browser = browserPath;
 if (!browser) {
   console.log(`No browser found; open ${html} instead.`);
 } else {
