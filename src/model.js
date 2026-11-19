@@ -112,6 +112,23 @@ export function component(doc, atomId) {
   return seen;
 }
 
+/**
+ * The atom whose midpoint with atomId lies within tol of p: the partner of a bond that an
+ * arrow dropped there would form.
+ * @param {Doc} doc @param {string} atomId @param {{x: number, y: number}} p @param {number} [tol]
+ */
+export function formingPartner(doc, atomId, p, tol = 10) {
+  const a = findAtom(doc, atomId);
+  if (!a) return null;
+  let best = null;
+  let bestD = tol;
+  for (const o of doc.atoms) {
+    const d = Math.hypot((a.x + o.x) / 2 - p.x, (a.y + o.y) / 2 - p.y);
+    if (o.id !== atomId && d < bestD) { best = o.id; bestD = d; }
+  }
+  return best;
+}
+
 /** @param {Doc} doc @param {Anchor} an */
 export function anchorExists(doc, an) {
   if (!an || typeof an !== 'object') return false;

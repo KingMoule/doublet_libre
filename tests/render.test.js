@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as M from '../src/model.js';
-import { layout, renderDoc, doubleBondSide, controlPoints, bendFromControl } from '../src/render.js';
+import { layout, renderDoc, doubleBondSide, controlPoints, bendFromControl, defaultBend } from '../src/render.js';
 import { sampleSN2 } from '../src/sample.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} should be close to ${b}`);
@@ -71,6 +71,21 @@ test('curved arrows follow when a molecule moves', () => {
   close(after.get('ca2').p0.x - before.get('ca2').p0.x, 30);
   close(after.get('ca1').raw0.x, before.get('ca1').raw0.x, 1e-9);
   close(after.get('ca1').raw3.x - before.get('ca1').raw3.x, 30);
+});
+
+test('an arrow to a forming bond ends exactly between the two atoms', () => {
+  const d = sampleSN2();
+  const ca = M.addCurvedArrow(d, { mark: 'm1' }, { between: ['a1', 'a3'] }, 2, defaultBend(d, { mark: 'm1' }, { between: ['a1', 'a3'] }));
+  const g = layout(d).curved.get(ca.id);
+  close(g.p3.x, 150);
+  close(g.p3.y, 100);
+});
+
+test('a new arrow bulges away from its molecule', () => {
+  const d = sampleSN2();
+  const bend = defaultBend(d, { bond: 'b2' }, { atom: 'a4' });
+  const [c1] = controlPoints({ x: 220, y: 100 }, { x: 240, y: 100 }, bend);
+  assert.ok(c1.y < 100, 'C1 sits below the C–Br bond, so the arrow curves above it');
 });
 
 test('a control point dragged by hand survives the round trip through the arrow frame', () => {
