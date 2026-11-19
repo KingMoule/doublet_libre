@@ -5,14 +5,18 @@
  */
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Prototype · phase 3',
+  badge: 'Prototype · phase 4',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
-    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', curved: 'Flèche courbe', erase: 'Gomme',
+    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', curved: 'Flèche courbe',
+    rxn: 'Flèche de réaction', text: 'Texte', erase: 'Gomme',
   },
-  toolKeys: { select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', curved: 'F', erase: 'E' },
+  toolKeys: {
+    select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', curved: 'F',
+    rxn: 'W', text: 'T', erase: 'E',
+  },
   actions: {
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', sample: 'Exemple SN2', clear: 'Nouveau', proposal: 'Proposition',
   },
@@ -26,6 +30,8 @@ export const fr = {
     lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',
     charge: 'Cliquez sur un atome pour +1, Maj + clic pour −1. Les H implicites s’ajustent.',
     partial: 'Cliquez sur un atome : δ+, puis δ−, puis rien.',
+    rxn: 'Glissez sur le fond pour tracer une flèche de réaction (clic : flèche de longueur standard), puis écrivez ses conditions dans le panneau.',
+    text: 'Cliquez sur le fond pour poser un « + », puis changez le texte dans le panneau.',
     curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
     hover: {
       atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
@@ -50,11 +56,13 @@ export const fr = {
       'Les outils Liaison, Chaîne, Cycle (3 à 8, benzène) et Atome, avec raccourcis clavier.',
       'Les outils Doublet, Charge et δ ; glissez une annotation pour la faire tourner.',
       'L’outil Flèche courbe : d’un doublet ou d’une liaison vers un atome, une liaison ou une liaison qui se forme.',
+      'Les outils Flèche de réaction (→ ⇌ ↔ ⇒, conditions sur plusieurs lignes) et Texte.',
       'La sélection de plusieurs atomes au cadre ou avec Maj + clic.',
     ],
     nextTitle: 'Prochaines phases',
     nextItems: [
-      'Phase 4 : outil Flèche de réaction.',
+      'Phase 5 : enregistrer, ouvrir, exporter en PNG et SVG pour Word et Google Docs.',
+      'Phase 6 : avertissements pédagogiques (octet, flèche qui part d’un H⁺…).',
     ],
     titles: {
       atom: 'Atome', bond: 'Liaison', mark: 'Annotation', charge: 'Charge formelle',
@@ -77,7 +85,7 @@ export const fr = {
     kind: 'Type',
     above: 'Au-dessus (réactifs, catalyseur)',
     below: 'En dessous (solvant, température, durée)',
-    formatHint: 'Les chiffres qui suivent un symbole passent en indice : H2O devient H₂O. ^+ met en exposant.',
+    formatHint: 'Les chiffres qui suivent un symbole passent en indice : H2O devient H₂O. ^+ met en exposant. Entrée ajoute une ligne, pour les étapes « 1. … 2. … ».',
     insert: 'Insérer',
     textLabel: 'Texte',
     remove: 'Supprimer',

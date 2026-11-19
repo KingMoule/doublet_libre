@@ -498,21 +498,24 @@ function reactionShape(ra) {
   }
   const size = STYLE.small;
   const c = mid(A, B);
-  const above = formatChem(ra.above ?? '');
-  const below = formatChem(ra.below ?? '');
-  const ta = add(c, scale(up, 8));
-  const tb = sub(c, scale(up, 7 + 0.72 * size));
-  let text = '';
-  if (above.length) text += `<text class="cond" x="${n2(ta.x)}" y="${n2(ta.y)}">${tspans(above, size)}</text>`;
-  if (below.length) text += `<text class="cond" x="${n2(tb.x)}" y="${n2(tb.y)}">${tspans(below, size)}</text>`;
-  const wa = segmentsWidth(above, size) / 2;
-  const wb = segmentsWidth(below, size) / 2;
-  const box = {
-    l: Math.min(A.x, B.x, ta.x - wa, tb.x - wb) - 2,
-    r: Math.max(A.x, B.x, ta.x + wa, tb.x + wb) + 2,
-    t: Math.min(A.y, B.y, above.length ? ta.y - 0.75 * size : c.y - 8),
-    b: Math.max(A.y, B.y, below.length ? tb.y + 0.3 * size : c.y + 8),
-  };
+  // One line per step ("1. …", "2. …"): above, the last line sits on the arrow; below, the first.
+  const lines = (/** @type {string} */ s) => (s ?? '').split('\n').filter((l) => l.trim()).map(formatChem);
+  const above = lines(ra.above);
+  const below = lines(ra.below);
+  const lh = 1.25 * size;
+  const placed = [
+    ...above.map((segs, i) => ({ segs, at: add(c, scale(up, 8 + (above.length - 1 - i) * lh)) })),
+    ...below.map((segs, i) => ({ segs, at: sub(c, scale(up, 7 + 0.72 * size + i * lh)) })),
+  ];
+  const text = placed.map(({ segs, at }) => `<text class="cond" x="${n2(at.x)}" y="${n2(at.y)}">${tspans(segs, size)}</text>`).join('');
+  const box = { l: Math.min(A.x, B.x) - 2, r: Math.max(A.x, B.x) + 2, t: Math.min(A.y, B.y) - 8, b: Math.max(A.y, B.y) + 8 };
+  for (const { segs, at } of placed) {
+    const w = segmentsWidth(segs, size) / 2;
+    box.l = Math.min(box.l, at.x - w - 2);
+    box.r = Math.max(box.r, at.x + w + 2);
+    box.t = Math.min(box.t, at.y - 0.75 * size);
+    box.b = Math.max(box.b, at.y + 0.3 * size);
+  }
   return { markup: `<g class="rx">${m}</g>${text}`, box };
 }
 
