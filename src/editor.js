@@ -8,6 +8,7 @@ import {
   zigzag, ringAt, ringOnBond, ringOnAtom,
 } from './geometry.js';
 import { sampleSN2 } from './sample.js';
+import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
@@ -57,7 +58,15 @@ function shell() {
       <button type="button" id="btn-redo">${fr.actions.redo}</button>
       <button type="button" id="btn-fit">${fr.actions.fit}</button>
       <button type="button" id="btn-sample">${fr.actions.sample}</button>
-      <button type="button" id="btn-clear">${fr.actions.clear}</button>
+      <details class="menu" id="file-menu"><summary>${fr.actions.file}</summary><div>
+        <button type="button" id="btn-clear">${fr.actions.clear}</button>
+        <button type="button" id="btn-open">${fr.actions.open}<kbd>Ctrl+O</kbd></button>
+        <button type="button" id="btn-save">${fr.actions.save}<kbd>Ctrl+S</kbd></button>
+        <button type="button" id="btn-png">${fr.actions.png}</button>
+        <button type="button" id="btn-svg">${fr.actions.svg}</button>
+        <button type="button" id="btn-copy">${fr.actions.copy}<kbd>Ctrl+C</kbd></button>
+      </div></details>
+      <input type="file" id="file-input" accept=".json,.svg,application/json,image/svg+xml" hidden>
       <a href="${PROPOSAL_URL}" target="_blank" rel="noopener">${fr.actions.proposal}</a>
     </div>
   </header>
@@ -579,6 +588,9 @@ export function startEditor(root) {
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && k.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); return; }
     if (ctrl && k.toLowerCase() === 'y') { e.preventDefault(); doRedo(); return; }
+    if (ctrl && k.toLowerCase() === 's') { e.preventDefault(); saveDoc(); return; }
+    if (ctrl && k.toLowerCase() === 'o') { e.preventDefault(); fileInput.click(); return; }
+    if (ctrl && k.toLowerCase() === 'c' && !String(window.getSelection())) { e.preventDefault(); copyImage(); return; }
     if (ctrl || e.altKey) return;
     if (k === ' ') { S.space = true; svg.classList.add('pannable'); e.preventDefault(); return; }
     if (k === 'Escape') { S.selection = null; render(); renderPanel(); return; }
@@ -652,6 +664,88 @@ export function startEditor(root) {
   $('#btn-sample').addEventListener('click', () => { replaceDoc(sampleSN2()); refit(); });
   $('#btn-clear').addEventListener('click', () => { replaceDoc(M.emptyDoc()); refit(); });
 
+  // ---------- files ----------
+
+  const FILE_NAME = 'mecanisme';
+  /** @type {HTMLInputElement} */ const fileInput = $('#file-input');
+  /** @type {HTMLDetailsElement} */ const fileMenu = $('#file-menu');
+
+  /** @param {Blob} blob @param {string} name */
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  /** The drawing as a PNG at 300 dpi on white, marked so Word and Google Docs size it right. */
+  async function pngBlob() {
+    const svgText = exportSVG(S.doc);
+    const [, , w, h] = (svgText.match(/viewBox="([^"]+)"/)?.[1] ?? '0 0 1 1').split(' ').map(Number);
+    const scale = (300 / 72) * POINTS_PER_UNIT;
+    const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(w * scale);
+      canvas.height = Math.ceil(h * scale);
+      const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = /** @type {Blob} */ (await new Promise((resolve) => canvas.toBlob(resolve, 'image/png')));
+      return new Blob([setPngDpi(new Uint8Array(await blob.arrayBuffer()), 300)], { type: 'image/png' });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function saveDoc() {
+    download(new Blob([M.serialize(S.doc)], { type: 'application/json' }), `${FILE_NAME}.doublet.json`);
+    statusEl.textContent = fr.files.saved;
+  }
+
+  async function copyImage() {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob() })]);
+      statusEl.textContent = fr.files.copied;
+    } catch {
+      statusEl.textContent = fr.files.copyFailed;
+    }
+  }
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    try {
+      replaceDoc(docFromText(await file.text()));
+      refit();
+      statusEl.textContent = fr.files.opened(file.name);
+    } catch {
+      statusEl.textContent = fr.files.badFile;
+    } finally {
+      fileInput.value = '';
+    }
+  });
+
+  /** @type {Record<string, () => unknown>} */
+  const fileActions = {
+    'btn-open': () => fileInput.click(),
+    'btn-save': saveDoc,
+    'btn-png': async () => download(await pngBlob(), `${FILE_NAME}.png`),
+    'btn-svg': () => download(new Blob([exportSVG(S.doc)], { type: 'image/svg+xml' }), `${FILE_NAME}.svg`),
+    'btn-copy': copyImage,
+  };
+  fileMenu.addEventListener('click', (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest('button');
+    if (!b) return;
+    fileMenu.open = false;
+    fileActions[b.id]?.();
+  });
+
   function updateButtons() {
     /** @type {HTMLButtonElement} */ ($('#btn-undo')).disabled = S.history.past.length === 0;
     /** @type {HTMLButtonElement} */ ($('#btn-redo')).disabled = S.history.future.length === 0;
@@ -699,6 +793,7 @@ export function startEditor(root) {
     } else if (!sel) {
       html = `<h2>${P.nothing}</h2><p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
         <h3>${P.phaseTitle}</h3><ul>${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul>
+        <h3>${P.shortcutsTitle}</h3><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul>
         <h3>${P.nextTitle}</h3><ul class="muted">${P.nextItems.map((x) => `<li>${x}</li>`).join('')}</ul>`;
     } else if (sel.kind === 'group') {
       html = `<h2>${P.group(sel.ids?.length ?? 0)}</h2><p class="muted">${P.groupHint}</p>${removeBtn}`;

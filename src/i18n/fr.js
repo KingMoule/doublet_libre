@@ -5,7 +5,7 @@
  */
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Prototype · phase 4',
+  badge: 'Prototype · phase 5',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
   tools: {
@@ -19,6 +19,15 @@ export const fr = {
   },
   actions: {
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', sample: 'Exemple SN2', clear: 'Nouveau', proposal: 'Proposition',
+    file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', png: 'Exporter en PNG', svg: 'Exporter en SVG', copy: 'Copier l’image',
+  },
+  files: {
+    saved: 'Enregistré : mecanisme.doublet.json, dans vos téléchargements.',
+    copied: 'Image copiée : collez-la dans Word ou Google Docs.',
+    copyFailed: 'Le navigateur a refusé la copie. Utilisez plutôt Fichier → Exporter en PNG.',
+    badFile: 'Ce fichier n’est pas un dessin de Doublet libre (.doublet.json, ou SVG exporté par l’app).',
+    /** @param {string} name */
+    opened: (name) => `Ouvert : ${name}`,
   },
   status: {
     select: 'Glissez une molécule pour la déplacer : les flèches courbes suivent. Glissez le fond pour sélectionner, Maj + clic pour ajouter un atome. Espace + glisser pour se déplacer, molette pour zoomer.',
@@ -58,10 +67,19 @@ export const fr = {
       'L’outil Flèche courbe : d’un doublet ou d’une liaison vers un atome, une liaison ou une liaison qui se forme.',
       'Les outils Flèche de réaction (→ ⇌ ↔ ⇒, conditions sur plusieurs lignes) et Texte.',
       'La sélection de plusieurs atomes au cadre ou avec Maj + clic.',
+      'Le menu Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG (qui se rouvre dans l’app), copier l’image.',
+    ],
+    shortcutsTitle: 'Raccourcis',
+    shortcuts: [
+      'Ctrl+Z, Ctrl+Y : annuler, rétablir',
+      'Ctrl+S, Ctrl+O : enregistrer, ouvrir',
+      'Ctrl+C : copier l’image du dessin',
+      'Suppr : effacer ce qui est survolé ou sélectionné ; Échap : désélectionner',
+      'Espace + glisser : déplacer la vue ; molette : zoomer',
+      'Lettre affichée sur un outil : le choisir',
     ],
     nextTitle: 'Prochaines phases',
     nextItems: [
-      'Phase 5 : enregistrer, ouvrir, exporter en PNG et SVG pour Word et Google Docs.',
       'Phase 6 : avertissements pédagogiques (octet, flèche qui part d’un H⁺…).',
     ],
     titles: {
