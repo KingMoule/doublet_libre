@@ -26,7 +26,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 ## Règles de dessin (IUPAC 2008 « GR », stéréo 2006 « ST »)
 
 - Automatique : zigzag à 120° (GR-3.2.1) ; carbone sans étiquette dès qu'il est lié (GR-2.1.2) ; HO– quand la liaison part à droite (GR-2.1.6) ; charge en haut à droite (GR-5.1) ; doublets sur les axes du symbole (GR-5.2) ; double liaison décalée vers le côté substitué, centrée pour un C=O de cétone (GR-1.10) ; bout étroit du coin sur le centre stéréogène (ST-0.3).
-- Avertissement : C ou N à cinq liaisons ; octet dépassé (2e période seulement) ; flèche partant d'un H, d'un H⁺ ou d'une charge + ; flèche inversée ; charge non conservée entre étapes ; ↔ entre structures au squelette différent ; charges formelles et partielles mélangées (GR-5.6).
+- Avertissement (`src/checks.js`) : octet dépassé, C ou N à cinq liaisons compris (S, P, Si et I exemptés, GR-8.2) ; flèche probablement inversée (part d'un atome +, arrive sur un atome −) ; charge non conservée de part et d'autre d'une flèche de réaction ; ↔ entre structures au squelette σ différent ; charges formelles et partielles sur une même molécule (GR-5.6). Une flèche ne peut pas partir d'un H ou d'un H⁺ : l'outil n'accepte que des électrons comme départ.
 - Style : charge cerclée ou non ; conditions tout au-dessus ou réparties ; doublet en trait (non IUPAC) en option.
 
 ## Format de fichier
@@ -45,6 +45,6 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 3 | Outil flèche courbe : ancrage, pleine ou demi, poignées, liaison en formation | Test : SN2 dessinée, molécule déplacée, flèches accrochées | faite |
 | 4 | Outil flèche de réaction : types, conditions, étapes numérotées ; outil Texte (« + ») | Figure SN2 complète refaite dans l'app | faite |
 | 5 | Enregistrer/ouvrir, SVG ré-éditable, PNG 300 ppp, copier vers Word et Google Docs | Aller-retour JSON et SVG sans perte | faite |
-| 6 | Vérifications pédagogiques (liste ci-dessus) | Une erreur d'étudiant typique par test ; aucune sur la SN2 correcte | à faire |
+| 6 | Vérifications pédagogiques (liste ci-dessus) | Une erreur d'étudiant typique par test ; aucune sur la SN2 correcte | faite |
 | 7 | Modèles : cycles, groupes, mécanismes types | Chaque modèle s'insère sans avertissement | v1 |
 | 8 | Mode exercice, mode présentation, import SMILES/MOL, tablette, anglais | — | plus tard |

@@ -22,6 +22,8 @@
   --accent-soft: #E3ECF8;
   --hl: rgba(29, 88, 166, 0.16);
   --hl-strong: rgba(29, 88, 166, 0.3);
+  --warn: #B3600A;
+  --warn-bg: #FBEFD9;
   --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -30,13 +32,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0B1015; --surface: #151D25; --paper: #111820; --ink: #E5EBEF; --muted: #9AA7B3; --rule: #2A3642; --hex: #19222B;
-    --e-arrow: #FF7088; --accent: #7EB3F4; --accent-soft: #172A40; --hl: rgba(126, 179, 244, 0.18); --hl-strong: rgba(126, 179, 244, 0.34);
+    --e-arrow: #FF7088; --accent: #7EB3F4; --accent-soft: #172A40; --hl: rgba(126, 179, 244, 0.18); --hl-strong: rgba(126, 179, 244, 0.34); --warn: #F2B65C; --warn-bg: #36270F;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0B1015; --surface: #151D25; --paper: #111820; --ink: #E5EBEF; --muted: #9AA7B3; --rule: #2A3642; --hex: #19222B;
-  --e-arrow: #FF7088; --accent: #7EB3F4; --accent-soft: #172A40; --hl: rgba(126, 179, 244, 0.18); --hl-strong: rgba(126, 179, 244, 0.34);
+  --e-arrow: #FF7088; --accent: #7EB3F4; --accent-soft: #172A40; --hl: rgba(126, 179, 244, 0.18); --hl-strong: rgba(126, 179, 244, 0.34); --warn: #F2B65C; --warn-bg: #36270F;
   color-scheme: dark;
 }
 
@@ -118,7 +120,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 #canvas .is-sel line.hl, #canvas .is-sel path.hl { fill: none; stroke: var(--hl-strong); }
 #canvas .guide { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; }
 #canvas .handle rect { fill: var(--surface); stroke: var(--accent); stroke-width: 1.4; cursor: move; }
-#canvas .ghost, #canvas .ghost-dot, #canvas .marquee { pointer-events: none; }
+#canvas .ghost, #canvas .ghost-dot, #canvas .marquee, #canvas .warn { pointer-events: none; }
+#canvas .warn { fill: none; stroke: var(--warn); stroke-width: 1.6; stroke-dasharray: 3 2; }
+#canvas path.warn { stroke-width: 7; stroke-dasharray: none; opacity: 0.35; stroke-linecap: round; }
+.panel .warnings { border-left: 3px solid var(--warn); background: var(--warn-bg); border-radius: 0 6px 6px 0; padding: 0.5rem 0.7rem; display: grid; gap: 0.3rem; }
+.panel .warnings h3 { margin: 0; color: var(--warn); }
+.panel .warnings ul { font-size: 0.85rem; }
 #canvas .ghost { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
 #canvas .ghost-dot { fill: var(--accent); }
 
