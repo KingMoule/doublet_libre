@@ -190,7 +190,7 @@ function placeOnLabel(info, own, marks, charges) {
   if (atom.charge) {
     const d = typeof atom.chargeAngle === 'number' ? nearest(DIAGONALS, atom.chargeAngle) : DIAGONALS.find((x) => !diagUsed.has(x)) ?? 45;
     diagUsed.add(d);
-    charges.set(atom.id, { atom: atom.id, charge: atom.charge, center: diagSpot(label.box, d, 0.5 * F, 0.35 * F) });
+    charges.set(atom.id, { atom: atom.id, charge: atom.charge, center: diagSpot(label.box, d, 0.3 * F, 0.25 * F) });
   }
   for (const m of own.filter((x) => x.kind === 'partial')) {
     const d = typeof m.angle === 'number' ? nearest(DIAGONALS, m.angle) : DIAGONALS.find((x) => !diagUsed.has(x)) ?? 45;
@@ -427,19 +427,11 @@ function markShape(pos) {
   return `<g class="lp">${pos.dots.map((/** @type {Vec} */ d) => `<circle cx="${n2(d.x)}" cy="${n2(d.y)}" r="${STYLE.dotR}"/>`).join('')}</g>`;
 }
 
-/** Circled ⊕/⊖ for unit charges (GR-5.1 accepts both), "2+" style otherwise. @param {any} c @param {boolean} circled */
-function chargeShape(c, circled) {
-  const { x, y } = c.center;
+/** "+", "−", "2+": written top right as a superscript, never circled. @param {any} c */
+function chargeShape(c) {
   const mag = Math.abs(c.charge);
-  if (circled && mag === 1) {
-    const r = 0.32 * F;
-    const a = r * 0.6;
-    let s = `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(r)}"/>${lineEl({ x: x - a, y }, { x: x + a, y })}`;
-    if (c.charge > 0) s += lineEl({ x, y: y - a }, { x, y: y + a });
-    return `<g class="chg">${s}</g>`;
-  }
   const text = `${mag > 1 ? mag : ''}${c.charge > 0 ? '+' : '−'}`;
-  return `<text class="chgt" x="${n2(x)}" y="${n2(y + 0.36 * STYLE.small)}">${text}</text>`;
+  return `<text class="chgt" x="${n2(c.center.x)}" y="${n2(c.center.y + 0.36 * STYLE.small)}">${text}</text>`;
 }
 
 /** @param {any} g */
@@ -543,7 +535,6 @@ export function renderDoc(doc, opts = {}) {
   };
   /** @param {string} kind @param {string} id @param {{lit: boolean, cls: string}} s @param {string} inner */
   const wrap = (kind, id, s, inner) => `<g class="${s.cls}" data-kind="${kind}" data-id="${esc(id)}">${inner}</g>`;
-  const circled = doc.style?.chargeCircled !== false;
   let out = '';
 
   for (const b of doc.bonds) {
@@ -568,7 +559,7 @@ export function renderDoc(doc, opts = {}) {
   }
   for (const c of L.charges.values()) {
     const s = st('charge', c.atom);
-    out += wrap('charge', c.atom, s, `${s.lit ? circleEl(c.center, 7, 'hl') : ''}${chargeShape(c, circled)}${circleEl(c.center, 6, 'hit')}`);
+    out += wrap('charge', c.atom, s, `${s.lit ? circleEl(c.center, 7, 'hl') : ''}${chargeShape(c)}${circleEl(c.center, 6, 'hit')}`);
   }
   for (const t of doc.texts) {
     const size = t.size ?? F * 1.3;

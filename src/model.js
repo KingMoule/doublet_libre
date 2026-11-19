@@ -21,7 +21,7 @@ import { implicitHydrogens } from './chem.js';
  *   kind: 'forward' | 'equilibrium' | 'resonance' | 'retro' | 'noReaction',
  *   above: string, below: string}} ReactionArrow
  * @typedef {{id: string, x: number, y: number, text: string, size?: number}} TextBox
- * @typedef {{version: 1, style: {chargeCircled?: boolean}, atoms: Atom[], bonds: Bond[],
+ * @typedef {{version: 1, style: {}, atoms: Atom[], bonds: Bond[],
  *   marks: Mark[], curvedArrows: CurvedArrow[], reactionArrows: ReactionArrow[],
  *   texts: TextBox[]}} Doc
  */
@@ -37,7 +37,7 @@ const LISTS = /** @type {(keyof typeof ID_PREFIX)[]} */ (Object.keys(ID_PREFIX))
 /** @returns {Doc} */
 export function emptyDoc() {
   return {
-    version: 1, style: { chargeCircled: true },
+    version: 1, style: {},
     atoms: [], bonds: [], marks: [], curvedArrows: [], reactionArrows: [], texts: [],
   };
 }

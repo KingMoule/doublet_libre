@@ -143,6 +143,40 @@ export function ringOnAtom(atom, dirDeg, n, L) {
 }
 
 /**
+ * The hexagonal paper of the canvas: cells with vertical sides whose side is the bond length L,
+ * one vertex at (L√3/2, 0). Its vertices are of two kinds: "up" ones carry edges at 90°, 210°
+ * and 330°, the others at 30°, 150° and 270°. A 120° zigzag started along an edge stays on it.
+ * @param {Vec} p @param {number} L @returns {{x: number, y: number, up: boolean}}
+ */
+export function hexVertex(p, L) {
+  const w = L * Math.sqrt(3);
+  /** @type {[number, number, boolean][]} */
+  const families = [[w / 2, 0, true], [0, 1.5 * L, true], [0, 0.5 * L, false], [w / 2, 2 * L, false]];
+  const near = families.map(([ox, oy, up]) => {
+    const x = ox + Math.round((p.x - ox) / w) * w;
+    const y = oy + Math.round((p.y - oy) / (3 * L)) * 3 * L;
+    return { x, y, up, d: Math.hypot(p.x - x, p.y - y) };
+  });
+  const best = near.reduce((a, b) => (b.d < a.d ? b : a));
+  return { x: best.x, y: best.y, up: best.up };
+}
+
+/** Directions of the grid edges leaving a vertex. @param {boolean} up */
+export const hexEdges = (up) => (up ? [90, 210, 330] : [30, 150, 270]);
+
+/** Centre of the grid cell nearest to p: a six-membered ring placed there lies on the grid. @param {Vec} p @param {number} L */
+export function hexCenter(p, L) {
+  const w = L * Math.sqrt(3);
+  const near = [[w / 2, L], [0, 2.5 * L]].map(([ox, oy]) => {
+    const x = ox + Math.round((p.x - ox) / w) * w;
+    const y = oy + Math.round((p.y - oy) / (3 * L)) * 3 * L;
+    return { x, y, d: Math.hypot(p.x - x, p.y - y) };
+  });
+  const best = near.reduce((a, b) => (b.d < a.d ? b : a));
+  return { x: best.x, y: best.y };
+}
+
+/**
  * View after a two-finger gesture: zoom by the change in finger spread, keeping under the
  * fingers' midpoint the document point that was under it when the gesture started.
  * @param {{x: number, y: number, w: number, h: number}} view at the start of the gesture

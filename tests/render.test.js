@@ -54,6 +54,13 @@ test('on a carbocation vertex the charge takes the largest free sector', () => {
   assert.ok(p.y < 0 && p.x > 0, 'up and to the right, away from both bonds');
 });
 
+test('charges are written + and −, never circled', () => {
+  const { markup } = renderDoc(sampleSN2());
+  const charges = [...markup.matchAll(/<text class="chgt"[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
+  assert.deepEqual(charges, ['−', '−']);
+  assert.doesNotMatch(markup, /class="chg"/);
+});
+
 test('a charge goes top right of the label (GR-5.1)', () => {
   const L = layout(sampleSN2());
   const label = L.atoms.get('a8').label;

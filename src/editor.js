@@ -5,7 +5,7 @@ import { renderDoc, defaultBend, bendFromControl, docBounds, esc, STYLE } from '
 import { ELEMENT_KEYS } from './chem.js';
 import {
   add, sub, dist, cross, angleOf, angleDiff, angularGaps, fromAngle, snapAngle, nextBondAngle,
-  zigzag, ringAt, ringOnBond, ringOnAtom, pinchView,
+  zigzag, ringAt, ringOnBond, ringOnAtom, pinchView, hexVertex, hexCenter, hexEdges, normDeg,
 } from './geometry.js';
 import { sampleSN2 } from './sample.js';
 import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
@@ -79,7 +79,7 @@ function shell() {
   <nav class="tools" aria-label="${fr.toolsLabel}">${tools}</nav>
   <main class="stage">
     <svg id="canvas" role="application" aria-label="${fr.canvasLabel}">
-      <defs><pattern id="hexp" width="34.64" height="60" patternUnits="userSpaceOnUse"><path class="hexline" d="M0,10 L17.32,0 L34.64,10 M0,10 L0,30 M0,30 L17.32,40 L34.64,30 M17.32,40 L17.32,60"/></pattern></defs>
+      <defs><pattern id="hexp" width="69.282" height="120" patternUnits="userSpaceOnUse"><path class="hexline" d="M0,20 L34.641,0 L69.282,20 M0,20 L0,60 M0,60 L34.641,80 L69.282,60 M34.641,80 L34.641,120"/></pattern></defs>
       <rect id="bg" fill="url(#hexp)"/>
       <g id="content"></g>
     </svg>
@@ -265,7 +265,8 @@ export function startEditor(root) {
     const a = D.atomId ? M.findAtom(S.doc, D.atomId) : null;
     const start = a ?? D.start;
     const existing = a ? bondAngles(S.doc, a.id) : [];
-    if (!D.moved) return [start, add(start, fromAngle(nextBondAngle(existing), STYLE.bond))];
+    // On the empty canvas the start sits on a grid vertex: the first bond follows a grid edge.
+    if (!D.moved) return [start, add(start, fromAngle(a ? nextBondAngle(existing) : D.start.up ? 330 : 30, STYLE.bond))];
     if (D.type === 'bond') {
       const target = a && atomUnder(e, a.id);
       return [start, target ?? add(start, fromAngle(snapAngle(angleOf(sub(p, start))), STYLE.bond))];
@@ -274,7 +275,8 @@ export function startEditor(root) {
     const n = Math.max(1, Math.round(Math.hypot(v.x, v.y) / (STYLE.bond * Math.cos(Math.PI / 6))));
     const dir = snapAngle(angleOf(v), 30);
     const clear = (/** @type {number} */ s) => Math.min(360, ...existing.map((x) => angleDiff(x, dir + 30 * s)));
-    return [start, ...zigzag(start, dir, n, STYLE.bond, clear(-1) > clear(1) ? -1 : 1)];
+    const onGrid = !a && hexEdges(D.start.up).includes(normDeg(dir - 30)) ? -1 : 1;
+    return [start, ...zigzag(start, dir, n, STYLE.bond, a ? (clear(-1) > clear(1) ? -1 : 1) : onGrid)];
   }
 
   /**
@@ -326,7 +328,7 @@ export function startEditor(root) {
       const s = M.substituentSides(d, bond).flat().reduce((t, x) => t + x, 0);
       points = ringOnBond(A, B, size, s ? -Math.sign(s) : Math.sign(cross(sub(B, A), sub(p, A))) || 1);
     } else {
-      points = ringAt(p, size, STYLE.bond);
+      points = ringAt(hexCenter(p, STYLE.bond), size, STYLE.bond);
     }
     M.addRing(d, points, aromatic && size === 6);
   }
@@ -370,7 +372,7 @@ export function startEditor(root) {
       : hit?.kind === 'mark' ? S.doc.marks.find((m) => m.id === hit.id)?.atom : undefined;
     if (tool === 'atom') {
       if (id) commit((d) => M.setElement(d, id, S.element));
-      else if (!hit) commit((d) => { M.addAtom(d, { element: S.element, x: p.x, y: p.y }); });
+      else if (!hit) commit((d) => { const v = hexVertex(p, STYLE.bond); M.addAtom(d, { element: S.element, x: v.x, y: v.y }); });
       return;
     }
     if (!id) return;
@@ -406,7 +408,7 @@ export function startEditor(root) {
       return;
     }
     if (S.tool === 'bond' || S.tool === 'chain') {
-      if (hit?.kind === 'atom' || !hit) S.drag = { type: S.tool, atomId: hit?.id ?? null, start: p, moved: false };
+      if (hit?.kind === 'atom' || !hit) S.drag = { type: S.tool, atomId: hit?.id ?? null, start: hit ? p : hexVertex(p, STYLE.bond), moved: false };
       return;
     }
     if (S.tool === 'rxn') {
