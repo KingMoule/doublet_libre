@@ -20,6 +20,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Vérification visuelle : rejouer un scénario de vrais événements de pointeur et de clavier dans l'app, puis juger le SVG obtenu. Les tests ne voient pas le CSS, et les captures du navigateur intégré ne sont pas fiables quand la fenêtre est réduite.
 - Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
+- Après avoir ouvert la PR, activer sa fusion automatique (squash) : GitHub la fusionne seulement quand le test `test` est vert. Si un test échoue, corriger plutôt que fusionner.
 
 ## Choix qui ne se voient pas dans le code
 

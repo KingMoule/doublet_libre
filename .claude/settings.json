@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ccd_pr__get_status",
+      "mcp__ccd_pr__bind_pr",
+      "mcp__ccd_pr__set_monitor",
+      "mcp__ccd_pr__set_auto_merge",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr merge *)",
+      "PowerShell(gh pr checks *)",
+      "PowerShell(gh pr merge *)"
+    ]
+  }
+}
