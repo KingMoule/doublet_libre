@@ -150,3 +150,27 @@ test('moving a selection carries its texts and reaction arrows along', () => {
   assert.deepEqual([d.reactionArrows[0].x1, d.reactionArrows[0].y2], [295, 105]);
   assert.equal(d.atoms[1].x, 180);
 });
+
+test('copying a molecule takes its bonds, marks and the curved arrows lying within it', () => {
+  const d = sampleSN2();
+  const part = M.extract(d, M.component(d, 'a3'));
+  assert.deepEqual(part.atoms.map((a) => a.id), ['a2', 'a3', 'a4']);
+  assert.deepEqual(part.bonds.map((b) => b.id), ['b1', 'b2']);
+  assert.deepEqual(part.marks.map((m) => m.id), ['m4', 'm5', 'm6', 'm7', 'm8']);
+  assert.deepEqual(part.curvedArrows.map((c) => c.id), ['ca2']); // ca1 starts on HO⁻, which is not copied
+  assert.deepEqual(M.validateDoc(part), []);
+});
+
+test('pasting adds a moved copy with fresh ids and links rewired to the copy', () => {
+  const d = sampleSN2();
+  const part = M.extract(d, new Set(['a2', 'a3', 'a4', 't1', 'ra1']));
+  const ids = M.paste(d, part, 10, 20);
+  assert.deepEqual(ids, ['a9', 'a10', 'a11', 't3', 'ra2']);
+  assert.deepEqual([M.findAtom(d, 'a9')?.x, M.findAtom(d, 'a9')?.y], [190, 154.64]);
+  const bond = d.bonds.find((b) => b.id === 'b6');
+  assert.deepEqual([bond?.a, bond?.b], ['a10', 'a11']);
+  assert.deepEqual(d.curvedArrows.at(-1)?.from, { bond: 'b6' });
+  assert.deepEqual(d.curvedArrows.at(-1)?.to, { atom: 'a11' });
+  assert.equal(d.reactionArrows.at(-1)?.x1, 295);
+  assert.deepEqual(M.validateDoc(d), []);
+});
