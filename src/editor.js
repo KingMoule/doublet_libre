@@ -22,7 +22,10 @@ import { TEMPLATES } from './templates.js';
 const STORAGE_KEY = 'doublet.document.v1';
 const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'text', 'erase']);
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
-const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
+/** Text icon, shrunk to fit long labels such as CO₂H. */
+const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="${Math.min(13, 34 / t.length).toFixed(1)}" fill="currentColor">${t}</text>`;
+/** @param {string} g a key of GROUPS */
+const groupName = (g) => fr.groupNames[/** @type {keyof typeof fr.groupNames} */ (g)];
 /** @param {string} v '3' to '8' or 'benzene' */
 const ringOf = (v) => (v === 'benzene' ? { size: 6, aromatic: true } : { size: Number(v), aromatic: false });
 /** A regular polygon, point up, with a circle inside for benzene. @param {{size: number, aromatic: boolean}} r */
@@ -43,7 +46,7 @@ const ICONS = {
   lonePair: '<circle cx="8" cy="11" r="2.2" fill="currentColor"/><circle cx="14" cy="11" r="2.2" fill="currentColor"/>',
   charge: '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 11 H14.5 M11 7.5 V14.5" stroke="currentColor" stroke-width="1.4"/>',
   partial: TEXT_ICON('δ'),
-  group: '<text x="11" y="15" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="currentColor">Ph</text>',
+  group: TEXT_ICON('Ph'),
   rxn: '<path d="M3 11 H17" stroke="currentColor" stroke-width="1.6"/><path d="M15 7 L20 11 L15 15 Z" fill="currentColor"/>',
   text: TEXT_ICON('T'),
   curved: '<path d="M4 17 C5 6 15 4 17 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 12.5 L17.3 14.6 L18.6 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -724,6 +727,10 @@ export function startEditor(root) {
       current: () => (S.ring.aromatic ? 'benzene' : String(S.ring.size)),
       choose: (v) => { S.ring = ringOf(v); }, icon: () => RING_ICON(S.ring),
     },
+    group: {
+      choices: Object.keys(GROUPS), label: (v) => groupName(v), title: (v) => groupName(v), current: () => S.group,
+      choose: (v) => { S.group = v; }, icon: () => TEXT_ICON(groupName(S.group)),
+    },
   };
   /** @type {HTMLElement} */ const flyout = $('#flyout');
   /** @param {string} tool */
@@ -737,7 +744,7 @@ export function startEditor(root) {
     flyout.innerHTML = o.choices.map((v) => `<button type="button" data-choice="${v}" title="${o.title(v)}" aria-label="${o.title(v)}" aria-pressed="${v === o.current()}">${o.label(v)}</button>`).join('');
     const r = toolBtn(tool).getBoundingClientRect();
     flyout.style.left = `${r.right + 6}px`;
-    flyout.style.top = `${r.top}px`;
+    flyout.style.top = `${Math.max(8, Math.min(r.top, innerHeight - flyout.offsetHeight - 8))}px`;
   }
   /** @param {string} tool @param {string} v */
   function chooseOption(tool, v) {
@@ -896,9 +903,7 @@ export function startEditor(root) {
     const sel = S.selection;
     let html = '';
     const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
-    if (!sel && S.tool === 'group') {
-      html = `<h2>${P.fgTitle}</h2><div class="row">${Object.keys(GROUPS).map((g) => `<button type="button" data-group="${g}" aria-pressed="${S.group === g}">${fr.groupNames[/** @type {keyof typeof fr.groupNames} */ (g)]}</button>`).join('')}</div><p class="muted small">${P.fgHint}</p>`;
-    } else if (!sel) {
+    if (!sel) {
       html = `<h2>${P.nothing}</h2><p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
         <h3>${P.phaseTitle}</h3><ul>${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul>
         <h3>${P.shortcutsTitle}</h3><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul>
@@ -960,11 +965,6 @@ export function startEditor(root) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
-    if (b.dataset.group) {
-      S.group = b.dataset.group;
-      renderPanel();
-      return;
-    }
     const act = b.dataset.action;
     const sel = S.selection;
     if (!act || !sel) return;
