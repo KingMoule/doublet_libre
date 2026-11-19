@@ -13,6 +13,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 | Licence | MIT, dépôt public |
 | Appareils | Ordinateur d'abord ; tablette plus tard |
 | Langue | Français ; tous les textes dans `src/i18n/fr.js` |
+| Réglage d'un outil | Petite fenêtre verticale à côté de l'outil (élément de l'outil Atome, taille de l'outil Cycle) ; l'icône montre le choix |
 | Technique | Site statique sans build ni dépendance ; JavaScript en modules avec JSDoc `// @ts-check` ; tests `node --test` |
 
 ## Ce que l'app dessine
