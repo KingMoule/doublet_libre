@@ -12,6 +12,7 @@ import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
 import { checkDoc } from './checks.js';
 import { GROUPS, attachGroup } from './groups.js';
 import { TEMPLATES } from './templates.js';
+import * as A from './apparatus.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
@@ -20,12 +21,21 @@ import { TEMPLATES } from './templates.js';
  */
 
 const STORAGE_KEY = 'doublet.document.v1';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'text', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'synthesis', 'heating', 'text', 'erase']);
+/** The glassware tools: each puts down the piece chosen in its option window. @type {Record<string, string[]>} */
+const FAMILIES = A.FAMILIES;
+/** The tools on the rail in each mode: drawing a mechanism, or a lab set-up. @type {Record<'mechanism' | 'setup', string[]>} */
+const MODE_TOOLS = {
+  mechanism: TOOLS.filter((t) => !FAMILIES[t]),
+  setup: ['select', ...Object.keys(FAMILIES), 'text', 'erase'],
+};
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 /** Text icon, shrunk to fit long labels such as CO₂H. */
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="${Math.min(13, 34 / t.length).toFixed(1)}" fill="currentColor">${t}</text>`;
 /** @param {string} g a key of GROUPS */
 const groupName = (g) => fr.groupNames[/** @type {keyof typeof fr.groupNames} */ (g)];
+/** @param {string} kind a key of A.PIECES */
+const pieceName = (kind) => fr.pieceNames[/** @type {keyof typeof fr.pieceNames} */ (kind)] ?? kind;
 /** @param {string} v '3' to '8' or 'benzene' */
 const ringOf = (v) => (v === 'benzene' ? { size: 6, aromatic: true } : { size: Number(v), aromatic: false });
 /** A regular polygon, point up, with a circle inside for benzene. @param {{size: number, aromatic: boolean}} r */
@@ -48,6 +58,13 @@ const BOND_ICON = (v) => {
   const offsets = { 1: [0], 2: [-1.6, 1.6], 3: [-2.6, 0, 2.6] }[/** @type {1 | 2 | 3} */ (Number(v))];
   return offsets.map((o) => `<path d="M${4 + 0.65 * o} ${17 + 0.76 * o} L${18 + 0.65 * o} ${5 + 0.76 * o}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`).join('');
 };
+/** A piece of glassware shrunk into a 22-pixel icon. @param {string} kind */
+const PIECE_ICON = (kind) => {
+  const { d, box } = A.PIECES[kind];
+  const s = Math.max(box.r - box.l, box.b - box.t) + 8;
+  const [x, y] = [(box.l + box.r - s) / 2, (box.t + box.b - s) / 2];
+  return `<svg width="22" height="22" viewBox="${x} ${y} ${s} ${s}"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+};
 const ICONS = {
   select: '<path d="M6 3 L6 17 L9.5 13.5 L12 19 L14 18 L11.5 12.5 L16 12.5 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
   bond: '<path d="M4 17 L18 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
@@ -62,6 +79,8 @@ const ICONS = {
   text: TEXT_ICON('T'),
   curved: '<path d="M4 17 C5 6 15 4 17 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 12.5 L17.3 14.6 L18.6 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
   erase: '<path d="M9 18 L3.5 12.5 L12 4 L19 11 L12 18 Z M7 9 L14 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  synthesis: PIECE_ICON('flask'),
+  heating: PIECE_ICON('mantle'),
 };
 
 /** @param {EventTarget | null} el @returns {Hit | null} */
@@ -85,6 +104,7 @@ function shell() {
       <button type="button" id="btn-undo" class="icon" title="${fr.actions.undo} (Ctrl+Z)" aria-label="${fr.actions.undo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3.5 L2.5 7 L6 10.5 M2.5 7 H11 A4.5 4.5 0 0 1 11 16 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" id="btn-redo" class="icon" title="${fr.actions.redo} (Ctrl+Y)" aria-label="${fr.actions.redo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M12 3.5 L15.5 7 L12 10.5 M15.5 7 H7 A4.5 4.5 0 0 0 7 16 H11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" id="btn-fit">${fr.actions.fit}</button>
+      <button type="button" id="btn-mode" aria-pressed="false">${fr.actions.setup}</button>
       <details class="menu" id="templates-menu"><summary>${fr.actions.templates}</summary><div>
         ${Object.keys(TEMPLATES).map((k) => `<button type="button" data-template="${k}">${fr.templateNames[/** @type {keyof typeof fr.templateNames} */ (k)]}</button>`).join('')}
       </div></details>
@@ -144,6 +164,9 @@ export function startEditor(root) {
     /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
     ring: { size: 6, aromatic: false },
     bond: '1',
+    /** @type {'mechanism' | 'setup'} */ mode: 'mechanism',
+    /** The piece each glassware tool puts down. @type {Record<string, string>} */
+    piece: Object.fromEntries(Object.entries(FAMILIES).map(([f, kinds]) => [f, kinds[0]])),
     element: 'C',
     group: 'Ph',
     /** @type {{a: {x:number,y:number}, b: {x:number,y:number}, view: {x:number,y:number,w:number,h:number}} | null} */ pinch: null,
@@ -233,8 +256,9 @@ export function startEditor(root) {
       case 'curved': case 'handle': return d.curvedArrows.some((c) => c.id === h.id);
       case 'rxn': return d.reactionArrows.some((r) => r.id === h.id);
       case 'text': return d.texts.some((t) => t.id === h.id);
+      case 'piece': return d.apparatus.some((g) => g.id === h.id);
       case 'group':
-        h.ids = (h.ids ?? []).filter((id) => M.findAtom(d, id) || d.texts.some((t) => t.id === id) || d.reactionArrows.some((r) => r.id === id));
+        h.ids = (h.ids ?? []).filter((id) => M.findAtom(d, id) || [...d.texts, ...d.reactionArrows, ...d.apparatus].some((o) => o.id === id));
         return h.ids.length > 0;
       default: return false;
     }
@@ -268,7 +292,8 @@ export function startEditor(root) {
       case 'curved': case 'handle': M.removeCurvedArrow(d, h.id); break;
       case 'rxn': M.removeReactionArrow(d, h.id); break;
       case 'text': M.removeText(d, h.id); break;
-      case 'group': for (const id of h.ids ?? []) { M.removeAtom(d, id); M.removeText(d, id); M.removeReactionArrow(d, id); } break;
+      case 'piece': M.removePiece(d, h.id); break;
+      case 'group': for (const id of h.ids ?? []) { M.removeAtom(d, id); M.removeText(d, id); M.removeReactionArrow(d, id); M.removePiece(d, id); } break;
       default: break;
     }
   }
@@ -374,7 +399,7 @@ export function startEditor(root) {
 
   /** Pointers currently down, for two-finger gestures. @type {Map<number, {x: number, y: number}>} */
   const pointers = new Map();
-  const TAP_TOOLS = new Set(['erase', 'ring', 'text', 'atom', 'group', 'lonePair', 'charge', 'partial']);
+  const TAP_TOOLS = new Set(['erase', 'ring', 'text', 'atom', 'group', 'lonePair', 'charge', 'partial', ...Object.keys(FAMILIES)]);
 
   /**
    * What a simple touch does with the current tool. It runs on release, and only if the pointer
@@ -390,9 +415,20 @@ export function startEditor(root) {
       return;
     }
     if (tool === 'ring') { commit((d) => addRingAt(d, hit, p)); return; }
+    if (FAMILIES[tool]) {
+      // Touching near the free joint of a piece fits the new piece onto it.
+      if (!hit || hit.kind === 'piece') {
+        commit((d) => {
+          const g = M.addPiece(d, { kind: S.piece[tool], x: Math.round(p.x), y: Math.round(p.y), angle: 0 });
+          A.place(d, g.id, p);
+          S.selection = { kind: 'piece', id: g.id };
+        });
+      }
+      return;
+    }
     if (tool === 'text') {
       if (hit?.kind === 'text') { S.selection = hit; render(); renderPanel(); }
-      else if (!hit) commit((d) => { S.selection = { kind: 'text', id: M.addText(d, { x: p.x, y: p.y, text: '+' }).id }; });
+      else if (!hit || hit.kind === 'piece') commit((d) => { S.selection = { kind: 'text', id: M.addText(d, { x: p.x, y: p.y, text: '+' }).id }; });
       return;
     }
     // Touching an atom's lone pair or charge counts as touching the atom.
@@ -462,7 +498,7 @@ export function startEditor(root) {
     }
     const sel = S.selection;
     const grouped = sel?.kind === 'group' && !!sel.ids?.includes(hit.id);
-    const movable = ['atom', 'text', 'rxn'];
+    const movable = ['atom', 'text', 'rxn', 'piece'];
     if (movable.includes(hit.kind) && e.shiftKey) {
       const ids = sel?.kind === 'group' ? sel.ids ?? [] : sel && movable.includes(sel.kind) ? [sel.id] : [];
       const next = ids.includes(hit.id) ? ids.filter((x) => x !== hit.id) : [...ids, hit.id];
@@ -482,8 +518,13 @@ export function startEditor(root) {
       S.drag = { type: 'rotateMark', id: hit.id, start: p, snap, moved: false };
     } else if (hit.kind === 'charge') {
       S.drag = { type: 'rotateCharge', id: hit.id, start: p, snap, moved: false };
-    } else if (hit.kind === 'rxn' || hit.kind === 'text') {
+    } else if (hit.kind === 'rxn' || hit.kind === 'text' || (hit.kind === 'piece' && grouped)) {
       S.drag = { type: 'move', ids: grouped ? new Set(sel?.ids) : new Set([hit.id]), last: p, start: p, snap, moved: false };
+    } else if (hit.kind === 'piece') {
+      // A piece takes its whole set-up along, and snaps to a joint it comes near.
+      const ids = A.assembly(S.doc, hit.id);
+      const orig = new Map(S.doc.apparatus.filter((g) => ids.has(g.id)).map((g) => [g.id, { ...g }]));
+      S.drag = { type: 'movePiece', ids, orig, start: p, snap, moved: false };
     }
     render();
     renderPanel();
@@ -522,6 +563,13 @@ export function startEditor(root) {
       case 'move':
         M.moveObjects(d, D.ids, p.x - D.last.x, p.y - D.last.y);
         D.last = p;
+        break;
+      case 'movePiece':
+        for (const g of d.apparatus) {
+          const o = D.orig.get(g.id);
+          if (o) Object.assign(g, { x: o.x + p.x - D.start.x, y: o.y + p.y - D.start.y, angle: o.angle });
+        }
+        A.snap(d, D.ids);
         break;
       case 'handle': {
         const g = S.layout?.curved.get(D.id);
@@ -660,13 +708,14 @@ export function startEditor(root) {
   /** @type {M.Doc | null} */ let clipboard = null;
   let pastes = 0;
 
-  /** The atoms, texts and reaction arrows to copy: the whole molecule for an atom or a bond. */
+  /** The objects to copy: the whole molecule for an atom or a bond, the whole set-up for a piece. */
   function selectedIds() {
     const sel = S.selection;
     if (sel?.kind === 'group') return new Set(sel.ids);
     if (sel?.kind === 'atom') return M.component(S.doc, sel.id);
     if (sel?.kind === 'bond') { const b = M.findBond(S.doc, sel.id); return b ? M.component(S.doc, b.a) : null; }
     if (sel?.kind === 'rxn' || sel?.kind === 'text') return new Set([sel.id]);
+    if (sel?.kind === 'piece') return A.assembly(S.doc, sel.id);
     return null;
   }
 
@@ -738,8 +787,8 @@ export function startEditor(root) {
       return;
     }
     if (!target) {
-      const tool = TOOLS.find((t) => fr.toolKeys[t].toLowerCase() === k.toLowerCase());
-      if (tool) setTool(tool);
+      const tool = MODE_TOOLS[S.mode].find((t) => fr.toolKeys[/** @type {typeof TOOLS[number]} */ (t)].toLowerCase() === k.toLowerCase());
+      if (tool) setTool(/** @type {typeof TOOLS[number]} */ (tool));
     }
   });
 
@@ -769,7 +818,17 @@ export function startEditor(root) {
     renderPanel();
   }
 
-  // Tool options (Bond: order or wedge, Atom: element, Ring: size, Group): a small vertical window beside the tool.
+  /** Shows the tools of a mode: drawing a mechanism, or a lab set-up. @param {'mechanism' | 'setup'} mode */
+  function setMode(mode) {
+    S.mode = mode;
+    $('#btn-mode').setAttribute('aria-pressed', String(mode === 'setup'));
+    for (const b of root.querySelectorAll('.tool')) {
+      if (b instanceof HTMLElement) b.hidden = !MODE_TOOLS[mode].includes(b.dataset.tool ?? '');
+    }
+    setTool(MODE_TOOLS[mode].includes(S.tool) ? S.tool : 'select');
+  }
+
+  // Tool options (Bond: order or wedge, Atom: element, Ring: size, Group, glassware): a small vertical window beside the tool.
   /** @type {Record<string, {choices: string[], label: (v: string) => string, title: (v: string) => string, current: () => string, choose: (v: string) => void, icon: () => string}>} */
   const OPTIONS = {
     bond: {
@@ -793,6 +852,11 @@ export function startEditor(root) {
       choices: Object.keys(GROUPS), label: (v) => groupName(v), title: (v) => groupName(v), current: () => S.group,
       choose: (v) => { S.group = v; }, icon: () => TEXT_ICON(groupName(S.group)),
     },
+    // A glassware tool keeps its family's icon: a tall piece such as a condenser is a mere bar at 22 pixels.
+    ...Object.fromEntries(Object.entries(FAMILIES).map(([tool, kinds]) => [tool, {
+      choices: kinds, label: (/** @type {string} */ v) => `${PIECE_ICON(v)}<span>${pieceName(v)}</span>`, title: pieceName,
+      current: () => S.piece[tool], choose: (/** @type {string} */ v) => { S.piece[tool] = v; }, icon: () => PIECE_ICON(kinds[0]),
+    }])),
   };
   /** @type {HTMLElement} */ const flyout = $('#flyout');
   /** @param {string} tool */
@@ -804,9 +868,11 @@ export function startEditor(root) {
     if (!o || !tool) return;
     flyout.dataset.for = tool;
     flyout.innerHTML = o.choices.map((v) => `<button type="button" data-choice="${v}" title="${o.title(v)}" aria-label="${o.title(v)}" aria-pressed="${v === o.current()}">${o.label(v)}</button>`).join('');
+    // Beside the tool, or below it when the screen is too narrow (tools in a row, on a phone).
     const r = toolBtn(tool).getBoundingClientRect();
-    flyout.style.left = `${r.right + 6}px`;
-    flyout.style.top = `${Math.max(8, Math.min(r.top, innerHeight - flyout.offsetHeight - 8))}px`;
+    const beside = r.right + 6 + flyout.offsetWidth <= innerWidth - 8;
+    flyout.style.left = `${beside ? r.right + 6 : Math.max(8, innerWidth - flyout.offsetWidth - 8)}px`;
+    flyout.style.top = `${Math.max(8, Math.min(beside ? r.top : r.bottom + 6, innerHeight - flyout.offsetHeight - 8))}px`;
   }
   /** @param {string} tool @param {string} v */
   function chooseOption(tool, v) {
@@ -830,6 +896,7 @@ export function startEditor(root) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-tool]'));
     if (b) setTool(/** @type {typeof TOOLS[number]} */ (b.dataset.tool));
   });
+  $('#btn-mode').addEventListener('click', () => setMode(S.mode === 'setup' ? 'mechanism' : 'setup'));
   $('#btn-undo').addEventListener('click', doUndo);
   $('#btn-redo').addEventListener('click', doRedo);
   const refit = () => { userMovedView = false; fit(); };
@@ -942,9 +1009,10 @@ export function startEditor(root) {
   }
 
   function updateStatus() {
-    const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : null;
+    const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] ?? null : null;
     const touch = S.tool === 'select' && matchMedia('(pointer: coarse)').matches;
-    statusEl.textContent = hovered ?? (touch ? fr.status.selectTouch : fr.status[S.tool]);
+    const setup = S.mode === 'setup' && S.tool === 'select';
+    statusEl.textContent = hovered ?? (setup ? fr.status.selectSetup : touch ? fr.status.selectTouch : fr.status[S.tool]);
   }
 
   // ---------- properties panel ----------
@@ -1023,6 +1091,12 @@ export function startEditor(root) {
     } else if (sel.kind === 'charge') {
       const a = M.findAtom(d, sel.id);
       if (a) html = `<h2>${P.titles.charge}</h2><dl class="kv"><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd></dl><div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div><p class="muted">${P.rotateHint}</p>${removeBtn}`;
+    } else if (sel.kind === 'piece') {
+      const g = d.apparatus.find((x) => x.id === sel.id);
+      if (g) {
+        html = `<h2>${pieceName(g.kind)}</h2><p class="label">${P.rotate}</p><div class="row">${btn('turn-15', '↺ 15°')}${btn('turn+15', '↻ 15°')}</div>
+          <div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>${removeBtn}`;
+      }
     } else if (sel.kind === 'text') {
       const t = d.texts.find((x) => x.id === sel.id);
       if (t) {
@@ -1050,6 +1124,12 @@ export function startEditor(root) {
     commit((d) => {
       if (act === 'delete') { deleteHit(d, sel); return; }
       if (act.startsWith('el-')) { M.setElement(d, sel.id, act.slice(3)); return; }
+      if (act === 'turn-15' || act === 'turn+15') {
+        const g = d.apparatus.find((x) => x.id === sel.id);
+        if (g) A.turn(d, A.assembly(d, g.id), g, Number(act.slice(4)));
+        return;
+      }
+      if (act === 'detach') { M.moveObjects(d, new Set([sel.id]), STYLE.bond, 0); return; }
       if (act === 'size-2' || act === 'size+2') { const t = d.texts.find((x) => x.id === sel.id); if (t) M.setTextSize(d, t.id, (t.size ?? STYLE.text) + Number(act.slice(4))); return; }
       if (act === 'charge-1' || act === 'charge+1') { const a = M.findAtom(d, sel.id); if (a) a.charge += act === 'charge+1' ? 1 : -1; return; }
       if (act === 'lp-add') { M.addMark(d, sel.id, 'lonePair'); return; }
@@ -1109,7 +1189,7 @@ export function startEditor(root) {
   // ---------- start ----------
   render();
   fit();
-  setTool('select');
+  setMode('mechanism');
   renderPanel();
   updateButtons();
 }

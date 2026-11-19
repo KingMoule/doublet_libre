@@ -21,6 +21,7 @@ const EXPORT_CSS = [
   '.lp circle{fill:#17212B}',
   '.rx line,.rx polyline{stroke:#17212B;stroke-width:1.4;fill:none}.rxh{fill:#17212B}',
   '.ea{fill:none;stroke:#C2304A;stroke-width:1.5;stroke-linecap:round}.eh{fill:#C2304A}',
+  '.gw{fill:none;stroke:#17212B;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round}',
 ].join('');
 
 /** @param {string} s */

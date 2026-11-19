@@ -70,6 +70,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .top button.icon { display: grid; place-items: center; padding: 0.25rem 0.45rem; }
 .top button, .panel button { border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 0.25rem 0.65rem; cursor: pointer; }
 .top button:hover:not(:disabled), .panel button:hover { border-color: var(--accent); }
+.top button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .top button:disabled { opacity: 0.45; cursor: default; }
 .menu { position: relative; }
 .menu summary { list-style: none; cursor: pointer; border: 1px solid var(--rule); border-radius: 6px; padding: 0.25rem 0.65rem; }
@@ -85,6 +86,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .tool { position: relative; display: grid; place-items: center; height: 44px; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; color: var(--ink); }
 .tool:hover { background: var(--accent-soft); }
 .tool[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.tool[hidden] { display: none; }
 .tool .tool-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .tool kbd { position: absolute; right: 4px; bottom: 2px; font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); }
 .flyout { position: fixed; z-index: 10; max-height: calc(100vh - 16px); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.25); }
@@ -97,7 +99,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Canvas */
 .stage { grid-area: stage; min-width: 0; min-height: 0; position: relative; background: var(--paper); }
 #canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; cursor: default; }
-#canvas[data-tool="bond"], #canvas[data-tool="chain"], #canvas[data-tool="ring"], #canvas[data-tool="atom"], #canvas[data-tool="curved"], #canvas[data-tool="rxn"], #canvas[data-tool="text"] { cursor: crosshair; }
+#canvas[data-tool="bond"], #canvas[data-tool="chain"], #canvas[data-tool="ring"], #canvas[data-tool="atom"], #canvas[data-tool="curved"], #canvas[data-tool="rxn"], #canvas[data-tool="text"], #canvas[data-tool="synthesis"], #canvas[data-tool="heating"] { cursor: crosshair; }
 #canvas[data-tool="lonePair"], #canvas[data-tool="charge"], #canvas[data-tool="partial"] { cursor: cell; }
 #canvas .marquee { fill: var(--hl); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 3; }
 #canvas[data-tool="erase"] { cursor: pointer; }
@@ -115,6 +117,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 #canvas .cond { font-family: var(--font-chem); font-size: 12px; fill: var(--ink); text-anchor: middle; }
 #canvas .ea { fill: none; stroke: var(--e-arrow); stroke-width: 1.5; stroke-linecap: round; }
 #canvas .eh { fill: var(--e-arrow); }
+#canvas .gw { fill: none; stroke: var(--ink); stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
 #canvas .hit { fill: transparent; stroke: transparent; stroke-width: 10px; }
 #canvas path.hit, #canvas line.hit { fill: none; pointer-events: stroke; }
 #canvas circle.hit, #canvas rect.hit { stroke: none; }
