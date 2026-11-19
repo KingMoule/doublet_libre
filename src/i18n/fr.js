@@ -11,6 +11,8 @@ export const fr = {
   badge: 'Version 1',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
+  /** @type {{benzene: string, size: (n: number) => string}} */
+  ringNames: { benzene: 'Benzène', size: (n) => `Cycle à ${n}` },
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
     lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', group: 'Groupe', curved: 'Flèche courbe',
@@ -113,9 +115,6 @@ export const fr = {
     rotateHint: 'Glissez-la dans le dessin pour la faire tourner autour de son atome.',
     fgTitle: 'Groupe',
     fgHint: 'Le groupe part dans la direction libre de l’atome cliqué, en zigzag. Ctrl+Z pour annuler.',
-    ringTitle: 'Cycle',
-    benzene: 'Benzène',
-    ringHint: 'Un cycle accolé à une liaison se place du côté libre. Le benzène garde des doubles liaisons alternées.',
     /** @param {number} n */
     group: (n) => `${n} éléments sélectionnés`,
     groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer.',

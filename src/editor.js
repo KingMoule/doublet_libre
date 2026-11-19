@@ -23,6 +23,17 @@ const STORAGE_KEY = 'doublet.document.v1';
 const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'text', 'erase']);
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
+/** @param {string} v '3' to '8' or 'benzene' */
+const ringOf = (v) => (v === 'benzene' ? { size: 6, aromatic: true } : { size: Number(v), aromatic: false });
+/** A regular polygon, point up, with a circle inside for benzene. @param {{size: number, aromatic: boolean}} r */
+const RING_ICON = (r) => {
+  const pts = Array.from({ length: r.size }, (_, i) => {
+    const a = (i / r.size - 0.25) * 2 * Math.PI;
+    return `${(11 + 8 * Math.cos(a)).toFixed(1)},${(11 + 8 * Math.sin(a)).toFixed(1)}`;
+  });
+  const circle = r.aromatic ? '<circle cx="11" cy="11" r="4" fill="none" stroke="currentColor" stroke-width="1.3"/>' : '';
+  return `<polygon points="${pts.join(' ')}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>${circle}`;
+};
 const ICONS = {
   select: '<path d="M6 3 L6 17 L9.5 13.5 L12 19 L14 18 L11.5 12.5 L16 12.5 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
   bond: '<path d="M4 17 L18 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
@@ -74,7 +85,7 @@ function shell() {
       <input type="file" id="file-input" accept=".json,.svg,application/json,image/svg+xml" hidden>
     </div>
   </header>
-  <nav class="tools" aria-label="${fr.toolsLabel}">${tools}<div class="flyout" id="element-flyout" hidden>${ELEMENTS.map((el) => `<button type="button" data-element="${el}">${el}</button>`).join('')}</div></nav>
+  <nav class="tools" aria-label="${fr.toolsLabel}">${tools}<div class="flyout" id="flyout" hidden></div></nav>
   <main class="stage">
     <svg id="canvas" role="application" aria-label="${fr.canvasLabel}">
       <defs><pattern id="hexp" width="69.282" height="120" patternUnits="userSpaceOnUse"><path class="hexline" d="M0,20 L34.641,0 L69.282,20 M0,20 L0,60 M0,60 L34.641,80 L69.282,60 M34.641,80 L34.641,120"/></pattern></defs>
@@ -638,7 +649,7 @@ export function startEditor(root) {
     if (ctrl && k.toLowerCase() === 'c' && !String(window.getSelection())) { e.preventDefault(); copyImage(); return; }
     if (ctrl || e.altKey) return;
     if (k === ' ') { S.space = true; svg.classList.add('pannable'); e.preventDefault(); return; }
-    if (k === 'Escape') { S.selection = null; showFlyout(false); render(); renderPanel(); return; }
+    if (k === 'Escape') { S.selection = null; showFlyout(null); render(); renderPanel(); return; }
     const target = S.hover ?? S.selection;
     if (k === 'Delete' || k === 'Backspace') {
       if (target && target.kind !== 'handle') { e.preventDefault(); commit((d) => deleteHit(d, target)); }
@@ -663,8 +674,8 @@ export function startEditor(root) {
       }
     }
     if (S.tool === 'ring' && /^[3-8]$/.test(k)) {
-      S.ring = { size: Number(k), aromatic: false };
-      renderPanel();
+      chooseOption('ring', k);
+      showFlyout(null);
       return;
     }
     if (!target) {
@@ -694,34 +705,56 @@ export function startEditor(root) {
     S.tool = tool;
     for (const b of root.querySelectorAll('.tool')) b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === tool));
     svg.dataset.tool = tool;
-    showFlyout(tool === 'atom');
+    showFlyout(tool);
     updateStatus();
     renderPanel();
   }
 
-  // Element chooser: a small vertical window beside the Atom tool.
-  /** @type {HTMLElement} */ const flyout = $('#element-flyout');
-  /** @type {HTMLElement} */ const atomBtn = $('[data-tool="atom"]');
-  /** @param {boolean} open */
-  function showFlyout(open) {
-    flyout.hidden = !open;
-    if (!open) return;
-    const r = atomBtn.getBoundingClientRect();
+  // Tool options (Atom: element, Ring: size): a small vertical window beside the tool.
+  /** @type {Record<string, {choices: string[], label: (v: string) => string, title: (v: string) => string, current: () => string, choose: (v: string) => void, icon: () => string}>} */
+  const OPTIONS = {
+    atom: {
+      choices: ELEMENTS, label: (v) => v, title: (v) => v, current: () => S.element,
+      choose: (v) => { S.element = v; }, icon: () => TEXT_ICON(S.element),
+    },
+    ring: {
+      choices: ['3', '4', '5', '6', '7', '8', 'benzene'],
+      label: (v) => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${RING_ICON(ringOf(v))}</svg><span>${v === 'benzene' ? '' : v}</span>`,
+      title: (v) => (v === 'benzene' ? fr.ringNames.benzene : fr.ringNames.size(Number(v))),
+      current: () => (S.ring.aromatic ? 'benzene' : String(S.ring.size)),
+      choose: (v) => { S.ring = ringOf(v); }, icon: () => RING_ICON(S.ring),
+    },
+  };
+  /** @type {HTMLElement} */ const flyout = $('#flyout');
+  /** @param {string} tool */
+  const toolBtn = (tool) => /** @type {HTMLElement} */ ($(`[data-tool="${tool}"]`));
+  /** @param {string | null} tool the tool whose options to show, or null to close */
+  function showFlyout(tool) {
+    const o = tool ? OPTIONS[tool] : null;
+    flyout.hidden = !o;
+    if (!o || !tool) return;
+    flyout.dataset.for = tool;
+    flyout.innerHTML = o.choices.map((v) => `<button type="button" data-choice="${v}" title="${o.title(v)}" aria-label="${o.title(v)}" aria-pressed="${v === o.current()}">${o.label(v)}</button>`).join('');
+    const r = toolBtn(tool).getBoundingClientRect();
     flyout.style.left = `${r.right + 6}px`;
     flyout.style.top = `${r.top}px`;
-    for (const b of flyout.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.element === S.element));
   }
+  /** @param {string} tool @param {string} v */
+  function chooseOption(tool, v) {
+    OPTIONS[tool].choose(v);
+    const icon = toolBtn(tool).querySelector('svg');
+    if (icon) icon.innerHTML = OPTIONS[tool].icon();
+  }
+  for (const tool of Object.keys(OPTIONS)) chooseOption(tool, OPTIONS[tool].current());
   flyout.addEventListener('click', (e) => {
-    const el = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.element;
-    if (!el) return;
-    S.element = el;
-    const icon = atomBtn.querySelector('svg');
-    if (icon) icon.innerHTML = TEXT_ICON(el);
-    showFlyout(false);
+    const v = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.choice;
+    if (!v || !flyout.dataset.for) return;
+    chooseOption(flyout.dataset.for, v);
+    showFlyout(null);
   });
   document.addEventListener('pointerdown', (e) => {
     const t = /** @type {Node} */ (e.target);
-    if (!flyout.hidden && !flyout.contains(t) && !atomBtn.contains(t)) showFlyout(false);
+    if (!flyout.hidden && !flyout.contains(t) && !toolBtn(flyout.dataset.for ?? '').contains(t)) showFlyout(null);
   });
 
   root.querySelector('.tools')?.addEventListener('click', (e) => {
@@ -865,10 +898,6 @@ export function startEditor(root) {
     const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
     if (!sel && S.tool === 'group') {
       html = `<h2>${P.fgTitle}</h2><div class="row">${Object.keys(GROUPS).map((g) => `<button type="button" data-group="${g}" aria-pressed="${S.group === g}">${fr.groupNames[/** @type {keyof typeof fr.groupNames} */ (g)]}</button>`).join('')}</div><p class="muted small">${P.fgHint}</p>`;
-    } else if (!sel && S.tool === 'ring') {
-      const { size, aromatic } = S.ring;
-      html = `<h2>${P.ringTitle}</h2><div class="seg">${[3, 4, 5, 6, 7, 8].map((n) => `<button type="button" data-ring="${n}" aria-pressed="${size === n && !aromatic}">${n}</button>`).join('')}</div>
-        <div class="col"><button type="button" data-ring="benzene" aria-pressed="${aromatic}">${P.benzene}</button></div><p class="muted small">${P.ringHint}</p>`;
     } else if (!sel) {
       html = `<h2>${P.nothing}</h2><p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
         <h3>${P.phaseTitle}</h3><ul>${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul>
@@ -933,12 +962,6 @@ export function startEditor(root) {
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
     if (b.dataset.group) {
       S.group = b.dataset.group;
-      renderPanel();
-      return;
-    }
-    if (b.dataset.ring) {
-      const v = b.dataset.ring;
-      S.ring = v === 'benzene' ? { size: 6, aromatic: true } : { size: Number(v), aromatic: false };
       renderPanel();
       return;
     }
