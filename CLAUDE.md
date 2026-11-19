@@ -32,6 +32,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Une flèche courbe référence des électrons (doublet, liaison, atome), jamais des coordonnées. Ses points de contrôle sont relatifs à ses ancres : c'est ce qui la fait suivre les molécules.
 - Chaque modification passe par `commit()` dans `editor.js`, qui enregistre l'état pour annuler.
 - Une opération sur une sélection (cadre, déplacer, effacer) vaut pour tous les objets à coordonnées : atomes, textes, flèches de réaction (`idsInRect` et `moveObjects` dans `model.js`).
+- Une action au clavier a aussi un bouton (panneau, petite fenêtre ou menu) : un étudiant sur tablette n'a ni Ctrl, ni Suppr, ni chiffres.
 
 ## Pièges
 
