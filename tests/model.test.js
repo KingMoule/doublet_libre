@@ -92,6 +92,17 @@ test('a ring drawn on an existing bond reuses its atoms (naphthalene stays Kekul
   assert.equal(d.bonds.filter((x) => x.order === 2).length, 5);
 });
 
+test('the δ tool cycles δ+ → δ− → nothing on an atom', () => {
+  const d = M.emptyDoc();
+  const a = M.addAtom(d, { element: 'O', x: 0, y: 0 });
+  const values = [];
+  for (let i = 0; i < 3; i++) {
+    M.cyclePartial(d, a.id);
+    values.push(d.marks.find((m) => m.atom === a.id && m.kind === 'partial')?.value ?? null);
+  }
+  assert.deepEqual(values, ['δ+', 'δ−', null]);
+});
+
 test('undo and redo restore the saved states', () => {
   const h = M.createHistory();
   const d = M.emptyDoc();

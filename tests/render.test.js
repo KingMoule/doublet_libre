@@ -33,6 +33,27 @@ test('lone pairs sit above, below, left or right of the symbol, away from bonds 
   assert.equal(new Set(bromide.map((c) => `${Math.round(c.x)},${Math.round(c.y)}`)).size, 4, 'four distinct spots');
 });
 
+test('a single electron is one dot on a free side of the symbol (GR-5.3)', () => {
+  const d = M.emptyDoc();
+  const o = M.addAtom(d, { element: 'O', x: 0, y: 0 });
+  M.addBond(d, o.id, M.addAtom(d, { x: 34.64, y: 20 }).id);
+  const r = M.addMark(d, o.id, 'radical');
+  const L = layout(d);
+  assert.equal(L.marks.get(r.id).dots.length, 1);
+  assert.equal(L.atoms.get(o.id).label.h, 0, 'the radical uses the valence: no H on O•');
+  const c = L.marks.get(r.id).center;
+  assert.ok(Math.abs(c.x) < 1e-9 || Math.abs(c.y) < 1e-9, 'on an axis');
+});
+
+test('on a carbocation vertex the charge takes the largest free sector', () => {
+  const d = M.emptyDoc();
+  const c = M.addAtom(d, { x: 0, y: 0, charge: 1 });
+  M.addBond(d, c.id, M.addAtom(d, { x: -40, y: 0 }).id);
+  M.addBond(d, c.id, M.addAtom(d, { x: 20, y: 34.64 }).id);
+  const p = layout(d).charges.get(c.id).center;
+  assert.ok(p.y < 0 && p.x > 0, 'up and to the right, away from both bonds');
+});
+
 test('a charge goes top right of the label (GR-5.1)', () => {
   const L = layout(sampleSN2());
   const label = L.atoms.get('a8').label;

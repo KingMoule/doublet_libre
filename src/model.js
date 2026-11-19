@@ -183,6 +183,14 @@ export function addMark(doc, atomId, kind, extra = {}) {
   return mark;
 }
 
+/** Partial charge of an atom, one step further: none → δ+ → δ− → none. @param {Doc} doc @param {string} atomId */
+export function cyclePartial(doc, atomId) {
+  const m = doc.marks.find((x) => x.atom === atomId && x.kind === 'partial');
+  if (!m) addMark(doc, atomId, 'partial', { value: 'δ+' });
+  else if (m.value === 'δ+') m.value = 'δ−';
+  else removeMark(doc, m.id);
+}
+
 /** @param {Doc} doc @param {Anchor} from @param {Anchor} to @param {1 | 2} [electrons] @param {CurvedArrow['bend']} [bend] */
 export function addCurvedArrow(doc, from, to, electrons = 2, bend = DEFAULT_BEND) {
   /** @type {CurvedArrow} */
