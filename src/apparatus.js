@@ -233,6 +233,57 @@ export const PIECES = {
       { x: 0, y: -82, dir: -90, kind: 'stem', male: false },
     ],
   },
+  // Basic glassware. Vessels stand on a flat base and take a stem (funnel, pipette, burette) in their mouth.
+  beaker: {
+    d: 'M-31 -72 L-28 -68 L-28 -3 Q-28 0 -25 0 L25 0 Q28 0 28 -3 L28 -70 M28 -20 L21 -20 M28 -35 L21 -35 M28 -50 L21 -50',
+    box: { l: -31, t: -72, r: 28, b: 0 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'base', male: true },
+      { x: 0, y: -70, dir: -90, kind: 'stem', male: false },
+    ],
+  },
+  erlenmeyer: {
+    d: 'M-10 -84 L-8 -82 L-8 -58 L-32 -4 Q-33 0 -29 0 L29 0 Q33 0 32 -4 L8 -58 L8 -82 L10 -84',
+    box: { l: -33, t: -84, r: 33, b: 0 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'base', male: true },
+      { x: 0, y: -82, dir: -90, kind: 'stem', male: false },
+    ],
+  },
+  // Graduated cylinder: a foot, a spout, a mark every 10 units.
+  cylinder: {
+    d: 'M-20 0 L20 0 L14 -6 L-14 -6 Z M-9 -6 L-9 -130 L-12 -133 M9 -6 L9 -132'
+      + [-20, -30, -40, -50, -60, -70, -80, -90, -100, -110, -120].map((y) => ` M9 ${y} L${y % 50 ? 5 : 2} ${y}`).join(''),
+    box: { l: -20, t: -133, r: 20, b: 0 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'base', male: true },
+      { x: 0, y: -132, dir: -90, kind: 'stem', male: false },
+    ],
+  },
+  testtube: {
+    d: 'M-10 -102 L-8 -100 L-8 -8 A8 8 0 0 0 8 -8 L8 -100 L10 -102',
+    box: { l: -10, t: -102, r: 10, b: 0 },
+    joints: [{ x: 0, y: -100, dir: -90, kind: 'stem', male: false }],
+  },
+  // Volumetric pipette and burette: their tip goes into a mouth.
+  pipette: {
+    d: 'M-0.8 25 L-1.5 -40 Q-8 -45 -8 -65 Q-8 -85 -1.5 -90 L-1.5 -170 M0.8 25 L1.5 -40 Q8 -45 8 -65 Q8 -85 1.5 -90 L1.5 -170 M-4 -140 L4 -140',
+    box: { l: -8, t: -170, r: 8, b: 25 },
+    joints: [{ x: 0, y: 0, dir: 90, kind: 'stem', male: true }],
+  },
+  burette: {
+    d: 'M-0.8 25 L-2 -8 L-2 -12 M0.8 25 L2 -8 L2 -12 M-8 -18 L8 -18 L8 -12 L-8 -12 Z M8 -15 L13 -15'
+      + ' M-2 -18 L-2 -22 L-5 -27 L-5 -230 M2 -18 L2 -22 L5 -27 L5 -230'
+      + [-50, -70, -90, -110, -130, -150, -170, -190, -210].map((y) => ` M-5 ${y} L-1 ${y}`).join(''),
+    box: { l: -8, t: -230, r: 13, b: 25 },
+    joints: [{ x: 0, y: 0, dir: 90, kind: 'stem', male: true }],
+  },
+  // Thiele tube (melting point): the side loop on the right, a thermometer from the top.
+  thiele: {
+    d: 'M-7.5 -110 L-6 -102 L-6 4 A6 6 0 0 0 6 4 L42 -8 L42 -48 L6 -78 L6 -102 L7.5 -110 M6 -66 L34 -42 L34 -12 L6 -6 Z',
+    box: { l: -7.5, t: -110, r: 42, b: 10 },
+    joints: [{ x: 0, y: -110, dir: -90, kind: 'joint', male: false }],
+  },
   // Heating mantle: a cup that takes the bottom of a flask, and a knob.
   mantle: {
     d: 'M-30 0 L-42 0 L-42 44 Q-42 50 -36 50 L36 50 Q42 50 42 44 L42 0 L30 0 A30 30 0 0 1 -30 0 Z'
@@ -279,6 +330,7 @@ export const FAMILIES = {
   synthesis: ['flask', 'flask3', 'allihn', 'addfunnel', 'claisen', 'dryingtube', 'deanstark', 'stopper'],
   distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
   separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask'],
+  glassware: ['beaker', 'erlenmeyer', 'cylinder', 'testtube', 'pipette', 'burette', 'thiele'],
   heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
 };
 

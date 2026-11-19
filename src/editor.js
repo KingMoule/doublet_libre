@@ -21,7 +21,7 @@ import * as A from './apparatus.js';
  */
 
 const STORAGE_KEY = 'doublet.document.v1';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'synthesis', 'distillation', 'separation', 'heating', 'text', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'synthesis', 'distillation', 'separation', 'glassware', 'heating', 'text', 'erase']);
 /** The glassware tools: each puts down the piece chosen in its option window. @type {Record<string, string[]>} */
 const FAMILIES = A.FAMILIES;
 /** The tools on the rail in each mode: drawing a mechanism, or a lab set-up. @type {Record<'mechanism' | 'setup', string[]>} */
@@ -82,6 +82,7 @@ const ICONS = {
   synthesis: PIECE_ICON('flask'),
   distillation: PIECE_ICON('head'),
   separation: PIECE_ICON('sepfunnel'),
+  glassware: PIECE_ICON('erlenmeyer'),
   heating: PIECE_ICON('mantle'),
 };
 
