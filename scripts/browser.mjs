@@ -7,6 +7,6 @@ export const browserPath = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/usr/bin/google-chrome', // before Chromium: on Ubuntu that one is often a snap, which cannot use /tmp
   '/usr/bin/chromium',
-  '/usr/bin/google-chrome',
 ].find((p) => p && existsSync(p));

@@ -50,7 +50,11 @@ const server = spawn(process.execPath, [path.join(root, 'scripts/serve.mjs'), St
 await new Promise((ok) => server.stdout.once('data', ok));
 // One reused profile folder: Windows keeps it locked a while after the browser closes.
 const profile = path.join(tmpdir(), 'doublet-edges');
-spawn(browserPath, ['--headless=new', '--disable-gpu', `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`, 'about:blank']);
+// On CI's Linux machines Chrome's sandbox cannot start; it only loads our own local page there.
+const sandbox = process.env.CI ? ['--no-sandbox'] : [];
+const browser = spawn(browserPath, ['--headless=new', '--disable-gpu', ...sandbox, `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+let browserLog = '';
+browser.stderr.on('data', (d) => { browserLog += d; });
 
 let failed = false;
 try {
@@ -83,12 +87,12 @@ process.exit(failed ? 1 : 0);
  */
 async function connect(level) {
   /** @type {string | undefined} */ let url;
-  for (let i = 0; i < 50 && !url; i++) {
+  for (let i = 0; i < 200 && !url; i++) {
     await new Promise((r) => setTimeout(r, 100));
     url = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/${level === 'page' ? 'list' : 'version'}`).then((r) => r.json())
       .then((j) => (level === 'page' ? j.find((/** @type {any} */ t) => t.type === 'page') : j)?.webSocketDebuggerUrl).catch(() => undefined);
   }
-  if (!url) throw new Error('The browser did not start.');
+  if (!url) throw new Error(`The browser did not start: ${browserPath}\n${browserLog}`);
   const ws = new WebSocket(url);
   await new Promise((ok, ko) => { ws.onopen = ok; ws.onerror = ko; });
   /** @type {Map<number, (msg: any) => void>} */ const pending = new Map();
