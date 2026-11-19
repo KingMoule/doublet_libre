@@ -103,6 +103,12 @@ test('the δ tool cycles δ+ → δ− → nothing on an atom', () => {
   assert.deepEqual(values, ['δ+', 'δ−', null]);
 });
 
+test('dropping an arrow between two atoms targets the bond that forms', () => {
+  const d = sampleSN2();
+  assert.equal(M.formingPartner(d, 'a1', { x: 151, y: 101 }), 'a3', 'midpoint of HO⁻ and the carbon');
+  assert.equal(M.formingPartner(d, 'a1', { x: 120, y: 160 }), null, 'nowhere near a midpoint');
+});
+
 test('undo and redo restore the saved states', () => {
   const h = M.createHistory();
   const d = M.emptyDoc();

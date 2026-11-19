@@ -17,7 +17,7 @@ import { sampleSN2 } from './sample.js';
 
 const STORAGE_KEY = 'doublet.document.v1';
 const PROPOSAL_URL = 'https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'curved', 'erase']);
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
 const ICONS = {
@@ -29,6 +29,7 @@ const ICONS = {
   lonePair: '<circle cx="8" cy="11" r="2.2" fill="currentColor"/><circle cx="14" cy="11" r="2.2" fill="currentColor"/>',
   charge: '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 11 H14.5 M11 7.5 V14.5" stroke="currentColor" stroke-width="1.4"/>',
   partial: TEXT_ICON('δ'),
+  curved: '<path d="M4 17 C5 6 15 4 17 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 12.5 L17.3 14.6 L18.6 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
   erase: '<path d="M9 18 L3.5 12.5 L12 4 L19 11 L12 18 Z M7 9 L14 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
 };
 
@@ -253,6 +254,34 @@ export function startEditor(root) {
     return [start, ...zigzag(start, dir, n, STYLE.bond, clear(-1) > clear(1) ? -1 : 1)];
   }
 
+  /**
+   * Where a curved arrow starts: a lone pair or single electron, a bond, or an atom
+   * (its electron mark nearest to the pointer).
+   * @param {Hit | null} hit @param {{x:number,y:number}} p @returns {M.Anchor | null}
+   */
+  function arrowSource(hit, p) {
+    if (hit?.kind === 'bond') return { bond: hit.id };
+    const marks = hit?.kind === 'mark' ? S.doc.marks.filter((m) => m.id === hit.id)
+      : hit?.kind === 'atom' ? S.doc.marks.filter((m) => m.atom === hit.id) : [];
+    const electrons = marks.filter((m) => m.kind !== 'partial');
+    if (!electrons.length) return null;
+    const near = electrons.reduce((a, b) => (dist(S.layout.marks.get(a.id).center, p) <= dist(S.layout.marks.get(b.id).center, p) ? a : b));
+    return { mark: near.id };
+  }
+
+  /**
+   * Where a curved arrow ends: an atom, a bond, or the midpoint of the bond it forms.
+   * @param {{clientX:number, clientY:number}} e @param {{x:number,y:number}} p @param {M.Anchor} from @returns {M.Anchor | null}
+   */
+  function arrowTarget(e, p, from) {
+    const hit = hitOf(document.elementFromPoint(e.clientX, e.clientY));
+    const fromAtom = 'mark' in from ? S.doc.marks.find((m) => m.id === from.mark)?.atom : undefined;
+    if (hit?.kind === 'atom') return hit.id === fromAtom ? null : { atom: hit.id };
+    if (hit?.kind === 'bond') return 'bond' in from && from.bond === hit.id ? null : { bond: hit.id };
+    const partner = fromAtom ? M.formingPartner(S.doc, fromAtom, p) : null;
+    return fromAtom && partner ? { between: [fromAtom, partner] } : null;
+  }
+
   /** Ring tool: on an atom (spiro or chain end), on a bond (fused, away from its neighbours), or alone. @param {M.Doc} d @param {Hit | null} hit @param {{x:number,y:number}} p */
   function addRingAt(d, hit, p) {
     const { size, aromatic } = S.ring;
@@ -305,6 +334,11 @@ export function startEditor(root) {
     }
     if (S.tool === 'ring') {
       commit((d) => addRingAt(d, hit, p));
+      return;
+    }
+    if (S.tool === 'curved') {
+      const from = arrowSource(hit, p);
+      if (from) S.drag = { type: 'curved', from, start: p, moved: false };
       return;
     }
     if (S.tool === 'atom') {
@@ -427,6 +461,9 @@ export function startEditor(root) {
       case 'chain':
         S.preview = { points: sketch(D, p, e) };
         break;
+      case 'curved':
+        S.preview = { points: [D.start, p] };
+        break;
       case 'marquee':
         S.marquee = { l: Math.min(p.x, D.start.x), r: Math.max(p.x, D.start.x), t: Math.min(p.y, D.start.y), b: Math.max(p.y, D.start.y) };
         break;
@@ -453,6 +490,13 @@ export function startEditor(root) {
     if (D.type === 'bond' || D.type === 'chain') {
       const points = sketch(D, p, e);
       commit((d) => M.addPath(d, points));
+      return;
+    }
+    if (D.type === 'curved') {
+      const to = D.moved ? arrowTarget(e, p, D.from) : null;
+      if (!to) { render(); return; }
+      const single = e.shiftKey || ('mark' in D.from && S.doc.marks.find((m) => m.id === D.from.mark)?.kind === 'radical');
+      commit((d) => { M.addCurvedArrow(d, D.from, to, single ? 1 : 2, defaultBend(d, D.from, to)); });
       return;
     }
     if (D.type === 'marquee') {

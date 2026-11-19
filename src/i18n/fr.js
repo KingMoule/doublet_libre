@@ -5,14 +5,14 @@
  */
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Prototype · phase 2',
+  badge: 'Prototype · phase 3',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
-    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', erase: 'Gomme',
+    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', curved: 'Flèche courbe', erase: 'Gomme',
   },
-  toolKeys: { select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', erase: 'E' },
+  toolKeys: { select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', curved: 'F', erase: 'E' },
   actions: {
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', sample: 'Exemple SN2', clear: 'Nouveau', proposal: 'Proposition',
   },
@@ -26,6 +26,7 @@ export const fr = {
     lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',
     charge: 'Cliquez sur un atome pour +1, Maj + clic pour −1. Les H implicites s’ajustent.',
     partial: 'Cliquez sur un atome : δ+, puis δ−, puis rien.',
+    curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
     hover: {
       atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
       bond: 'Liaison : tapez 1, 2 ou 3 pour l’ordre, W pour un coin plein, H pour un coin haché, Suppr pour l’effacer.',
@@ -48,11 +49,11 @@ export const fr = {
       'Des flèches courbes accrochées aux électrons : déplacez le bromoéthane, elles suivent.',
       'Les outils Liaison, Chaîne, Cycle (3 à 8, benzène) et Atome, avec raccourcis clavier.',
       'Les outils Doublet, Charge et δ ; glissez une annotation pour la faire tourner.',
+      'L’outil Flèche courbe : d’un doublet ou d’une liaison vers un atome, une liaison ou une liaison qui se forme.',
       'La sélection de plusieurs atomes au cadre ou avec Maj + clic.',
     ],
     nextTitle: 'Prochaines phases',
     nextItems: [
-      'Phase 3 : outil Flèche courbe.',
       'Phase 4 : outil Flèche de réaction.',
     ],
     titles: {
