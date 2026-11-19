@@ -4,11 +4,12 @@
  * A piece is drawn in its own frame, in drawing units (a bond is 40), then turned by its angle
  * about its origin and moved to (x, y). Its joints are where it fits another piece:
  * a ground-glass joint takes a joint of the other sex facing it; a seat (the bottom of a flask)
- * goes into a cup (a heating mantle); a flat base stands on a flat top (a hotplate).
+ * goes into a cup (a heating mantle); a flat base stands on a flat top (a hotplate); a stem goes into
+ * a mouth (a funnel into a filter flask); a fluted paper sits in a funnel.
  * Pieces whose joints meet form one set-up. A stand and its clamps have no joint: they are placed freely.
  * @typedef {import('./model.js').Doc} Doc
  * @typedef {import('./model.js').Piece} Piece
- * @typedef {{x: number, y: number, dir: number, kind: 'joint' | 'seat' | 'base', male: boolean}} Joint
+ * @typedef {{x: number, y: number, dir: number, kind: 'joint' | 'seat' | 'base' | 'stem' | 'paper', male: boolean}} Joint
  *   dir: the way the joint faces, in degrees (0 right, 90 down)
  * @typedef {Joint & {piece: string}} WorldJoint
  * @typedef {{d: string, box: {l: number, t: number, r: number, b: number}, joints: Joint[]}} PieceDef
@@ -188,6 +189,50 @@ export const PIECES = {
       { x: 32, y: -98, dir: 90, kind: 'joint', male: true },
     ],
   },
+  // Separatory funnel: a socket for its stopper, two layers, a tap, a stem that pours into a mouth.
+  // The layer line is where the left wall (a quadratic from (-2.5, -30) through (-24, -60) to
+  // (-22, -95)) reaches y = -78: t = 0.75, x = -21.5.
+  sepfunnel: {
+    d: 'M-2.5 -26 L-2.5 -30 Q-24 -60 -22 -95 Q-20 -112 -6 -118 L-6 -126 L-7.5 -134'
+      + ' M2.5 -26 L2.5 -30 Q24 -60 22 -95 Q20 -112 6 -118 L6 -126 L7.5 -134 M-21 -78 L21 -78'
+      + ' M-9 -26 L9 -26 L9 -20 L-9 -20 Z M9 -23 L14 -23 M-2.5 -20 L-2.5 25 M2.5 -20 L2.5 25',
+    box: { l: -24, t: -134, r: 24, b: 25 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'stem', male: true },
+      { x: 0, y: -134, dir: -90, kind: 'joint', male: false },
+    ],
+  },
+  // Funnel: its stem goes into a mouth, a fluted filter paper sits in its cone.
+  funnel: {
+    d: 'M-3 25 L-3 -20 L-30 -55 M3 25 L3 -20 L30 -55',
+    box: { l: -30, t: -55, r: 30, b: 25 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'stem', male: true },
+      { x: 0, y: -20, dir: -90, kind: 'paper', male: false },
+    ],
+  },
+  filterpaper: {
+    d: 'M0 0 L-22 -30 L-16 -33 L-11 -30 L-5 -33 L0 -30 L5 -33 L11 -30 L16 -33 L22 -30 Z M0 0 L-11 -30 M0 0 L0 -30 M0 0 L11 -30',
+    box: { l: -22, t: -33, r: 22, b: 0 },
+    joints: [{ x: 0, y: 0, dir: 90, kind: 'paper', male: true }],
+  },
+  // Büchner funnel: perforated plate, stem through a rubber cone that sits in the mouth of a filter flask.
+  buchner: {
+    d: 'M-3 20 L-3 -25 L-26 -40 L-26 -72 M3 20 L3 -25 L26 -40 L26 -72 M-12 -8 L12 -8 L8 8 L-8 8 Z'
+      + [-24, -18, -12, -6, 0, 6, 12, 18].map((x) => ` M${x} -44 L${x + 4} -44`).join(''),
+    box: { l: -26, t: -72, r: 26, b: 20 },
+    joints: [{ x: 0, y: 0, dir: 90, kind: 'stem', male: true }],
+  },
+  // Filter flask: a conical flask with a hose nozzle; a stem goes into its mouth.
+  filterflask: {
+    d: 'M-9 -82 L-9 -60 L-32 -4 Q-33 0 -29 0 L29 0 Q33 0 32 -4 L9 -60 L9 -66 L28 -66'
+      + ' M9 -82 L9 -74 L28 -74 M28 -77 L28 -63',
+    box: { l: -33, t: -82, r: 28, b: 0 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'base', male: true },
+      { x: 0, y: -82, dir: -90, kind: 'stem', male: false },
+    ],
+  },
   // Heating mantle: a cup that takes the bottom of a flask, and a knob.
   mantle: {
     d: 'M-30 0 L-42 0 L-42 44 Q-42 50 -36 50 L36 50 Q42 50 42 44 L42 0 L30 0 A30 30 0 0 1 -30 0 Z'
@@ -233,6 +278,7 @@ export const PIECES = {
 export const FAMILIES = {
   synthesis: ['flask', 'flask3', 'allihn', 'addfunnel', 'claisen', 'dryingtube', 'deanstark', 'stopper'],
   distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
+  separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask'],
   heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
 };
 
