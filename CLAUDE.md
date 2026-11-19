@@ -1,0 +1,32 @@
+# Doublet libre
+
+Éditeur web libre (MIT) pour dessiner des mécanismes de chimie organique, pensé d'abord pour les étudiants. Site statique sans build ni dépendance.
+
+Less is more. You see elegance in simplicity. You favour concise, clean solutions over those that are complex and comprehensive for risk of over-engineering. Upon work completion, take pause to critically review your work: if complexity has crept in, address the issue and suggest a small change to our workflow to help avoid this in the future.
+
+Langue : on échange en français ; le code, les identifiants et les commentaires sont en anglais. Tout texte affiché à l'utilisateur vit dans `src/i18n/fr.js`.
+
+## Commandes
+
+- Tests : `node --test` ; un seul fichier : `node --test tests/render.test.js`
+- Aperçu : `node scripts/serve.mjs` puis http://localhost:8765 (configuration `doublet` dans `.claude/launch.json`)
+
+## Façon de travailler
+
+- Partir de `SPEC.md`. Une fonctionnalité qui n'y est pas se propose d'abord, avant d'être codée.
+- Une phase à la fois. Écrire d'abord le test qui échoue, puis le code qui le fait passer.
+- Une tâche est finie quand `node --test` passe, et que le rendu a été vu dans le navigateur si l'affichage a changé. Montrer la commande lancée et sa sortie.
+- Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
+- Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
+
+## Choix qui ne se voient pas dans le code
+
+- Pas de framework ni de build. Les types passent par JSDoc et `// @ts-check`. Une dépendance ne s'ajoute que si elle remplace beaucoup de code.
+- `render.js` est pur (document → SVG) et testable sans navigateur. La logique de dessin y vit, pas dans `editor.js`.
+- Une flèche courbe référence des électrons (doublet, liaison, atome), jamais des coordonnées. Ses points de contrôle sont relatifs à ses ancres : c'est ce qui la fait suivre les molécules.
+- Chaque modification passe par `commit()` dans `editor.js`, qui enregistre l'état pour annuler.
+
+## Pièges
+
+- Le dessin est gardé dans `localStorage` : après avoir changé `sample.js`, cliquer « Exemple SN2 » pour le voir.
+- Les tests de rendu comparent des fragments de SVG arrondis au centième : changer une taille de police casse leurs valeurs attendues.

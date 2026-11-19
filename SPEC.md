@@ -1,0 +1,50 @@
+# SPEC — Doublet libre
+
+Éditeur web gratuit pour dessiner des mécanismes de chimie organique, pensé d'abord pour les étudiants depuis l'abandon de ChemSketch gratuit (2026).
+Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et l'IUPAC : https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S
+
+## Décisions
+
+| Sujet | Décision |
+|---|---|
+| Public | Étudiants d'abord |
+| Vérifications pédagogiques | Dans la première version, en avertissements non bloquants |
+| Remise des travaux | Image collée dans Word ou Google Docs (PNG et SVG ré-éditable) |
+| Licence | MIT, dépôt public |
+| Appareils | Ordinateur d'abord ; tablette plus tard |
+| Langue | Français ; tous les textes dans `src/i18n/fr.js` |
+| Technique | Site statique sans build ni dépendance ; JavaScript en modules avec JSDoc `// @ts-check` ; tests `node --test` |
+
+## Ce que l'app dessine
+
+- **Formule topologique** : carbones implicites, angles de 120°, longueur constante, hétéroatomes avec leurs H (OH, NH₂, HO– inversé).
+- **Doublets libres** accrochés à l'atome, en deux points au-dessus, en dessous, à gauche ou à droite du symbole.
+- **Charges formelles** en haut à droite, cerclées ou non ; **δ+ / δ−** accrochés à l'atome.
+- **Flèches courbes** : source = doublet, liaison ou électron seul ; cible = atome, liaison ou liaison en formation ; pleine (2 e⁻) ou demi-flèche (1 e⁻) ; elles suivent les molécules.
+- **Flèche de réaction** distincte : → ⇌ ↔ ⇒ et pas de réaction ; conditions au-dessus et en dessous, liées à la flèche ; H2O devient H₂O.
+
+## Règles de dessin (IUPAC 2008 « GR », stéréo 2006 « ST »)
+
+- Automatique : zigzag à 120° (GR-3.2.1) ; carbone sans étiquette dès qu'il est lié (GR-2.1.2) ; HO– quand la liaison part à droite (GR-2.1.6) ; charge en haut à droite (GR-5.1) ; doublets sur les axes du symbole (GR-5.2) ; double liaison décalée vers le côté substitué, centrée pour un C=O de cétone (GR-1.10) ; bout étroit du coin sur le centre stéréogène (ST-0.3).
+- Avertissement : C ou N à cinq liaisons ; octet dépassé (2e période seulement) ; flèche partant d'un H, d'un H⁺ ou d'une charge + ; flèche inversée ; charge non conservée entre étapes ; ↔ entre structures au squelette différent ; charges formelles et partielles mélangées (GR-5.6).
+- Style : charge cerclée ou non ; conditions tout au-dessus ou réparties ; doublet en trait (non IUPAC) en option.
+
+## Format de fichier
+
+JSON `.doublet.json` : objets à plat reliés par identifiants (`atoms`, `bonds`, `marks`, `curvedArrows`, `reactionArrows`, `texts`). Une flèche courbe référence des électrons (`{mark}`, `{bond}`, `{atom}`, `{between}`), jamais des coordonnées. Voir les types JSDoc de `src/model.js`.
+
+## Phases
+
+Chaque phase se termine par une vérification qu'on peut lancer.
+
+| Phase | Contenu | Vérification | État |
+|---|---|---|---|
+| 0 | Modèle, rendu SVG, zoom, annuler ; essai de Kekule.js | 28 tests verts ; exemple SN2 rendu | faite |
+| 1 | Chaînes, cycles 3 à 8 et benzène, coins, sélection multiple, gomme | Tests de géométrie ; éthanol, cyclohexanone, bromoéthane dessinés | à faire |
+| 2 | Outils doublet, électron seul, charge, δ ; rotation autour de l'atome | Tests de placement ; figure SN2 sans flèches refaite dans l'app | à faire |
+| 3 | Outil flèche courbe : ancrage, pleine ou demi, poignées, liaison en formation | Test : SN2 dessinée, molécule déplacée, flèches accrochées | à faire |
+| 4 | Outil flèche de réaction : types, conditions, étapes numérotées | Figure SN2 complète refaite dans l'app | à faire |
+| 5 | Enregistrer/ouvrir, SVG ré-éditable, PNG 300 ppp, copier vers Word et Google Docs | Aller-retour JSON et SVG sans perte | à faire |
+| 6 | Vérifications pédagogiques (liste ci-dessus) | Une erreur d'étudiant typique par test ; aucune sur la SN2 correcte | à faire |
+| 7 | Modèles : cycles, groupes, mécanismes types | Chaque modèle s'insère sans avertissement | v1 |
+| 8 | Mode exercice, mode présentation, import SMILES/MOL, tablette, anglais | — | plus tard |

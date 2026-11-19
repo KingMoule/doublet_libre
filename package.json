@@ -1,0 +1,12 @@
+{
+  "name": "doublet-libre",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Éditeur web libre de mécanismes de chimie organique",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "node scripts/serve.mjs"
+  }
+}
