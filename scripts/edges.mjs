@@ -1,5 +1,6 @@
 // Checks, on tablet and short screens, that every tool's option window and every top-bar menu
-// stays inside the screen without hiding its button, and that every tool stays reachable.
+// stays inside the screen without hiding its button, that every tool stays reachable,
+// and that every help text fits in the two lines of the status bar.
 // Usage: node scripts/edges.mjs   (needs Edge or Chrome, see browser.mjs; exits 1 on a problem)
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -37,6 +38,17 @@ const CHECK = `(async () => {
     if (!inScreen(m)) problems.push('menu ' + d.id + ' hors écran');
     if (overlaps(m, d.querySelector('summary').getBoundingClientRect())) problems.push('menu ' + d.id + ' sur son bouton');
     d.open = false;
+  }
+  // On a wide screen the help line keeps two lines of room: every help text must fit in them.
+  if (innerWidth > 760) {
+    const { fr } = await import('/src/i18n/fr.js');
+    const el = document.querySelector('#status');
+    const texts = { ...fr.status, ...fr.status.hover, ...fr.files, opened: fr.files.opened('mecanisme.doublet.json') };
+    for (const [key, text] of Object.entries(texts)) {
+      if (typeof text !== 'string') continue;
+      el.textContent = text;
+      if (el.scrollHeight > el.clientHeight + 1) problems.push('aide ' + key + ' sur plus de deux lignes');
+    }
   }
   return problems;
 })()`;
