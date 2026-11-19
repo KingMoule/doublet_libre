@@ -44,7 +44,7 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 2 | Outil Atome (atome isolé, élément au choix) ; outils doublet, électron seul, charge, δ ; rotation autour de l'atome | Tests de placement ; figure SN2 sans flèches refaite dans l'app | faite |
 | 3 | Outil flèche courbe : ancrage, pleine ou demi, poignées, liaison en formation | Test : SN2 dessinée, molécule déplacée, flèches accrochées | faite |
 | 4 | Outil flèche de réaction : types, conditions, étapes numérotées ; outil Texte (« + ») | Figure SN2 complète refaite dans l'app | faite |
-| 5 | Enregistrer/ouvrir, SVG ré-éditable, PNG 300 ppp, copier vers Word et Google Docs | Aller-retour JSON et SVG sans perte | à faire |
+| 5 | Enregistrer/ouvrir, SVG ré-éditable, PNG 300 ppp, copier vers Word et Google Docs | Aller-retour JSON et SVG sans perte | faite |
 | 6 | Vérifications pédagogiques (liste ci-dessus) | Une erreur d'étudiant typique par test ; aucune sur la SN2 correcte | à faire |
 | 7 | Modèles : cycles, groupes, mécanismes types | Chaque modèle s'insère sans avertissement | v1 |
 | 8 | Mode exercice, mode présentation, import SMILES/MOL, tablette, anglais | — | plus tard |

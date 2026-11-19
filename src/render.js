@@ -524,7 +524,8 @@ function reactionShape(ra) {
 /**
  * @param {Doc} doc
  * @param {{selection?: {kind: string, id: string, ids?: string[]} | null, hover?: {kind: string, id: string} | null,
- *   preview?: {points: Vec[]} | null, marquee?: {l: number, t: number, r: number, b: number} | null}} [opts]
+ *   preview?: {points: Vec[]} | null, marquee?: {l: number, t: number, r: number, b: number} | null,
+ *   plain?: boolean}} [opts] plain: drawing only, without the invisible click areas (for export)
  */
 export function renderDoc(doc, opts = {}) {
   const L = layout(doc);
@@ -598,6 +599,7 @@ export function renderDoc(doc, opts = {}) {
   const ghost = opts.preview?.points;
   if (ghost && ghost.length > 1) out += `<polyline class="ghost" points="${pts(ghost)}"/>${circleEl(ghost[ghost.length - 1], 3, 'ghost-dot')}`;
   if (opts.marquee) out += rectEl(opts.marquee, 0, 'marquee');
+  if (opts.plain) out = out.replace(/<(?:line|rect|circle|path) class="hit"[^>]*\/>/g, '');
   return { markup: out, layout: L };
 }
 
