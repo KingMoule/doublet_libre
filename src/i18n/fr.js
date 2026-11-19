@@ -5,17 +5,19 @@
  */
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Prototype · phase 0',
+  badge: 'Prototype · phase 1',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
-  tools: { select: 'Sélection', bond: 'Liaison', erase: 'Gomme' },
-  toolKeys: { select: 'V', bond: 'B', erase: 'E' },
+  tools: { select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', erase: 'Gomme' },
+  toolKeys: { select: 'V', bond: 'B', chain: 'Z', ring: 'R', erase: 'E' },
   actions: {
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', sample: 'Exemple SN2', clear: 'Nouveau', proposal: 'Proposition',
   },
   status: {
-    select: 'Glissez une molécule pour la déplacer : les flèches courbes suivent. Glissez le fond pour vous déplacer, molette pour zoomer, Ctrl+Z pour annuler.',
+    select: 'Glissez une molécule pour la déplacer : les flèches courbes suivent. Glissez le fond pour sélectionner, Maj + clic pour ajouter un atome. Espace + glisser pour se déplacer, molette pour zoomer.',
     bond: 'Cliquez sur le fond pour poser une liaison, sur un atome pour en ajouter une, sur une liaison pour changer son ordre. Glissez pour choisir la direction.',
+    chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
+    ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',
     erase: 'Cliquez sur un objet pour l’effacer.',
     hover: {
       atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
@@ -35,14 +37,13 @@ export const fr = {
     counts: (d) => `${d.atoms.length} atomes · ${d.bonds.length} liaisons · ${d.curvedArrows.length} flèches courbes`,
     phaseTitle: 'Dans ce prototype',
     phaseItems: [
-      'Le modèle du document et son rendu selon les règles de base de l’IUPAC.',
+      'Le rendu selon les règles de base de l’IUPAC.',
       'Des flèches courbes accrochées aux électrons : déplacez le bromoéthane, elles suivent.',
-      'Zoom, déplacement de la vue, annuler et rétablir.',
-      'L’outil Liaison et les raccourcis clavier, en avant-goût de la phase 1.',
+      'Les outils Liaison, Chaîne et Cycle (3 à 8, benzène), avec raccourcis clavier.',
+      'La sélection de plusieurs atomes au cadre ou avec Maj + clic.',
     ],
     nextTitle: 'Prochaines phases',
     nextItems: [
-      'Phase 1 : chaînes, cycles, sélection de plusieurs objets.',
       'Phase 2 : outils Doublet, Charge et δ.',
       'Phase 3 : outil Flèche courbe.',
       'Phase 4 : outil Flèche de réaction.',
@@ -74,6 +75,12 @@ export const fr = {
     remove: 'Supprimer',
     markNames: { lonePair: 'Doublet libre', radical: 'Électron célibataire', partial: 'Charge partielle' },
     rotateHint: 'Glissez-la dans le dessin pour la faire tourner autour de son atome.',
+    ringTitle: 'Cycle',
+    benzene: 'Benzène',
+    ringHint: 'Un cycle accolé à une liaison se place du côté libre. Le benzène garde des doubles liaisons alternées.',
+    /** @param {number} n */
+    group: (n) => `${n} atomes sélectionnés`,
+    groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer.',
   },
   kinds: {
     forward: 'Réaction →', equilibrium: 'Équilibre ⇌', resonance: 'Résonance ↔', retro: 'Rétrosynthèse ⇒', noReaction: 'Pas de réaction',

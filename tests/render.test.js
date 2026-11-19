@@ -105,6 +105,17 @@ test('the example renders every object, with H2O subscripted', () => {
   assert.match(markup, />δ\+</);
 });
 
+test('a group selection highlights its atoms and the bonds between them', () => {
+  const { markup } = renderDoc(sampleSN2(), { selection: { kind: 'group', id: 'group', ids: ['a2', 'a3'] } });
+  assert.equal(count(markup, /class="obj is-sel" data-kind="atom"/g), 2);
+  assert.equal(count(markup, /class="obj is-sel" data-kind="bond"/g), 1);
+});
+
+test('the marquee is drawn while selecting', () => {
+  const { markup } = renderDoc(sampleSN2(), { marquee: { l: 0, t: 0, r: 10, b: 10 } });
+  assert.match(markup, /class="marquee"/);
+});
+
 test('selecting a curved arrow shows its two handles', () => {
   const { markup } = renderDoc(sampleSN2(), { selection: { kind: 'curved', id: 'ca1' } });
   assert.equal(count(markup, /data-kind="handle"/g), 2);

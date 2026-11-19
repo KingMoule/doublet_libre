@@ -90,6 +90,59 @@ export function nextBondAngle(existing) {
 }
 
 /**
+ * Zigzag chain of n bonds from start, along dirDeg (GR-3.2.1). Returns the new points.
+ * @param {Vec} start @param {number} dirDeg @param {number} n @param {number} L @param {1 | -1} [sign] side of the first bond
+ */
+export function zigzag(start, dirDeg, n, L, sign = 1) {
+  const pts = [];
+  let p = start;
+  for (let k = 0; k < n; k++) {
+    p = add(p, fromAngle(dirDeg + (k % 2 === 0 ? 30 : -30) * sign, L));
+    pts.push(p);
+  }
+  return pts;
+}
+
+/** @param {Vec} center @param {number} n @param {number} startDeg @param {number} L */
+function polygon(center, n, startDeg, L) {
+  const R = L / (2 * Math.sin(Math.PI / n));
+  return Array.from({ length: n }, (_, k) => add(center, fromAngle(startDeg + (k * 360) / n, R)));
+}
+
+/**
+ * Isolated ring: vertical sides for six atoms (GR-3.4.2), a flat bottom otherwise (GR-3.4.3).
+ * @param {Vec} center @param {number} n @param {number} L
+ */
+export function ringAt(center, n, L) {
+  return polygon(center, n, n === 6 ? 30 : 270 - 180 / n, L);
+}
+
+/**
+ * Ring sharing the bond a–b, on side 1 (screen right of a→b) or −1. Starts with a, b.
+ * @param {Vec} a @param {Vec} b @param {number} n @param {number} side
+ */
+export function ringOnBond(a, b, n, side) {
+  const L = dist(a, b);
+  const u = norm(sub(b, a));
+  const c = add(mid(a, b), scale({ x: -u.y, y: u.x }, (side * L) / (2 * Math.tan(Math.PI / n))));
+  const R = L / (2 * Math.sin(Math.PI / n));
+  const ta = angleOf(sub(a, c));
+  const step = angleDiff(ta + 360 / n, angleOf(sub(b, c))) < 1 ? 360 / n : -360 / n;
+  return [a, b, ...Array.from({ length: n - 2 }, (_, k) => add(c, fromAngle(ta + (k + 2) * step, R)))];
+}
+
+/**
+ * Ring through an atom, its centre in direction dirDeg. Starts with the atom.
+ * @param {Vec} atom @param {number} dirDeg @param {number} n @param {number} L
+ */
+export function ringOnAtom(atom, dirDeg, n, L) {
+  const center = add(atom, fromAngle(dirDeg, L / (2 * Math.sin(Math.PI / n))));
+  const pts = polygon(center, n, dirDeg + 180, L);
+  pts[0] = { x: atom.x, y: atom.y };
+  return pts;
+}
+
+/**
  * Distance from the centre of a box to its edge along a unit direction.
  * @param {Vec} u @param {number} halfW @param {number} halfH
  */

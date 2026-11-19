@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as M from '../src/model.js';
 import { sampleSN2 } from '../src/sample.js';
+import { ringAt, ringOnBond } from '../src/geometry.js';
 
 test('the example document is valid', () => {
   assert.deepEqual(M.validateDoc(sampleSN2()), []);
@@ -66,6 +67,29 @@ test('bond order cycles 1 → 2 → 3 → 1 and a multiple bond loses its wedge'
   M.cycleBondOrder(d, bond.id);
   M.cycleBondOrder(d, bond.id);
   assert.equal(bond.order, 1);
+});
+
+/** No atom may carry two double bonds in a Kekulé structure. */
+const doublesPerAtom = (d) => d.atoms.map((a) => M.bondsOf(d, a.id).filter((b) => b.order === 2).length);
+
+test('a benzene ring alternates three double bonds', () => {
+  const d = M.emptyDoc();
+  M.addRing(d, ringAt({ x: 0, y: 0 }, 6, 40), true);
+  assert.equal(d.atoms.length, 6);
+  assert.equal(d.bonds.length, 6);
+  assert.deepEqual(doublesPerAtom(d), [1, 1, 1, 1, 1, 1]);
+});
+
+test('a ring drawn on an existing bond reuses its atoms (naphthalene stays Kekulé)', () => {
+  const d = M.emptyDoc();
+  const first = M.addRing(d, ringAt({ x: 0, y: 0 }, 6, 40), true);
+  const a = M.findAtom(d, first[0]);
+  const b = M.findAtom(d, first[1]);
+  M.addRing(d, ringOnBond(a, b, 6, 1), true);
+  assert.equal(d.atoms.length, 10);
+  assert.equal(d.bonds.length, 11);
+  assert.ok(doublesPerAtom(d).every((n) => n <= 1));
+  assert.equal(d.bonds.filter((x) => x.order === 2).length, 5);
 });
 
 test('undo and redo restore the saved states', () => {

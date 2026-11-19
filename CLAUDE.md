@@ -9,6 +9,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 ## Commandes
 
 - Tests : `node --test` ; un seul fichier : `node --test tests/render.test.js`
+- Types : `npx -y -p typescript@5.6.3 tsc -p jsconfig.json` (aussi lancé par la CI)
 - Aperçu : `node scripts/serve.mjs` puis http://localhost:8765 (configuration `doublet` dans `.claude/launch.json`)
 
 ## Façon de travailler
@@ -27,6 +28,8 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Chaque modification passe par `commit()` dans `editor.js`, qui enregistre l'état pour annuler.
 
 ## Pièges
+
+- Sous Windows, modifier les fichiers avec les outils Edit et Write, jamais avec PowerShell : PowerShell 5 lit l'UTF-8 comme de l'ANSI et casse les accents.
 
 - Le dessin est gardé dans `localStorage` : après avoir changé `sample.js`, cliquer « Exemple SN2 » pour le voir.
 - Les tests de rendu comparent des fragments de SVG arrondis au centième : changer une taille de police casse leurs valeurs attendues.

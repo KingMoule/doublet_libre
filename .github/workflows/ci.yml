@@ -11,3 +11,4 @@ jobs:
         with:
           node-version: 22
       - run: node --test
+      - run: npx -y -p typescript@5.6.3 tsc -p jsconfig.json

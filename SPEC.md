@@ -40,7 +40,7 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | Phase | Contenu | Vérification | État |
 |---|---|---|---|
 | 0 | Modèle, rendu SVG, zoom, annuler ; essai de Kekule.js | 28 tests verts ; exemple SN2 rendu | faite |
-| 1 | Chaînes, cycles 3 à 8 et benzène, coins, sélection multiple, gomme | Tests de géométrie ; éthanol, cyclohexanone, bromoéthane dessinés | à faire |
+| 1 | Chaînes, cycles 3 à 8 et benzène, coins, sélection multiple, gomme | Tests de géométrie ; éthanol, cyclohexanone, bromoéthane dessinés | faite |
 | 2 | Outils doublet, électron seul, charge, δ ; rotation autour de l'atome | Tests de placement ; figure SN2 sans flèches refaite dans l'app | à faire |
 | 3 | Outil flèche courbe : ancrage, pleine ou demi, poignées, liaison en formation | Test : SN2 dessinée, molécule déplacée, flèches accrochées | à faire |
 | 4 | Outil flèche de réaction : types, conditions, étapes numérotées | Figure SN2 complète refaite dans l'app | à faire |
