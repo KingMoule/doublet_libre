@@ -71,7 +71,7 @@ test('a charge goes top right of the label (GR-5.1)', () => {
 test('curved arrows follow when a molecule moves', () => {
   const d = sampleSN2();
   const before = layout(d).curved;
-  M.moveAtoms(d, M.component(d, 'a3'), 30, -20);
+  M.moveObjects(d, M.component(d, 'a3'), 30, -20);
   const after = layout(d).curved;
   close(after.get('ca2').p3.x - before.get('ca2').p3.x, 30);
   close(after.get('ca2').p3.y - before.get('ca2').p3.y, -20);

@@ -281,9 +281,22 @@ export function removeText(doc, id) {
   doc.texts = doc.texts.filter((t) => t.id !== id);
 }
 
-/** @param {Doc} doc @param {Set<string>} ids @param {number} dx @param {number} dy */
-export function moveAtoms(doc, ids, dx, dy) {
+/** Atoms, texts and reaction arrows lying entirely inside a rectangle. @param {Doc} doc @param {{l:number,t:number,r:number,b:number}} r */
+export function idsInRect(doc, r) {
+  /** @param {number} x @param {number} y */
+  const inside = (x, y) => x >= r.l && x <= r.r && y >= r.t && y <= r.b;
+  return [
+    ...doc.atoms.filter((a) => inside(a.x, a.y)),
+    ...doc.texts.filter((t) => inside(t.x, t.y)),
+    ...doc.reactionArrows.filter((ra) => inside(ra.x1, ra.y1) && inside(ra.x2, ra.y2)),
+  ].map((o) => o.id);
+}
+
+/** Moves the atoms, texts and reaction arrows whose ids are given. @param {Doc} doc @param {Set<string>} ids @param {number} dx @param {number} dy */
+export function moveObjects(doc, ids, dx, dy) {
   for (const a of doc.atoms) if (ids.has(a.id)) { a.x += dx; a.y += dy; }
+  for (const t of doc.texts) if (ids.has(t.id)) { t.x += dx; t.y += dy; }
+  for (const ra of doc.reactionArrows) if (ids.has(ra.id)) { ra.x1 += dx; ra.x2 += dx; ra.y1 += dy; ra.y2 += dy; }
 }
 
 /** @param {Doc} doc @param {string} id @param {1 | 2 | 3} order */

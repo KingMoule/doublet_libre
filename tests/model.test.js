@@ -135,3 +135,18 @@ test('validation catches dangling references', () => {
   assert.match(errors, /ca9 has a dangling anchor/);
   assert.throws(() => M.parseDoc(JSON.stringify(d)));
 });
+
+test('a marquee takes atoms, texts and reaction arrows lying inside it', () => {
+  const d = sampleSN2();
+  const ids = M.idsInRect(d, { l: 90, t: 80, r: 380, b: 140 });
+  assert.deepEqual(ids, ['a1', 'a2', 'a3', 'a4', 't1', 'ra1']);
+});
+
+test('moving a selection carries its texts and reaction arrows along', () => {
+  const d = sampleSN2();
+  M.moveObjects(d, new Set(['a1', 't1', 'ra1']), 10, 5);
+  assert.deepEqual([d.atoms[0].x, d.atoms[0].y], [110, 105]);
+  assert.deepEqual([d.texts[0].x, d.texts[0].y], [160, 105]);
+  assert.deepEqual([d.reactionArrows[0].x1, d.reactionArrows[0].y2], [295, 105]);
+  assert.equal(d.atoms[1].x, 180);
+});

@@ -566,12 +566,12 @@ export function renderDoc(doc, opts = {}) {
     const segs = formatChem(t.text);
     const w = segmentsWidth(segs, size);
     const box = { l: t.x - w / 2, r: t.x + w / 2, t: t.y - size / 2, b: t.y + size / 2 };
-    const s = st('text', t.id);
+    const s = st('text', t.id, group.has(t.id));
     out += wrap('text', t.id, s, `${s.lit ? rectEl(box, 2, 'hl') : ''}<text class="txt" x="${n2(t.x)}" y="${n2(t.y + 0.36 * size)}" font-size="${n2(size)}">${tspans(segs, size)}</text>${rectEl(box, 3, 'hit')}`);
   }
   for (const ra of doc.reactionArrows) {
     const r = reactionShape(ra);
-    const s = st('rxn', ra.id);
+    const s = st('rxn', ra.id, group.has(ra.id));
     out += wrap('rxn', ra.id, s, `${s.lit ? rectEl(r.box, 3, 'hl') : ''}${r.markup}${rectEl(r.box, 2, 'hit')}`);
   }
   for (const ca of doc.curvedArrows) {
