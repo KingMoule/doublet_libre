@@ -98,6 +98,96 @@ export const PIECES = {
     box: { l: -8, t: -14, r: 8, b: 10 },
     joints: [{ x: 0, y: 0, dir: 90, kind: 'joint', male: true }],
   },
+  // Vigreux column: a socket on top, a cone below, indentations inside.
+  vigreux: {
+    d: 'M-7.5 -70 L-6 -62 L-6 66 L-5 70 L-4.5 80 M4.5 80 L5 70 L6 66 L6 -62 L7.5 -70'
+      + [-40, -20, 0, 20, 40].map((y) => ` M-6 ${y - 4} L-2.5 ${y} L-6 ${y + 4} M6 ${y - 4} L2.5 ${y} L6 ${y + 4}`).join(''),
+    box: { l: -7.5, t: -70, r: 7.5, b: 80 },
+    joints: [
+      { x: 0, y: -70, dir: -90, kind: 'joint', male: false },
+      { x: 0, y: 70, dir: 90, kind: 'joint', male: true },
+    ],
+  },
+  // Distillation head. The side arm leaves the tube at (0, -15), slopes 25° down to the right,
+  // half-width 5; its walls are the axis ± 5 × normal, from the tube wall x = 6 to the shoulder
+  // 45 along the axis (the joint), cone 10 further. A condenser fitted there lies along the arm.
+  head: {
+    d: 'M-7.5 -40 L-6 -32 L-6 40 L-5 40 L-4.5 50 M4.5 50 L5 40 L6 40 L6 -6.7 L38.7 8.5 L47.9 12.3'
+      + ' M51.7 4.2 L42.9 -0.5 L6 -17.7 L6 -32 L7.5 -40',
+    box: { l: -7.5, t: -40, r: 51.7, b: 50 },
+    joints: [
+      { x: 0, y: 40, dir: 90, kind: 'joint', male: true },
+      { x: 40.78, y: 4.02, dir: 25, kind: 'joint', male: true },
+      { x: 0, y: -40, dir: -90, kind: 'joint', male: false },
+    ],
+  },
+  // Thermometer in its adapter: the bulb ends level with the side arm of a distillation head.
+  thermometer: {
+    d: 'M-4.5 10 L-5 0 L-7 0 L-7 -10 L-1.5 -14 L-1.5 -108 Q0 -112 1.5 -108 L1.5 -14 L7 -10 L7 0 L5 0 L4.5 10'
+      + ' M-1.5 10 L-1.5 20 Q-3.5 22 -3.5 26 Q-3.5 31 0 31 Q3.5 31 3.5 26 Q3.5 22 1.5 20 L1.5 10'
+      + [-30, -45, -60, -75, -90].map((y) => ` M1.5 ${y} L4 ${y}`).join(''),
+    box: { l: -7, t: -112, r: 7, b: 31 },
+    joints: [{ x: 0, y: 0, dir: 90, kind: 'joint', male: true }],
+  },
+  // Liebig (straight) condenser: a socket at the top, a cone at the bottom, water jacket.
+  liebig: {
+    d: 'M-7.5 -80 L-6 -72 L-6 -66 Q-11 -64 -11 -58 L-11 56 Q-11 62 -5 64 L-5 75 L-4.5 85'
+      + ' M4.5 85 L5 75 L5 64 Q11 62 11 56 L11 -58 Q11 -64 6 -66 L6 -72 L7.5 -80'
+      + ' M-3 -66 L-3 64 M3 -66 L3 64 M11 44 L19 44 M11 52 L19 52 M-11 -52 L-19 -52 M-11 -44 L-19 -44',
+    box: { l: -19, t: -80, r: 19, b: 85 },
+    joints: [
+      { x: 0, y: -80, dir: -90, kind: 'joint', male: false },
+      { x: 0, y: 75, dir: 90, kind: 'joint', male: true },
+    ],
+  },
+  // Bent adapter, drawn for the 25° slope of a condenser on a distillation head: its socket at the
+  // origin faces up the slope (-155°); the axis runs 30 down the slope, then 26 straight down to the
+  // shoulder (the joint), cone 10 further; walls at ± 6, mitred at the bend.
+  adapter: {
+    d: 'M-3.2 6.8 L4.7 8.8 L21.2 16.5 L21.2 38.7 L22.2 38.7 L22.7 48.7 M31.7 48.7 L32.2 38.7 L33.2 38.7 L33.2 8.9 L9.8 -2.1 L3.2 -6.8',
+    box: { l: -3.2, t: -6.8, r: 33.2, b: 48.7 },
+    joints: [
+      { x: 0, y: 0, dir: -155, kind: 'joint', male: false },
+      { x: 27.19, y: 38.68, dir: 90, kind: 'joint', male: true },
+    ],
+  },
+  // Vacuum adapter: the bent adapter with a hose nozzle at the bend.
+  vacadapter: {
+    d: 'M-3.2 6.8 L4.7 8.8 L21.2 16.5 L21.2 38.7 L22.2 38.7 L22.7 48.7 M31.7 48.7 L32.2 38.7 L33.2 38.7 L33.2 24 L45 24'
+      + ' M45 18 L33.2 18 L33.2 8.9 L9.8 -2.1 L3.2 -6.8 M45 16 L45 26',
+    box: { l: -3.2, t: -6.8, r: 45, b: 48.7 },
+    joints: [
+      { x: 0, y: 0, dir: -155, kind: 'joint', male: false },
+      { x: 27.19, y: 38.68, dir: 90, kind: 'joint', male: true },
+    ],
+  },
+  // Soxhlet extractor: thimble in the chamber, vapour tube on the left, siphon on the right.
+  soxhlet: {
+    d: 'M-7.5 -80 L-6 -72 L-6 -62 L-14 -56 L-14 30 L-5 40 L-5 70 L-4.5 80 M7.5 -80 L6 -72 L6 -62 L14 -56 L14 30 L5 40 L5 70 L4.5 80'
+      + ' M-5 52 L-24 52 L-24 -44 L-14 -44 M-5 58 L-28 58 L-28 -50 L-14 -50'
+      + ' M14 20 L18 20 L18 -20 Q18 -30 24 -30 Q30 -30 30 -20 L30 62 L5 62 M14 26 L22 26 L22 -20 Q22 -25 24 -25 Q26 -25 26 -20 L26 56 L5 56'
+      + ' M-9 -40 L-9 20 L9 20 L9 -40',
+    box: { l: -28, t: -80, r: 30, b: 80 },
+    joints: [
+      { x: 0, y: -80, dir: -90, kind: 'joint', male: false },
+      { x: 0, y: 70, dir: 90, kind: 'joint', male: true },
+    ],
+  },
+  // Rotary evaporator: bath, motor on its post, coil condenser. The shaft leaves the motor at
+  // (-20, -112) at 145°, half-width 4, 70 long to its joint: a flask fitted there leans 55° into the
+  // bath. A receiving flask hangs from the condenser.
+  rotavap: {
+    d: 'M-170 0 L60 0 L60 6 L-170 6 Z M-160 -70 L-160 0 L-60 0 L-60 -70 M-160 -55 Q-153 -58 -146 -55 M-74 -55 Q-67 -58 -60 -55'
+      + ' M-8 0 L-8 -100 M-2 0 L-2 -100 M-30 -130 L10 -130 L10 -100 L-30 -100 Z'
+      + ' M-22.3 -115.3 L-79.6 -75.1 M-17.7 -108.7 L-75.1 -68.6 M10 -126 L20 -126 M10 -118 L20 -118'
+      + ' M20 -210 L44 -210 L44 -112 L36 -106 L36 -98 L35.5 -88 M20 -210 L20 -112 L28 -106 L28 -98 L28.5 -88'
+      + ' M24 -200 L40 -192 L24 -184 L40 -176 L24 -168 L40 -160 L24 -152 L40 -144 L24 -136',
+    box: { l: -170, t: -210, r: 60, b: 6 },
+    joints: [
+      { x: -77.34, y: -71.85, dir: 145, kind: 'joint', male: true },
+      { x: 32, y: -98, dir: 90, kind: 'joint', male: true },
+    ],
+  },
   // Heating mantle: a cup that takes the bottom of a flask, and a knob.
   mantle: {
     d: 'M-30 0 L-42 0 L-42 44 Q-42 50 -36 50 L36 50 Q42 50 42 44 L42 0 L30 0 A30 30 0 0 1 -30 0 Z'
@@ -142,6 +232,7 @@ export const PIECES = {
 /** The pieces of each glassware tool, in the order of its option window. */
 export const FAMILIES = {
   synthesis: ['flask', 'flask3', 'allihn', 'addfunnel', 'claisen', 'dryingtube', 'deanstark', 'stopper'],
+  distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
   heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
 };
 

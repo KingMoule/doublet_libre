@@ -158,3 +158,48 @@ test('a heating mantle also sits on the hotplate', () => {
 test('a stand and a clamp are placed freely: they have no joint', () => {
   assert.deepEqual([A.PIECES.stand.joints, A.PIECES.clamp.joints], [[], []]);
 });
+
+test('a distillation train fits together: column, head, condenser along the side arm, adapter, receiver', () => {
+  const { d, ids: [flask], piece } = withPieces('flask');
+  const put = (/** @type {string} */ kind, /** @type {A.WorldJoint} */ j) => {
+    const g = M.addPiece(d, { kind, x: 0, y: 0, angle: 0 });
+    assert.ok(A.place(d, g.id, j), kind);
+    return g;
+  };
+  const socket = (/** @type {M.Piece} */ g) => /** @type {A.WorldJoint} */ (A.worldJoints(g).find((j) => j.kind === 'joint' && !j.male));
+  const cone = (/** @type {M.Piece} */ g, /** @type {number} */ i = 0) => /** @type {A.WorldJoint} */ (A.worldJoints(g).filter((j) => j.male)[i]);
+  const column = put('vigreux', socket(piece(flask)));
+  const head = put('head', socket(column));
+  put('thermometer', socket(head));
+  const arm = cone(head, 1);
+  assert.equal(arm.dir, 25); // the side arm slopes down to the right
+  const condenser = put('liebig', arm);
+  assert.equal(condenser.angle, -65); // the condenser lies along the arm
+  const adapter = put('adapter', cone(condenser));
+  assert.equal(adapter.angle, 0); // the adapter is drawn for that slope
+  const outlet = cone(adapter);
+  assert.equal(outlet.dir, 90); // and pours straight down into the receiver
+  put('flask', outlet);
+  assert.equal(A.assembly(d, flask).size, 7);
+});
+
+test('a Soxhlet extractor goes between a flask and a condenser', () => {
+  const { d, ids: [flask], piece } = withPieces('flask');
+  const sox = M.addPiece(d, { kind: 'soxhlet', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, sox.id, A.worldJoints(piece(flask))[0]));
+  const top = /** @type {A.WorldJoint} */ (A.worldJoints(sox).find((j) => !j.male));
+  const condenser = M.addPiece(d, { kind: 'allihn', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, condenser.id, top));
+  assert.equal(A.assembly(d, flask).size, 3);
+});
+
+test('a rotary evaporator takes a leaning evaporating flask and a hanging receiver', () => {
+  const { d, ids: [rv], piece } = withPieces('rotavap');
+  const [shaft, outlet] = A.worldJoints(piece(rv));
+  const evap = M.addPiece(d, { kind: 'flask', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, evap.id, shaft));
+  assert.equal(evap.angle, 55);
+  const receiver = M.addPiece(d, { kind: 'flask', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, receiver.id, outlet));
+  assert.equal(receiver.angle, 0);
+});
