@@ -1,4 +1,4 @@
-// Checks, on tablet and short screens, that every tool's option window and every top-bar menu
+// Checks, on tablet and short screens and in both modes, that every tool's option window and every top-bar menu
 // stays inside the screen without hiding its button, that every tool stays reachable,
 // and that every help text fits in the two lines of the status bar.
 // Usage: node scripts/edges.mjs   (needs Edge or Chrome, see browser.mjs; exits 1 on a problem)
@@ -18,18 +18,22 @@ const CHECK = `(async () => {
   const inScreen = (r) => r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const problems = [];
-  for (const b of document.querySelectorAll('.tool')) {
-    b.scrollIntoView({ block: 'nearest' });
-    const r = b.getBoundingClientRect(), rail = document.querySelector('.tools').getBoundingClientRect();
-    if (!inScreen(r) || r.top < rail.top - 1 || r.bottom > rail.bottom + 1) problems.push('outil ' + b.dataset.tool + ' inaccessible');
-    b.click();
-    await wait(20);
-    const f = document.querySelector('#flyout');
-    if (f.hidden) continue;
-    const fr = f.getBoundingClientRect();
-    if (!inScreen(fr)) problems.push('fenêtre de ' + b.dataset.tool + ' hors écran');
-    if (overlaps(fr, b.getBoundingClientRect())) problems.push('fenêtre de ' + b.dataset.tool + ' sur son bouton');
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  // Both modes: drawing a mechanism, then a lab set-up, each with its own tools.
+  for (const mode of ['mécanisme', 'montage']) {
+    if (mode === 'montage') document.querySelector('#btn-mode').click();
+    for (const b of document.querySelectorAll('.tool:not([hidden])')) {
+      b.scrollIntoView({ block: 'nearest' });
+      const r = b.getBoundingClientRect(), rail = document.querySelector('.tools').getBoundingClientRect();
+      if (!inScreen(r) || r.top < rail.top - 1 || r.bottom > rail.bottom + 1) problems.push('outil ' + b.dataset.tool + ' inaccessible');
+      b.click();
+      await wait(20);
+      const f = document.querySelector('#flyout');
+      if (f.hidden) continue;
+      const fr = f.getBoundingClientRect();
+      if (!inScreen(fr)) problems.push('fenêtre de ' + b.dataset.tool + ' hors écran');
+      if (overlaps(fr, b.getBoundingClientRect())) problems.push('fenêtre de ' + b.dataset.tool + ' sur son bouton');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    }
   }
   for (const d of document.querySelectorAll('.top details')) {
     d.open = true;

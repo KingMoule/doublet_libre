@@ -203,3 +203,23 @@ test('a text size is a whole number of points, from 10 to 48', () => {
   M.setTextSize(d, t.id, 99);
   assert.equal(t.size, 48);
 });
+
+test('a file saved before the lab set-ups opens, with no pieces', () => {
+  const old = JSON.parse(M.serialize(sampleSN2()));
+  delete old.apparatus;
+  assert.deepEqual(M.parseDoc(JSON.stringify(old)).apparatus, []);
+});
+
+test('pieces of glassware are selected, moved, copied and pasted like the other objects', () => {
+  const d = M.emptyDoc();
+  const g = M.addPiece(d, { kind: 'flask', x: 50, y: 50, angle: 0 });
+  assert.equal(g.id, 'g1');
+  assert.deepEqual(M.idsInRect(d, { l: 0, t: 0, r: 100, b: 100 }), ['g1']);
+  M.moveObjects(d, new Set(['g1']), 10, 5);
+  assert.deepEqual([g.x, g.y], [60, 55]);
+  const ids = M.paste(d, M.extract(d, new Set(['g1'])), 40, 0);
+  assert.deepEqual(ids, ['g2']);
+  assert.deepEqual([d.apparatus[1].x, d.apparatus[1].kind], [100, 'flask']);
+  M.removePiece(d, 'g1');
+  assert.deepEqual(d.apparatus.map((x) => x.id), ['g2']);
+});

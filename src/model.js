@@ -21,16 +21,18 @@ import { implicitHydrogens } from './chem.js';
  *   kind: 'forward' | 'equilibrium' | 'resonance' | 'retro' | 'noReaction',
  *   above: string, below: string}} ReactionArrow
  * @typedef {{id: string, x: number, y: number, text: string, size?: number}} TextBox
+ * @typedef {{id: string, kind: string, x: number, y: number, angle: number}} Piece
+ *   a piece of lab glassware (see apparatus.js), turned by angle degrees about (x, y)
  * @typedef {{version: 1, style: {}, atoms: Atom[], bonds: Bond[],
  *   marks: Mark[], curvedArrows: CurvedArrow[], reactionArrows: ReactionArrow[],
- *   texts: TextBox[]}} Doc
+ *   texts: TextBox[], apparatus: Piece[]}} Doc
  */
 
 /** Control points of a new curved arrow, in the arrow's own frame (see render.controlPoints). */
 export const DEFAULT_BEND = /** @type {[[number, number], [number, number]]} */ ([[0.15, 0.45], [0.85, 0.45]]);
 
 const ID_PREFIX = /** @type {const} */ ({
-  atoms: 'a', bonds: 'b', marks: 'm', curvedArrows: 'ca', reactionArrows: 'ra', texts: 't',
+  atoms: 'a', bonds: 'b', marks: 'm', curvedArrows: 'ca', reactionArrows: 'ra', texts: 't', apparatus: 'g',
 });
 const LISTS = /** @type {(keyof typeof ID_PREFIX)[]} */ (Object.keys(ID_PREFIX));
 
@@ -38,7 +40,7 @@ const LISTS = /** @type {(keyof typeof ID_PREFIX)[]} */ (Object.keys(ID_PREFIX))
 export function emptyDoc() {
   return {
     version: 1, style: {},
-    atoms: [], bonds: [], marks: [], curvedArrows: [], reactionArrows: [], texts: [],
+    atoms: [], bonds: [], marks: [], curvedArrows: [], reactionArrows: [], texts: [], apparatus: [],
   };
 }
 
@@ -231,6 +233,13 @@ export function addText(doc, p) {
   return text;
 }
 
+/** @param {Doc} doc @param {Omit<Piece, 'id'>} p */
+export function addPiece(doc, p) {
+  const piece = { id: nextId(doc, 'apparatus'), ...p };
+  doc.apparatus.push(piece);
+  return piece;
+}
+
 /** A text size is a whole number of points, from 10 to 48. @param {Doc} doc @param {string} id @param {number} size */
 export function setTextSize(doc, id, size) {
   const t = doc.texts.find((x) => x.id === id);
@@ -287,7 +296,12 @@ export function removeText(doc, id) {
   doc.texts = doc.texts.filter((t) => t.id !== id);
 }
 
-/** Atoms, texts and reaction arrows lying entirely inside a rectangle. @param {Doc} doc @param {{l:number,t:number,r:number,b:number}} r */
+/** @param {Doc} doc @param {string} id */
+export function removePiece(doc, id) {
+  doc.apparatus = doc.apparatus.filter((g) => g.id !== id);
+}
+
+/** Atoms, texts, reaction arrows and pieces of glassware lying entirely inside a rectangle. @param {Doc} doc @param {{l:number,t:number,r:number,b:number}} r */
 export function idsInRect(doc, r) {
   /** @param {number} x @param {number} y */
   const inside = (x, y) => x >= r.l && x <= r.r && y >= r.t && y <= r.b;
@@ -295,18 +309,20 @@ export function idsInRect(doc, r) {
     ...doc.atoms.filter((a) => inside(a.x, a.y)),
     ...doc.texts.filter((t) => inside(t.x, t.y)),
     ...doc.reactionArrows.filter((ra) => inside(ra.x1, ra.y1) && inside(ra.x2, ra.y2)),
+    ...doc.apparatus.filter((g) => inside(g.x, g.y)),
   ].map((o) => o.id);
 }
 
-/** Moves the atoms, texts and reaction arrows whose ids are given. @param {Doc} doc @param {Set<string>} ids @param {number} dx @param {number} dy */
+/** Moves the atoms, texts, reaction arrows and pieces whose ids are given. @param {Doc} doc @param {Set<string>} ids @param {number} dx @param {number} dy */
 export function moveObjects(doc, ids, dx, dy) {
   for (const a of doc.atoms) if (ids.has(a.id)) { a.x += dx; a.y += dy; }
   for (const t of doc.texts) if (ids.has(t.id)) { t.x += dx; t.y += dy; }
   for (const ra of doc.reactionArrows) if (ids.has(ra.id)) { ra.x1 += dx; ra.x2 += dx; ra.y1 += dy; ra.y2 += dy; }
+  for (const g of doc.apparatus) if (ids.has(g.id)) { g.x += dx; g.y += dy; }
 }
 
 /**
- * The part of a document made of the given atoms, texts and reaction arrows, as a copy. Bonds, marks
+ * The part of a document made of the given atoms, texts, reaction arrows and pieces, as a copy. Bonds, marks
  * and curved arrows come along when everything they point at is in it.
  * @param {Doc} doc @param {Set<string>} ids
  */
@@ -317,13 +333,14 @@ export function extract(doc, ids) {
   part.marks = doc.marks.filter((m) => ids.has(m.atom));
   part.texts = doc.texts.filter((t) => ids.has(t.id));
   part.reactionArrows = doc.reactionArrows.filter((r) => ids.has(r.id));
+  part.apparatus = doc.apparatus.filter((g) => ids.has(g.id));
   part.curvedArrows = doc.curvedArrows.filter((c) => anchorExists(part, c.from) && anchorExists(part, c.to));
   return /** @type {Doc} */ (structuredClone(part));
 }
 
 /**
  * Adds a copy of a part made by extract, moved by (dx, dy), with fresh ids.
- * Returns the ids of its atoms, texts and reaction arrows, as a selection.
+ * Returns the ids of its atoms, texts, reaction arrows and pieces, as a selection.
  * @param {Doc} doc @param {Doc} part @param {number} dx @param {number} dy
  */
 export function paste(doc, part, dx, dy) {
@@ -342,8 +359,9 @@ export function paste(doc, part, dx, dy) {
   for (const r of p.reactionArrows) {
     doc.reactionArrows.push({ ...r, id: fresh('reactionArrows', r.id), x1: r.x1 + dx, y1: r.y1 + dy, x2: r.x2 + dx, y2: r.y2 + dy });
   }
+  for (const g of p.apparatus) doc.apparatus.push({ ...g, id: fresh('apparatus', g.id), x: g.x + dx, y: g.y + dy });
   for (const c of p.curvedArrows) doc.curvedArrows.push({ ...c, id: fresh('curvedArrows', c.id), from: anchor(c.from), to: anchor(c.to) });
-  return [...p.atoms, ...p.texts, ...p.reactionArrows].map((o) => to(o.id));
+  return [...p.atoms, ...p.texts, ...p.reactionArrows, ...p.apparatus].map((o) => to(o.id));
 }
 
 /** @param {Doc} doc @param {string} id @param {1 | 2 | 3} order */
@@ -454,6 +472,8 @@ export function validateDoc(doc) {
 /** @param {string} text @returns {Doc} */
 export function parseDoc(text) {
   const doc = JSON.parse(text);
+  // Files saved before the lab set-ups have no glassware list.
+  if (doc && typeof doc === 'object' && !('apparatus' in doc)) doc.apparatus = [];
   const errors = validateDoc(doc);
   if (errors.length) throw new Error(errors.join('; '));
   return doc;

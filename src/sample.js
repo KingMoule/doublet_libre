@@ -51,5 +51,6 @@ export function sampleSN2() {
       { id: 't1', x: 150, y: 100, text: '+' },
       { id: 't2', x: 506, y: 100, text: '+' },
     ],
+    apparatus: [],
   };
 }

@@ -3,6 +3,7 @@ import {
   add, sub, scale, norm, mid, dot, cross, fromAngle, angleOf, angleDiff, angularGaps, boxExit,
 } from './geometry.js';
 import { formatChem, H_FIRST } from './chem.js';
+import { PIECES, corners } from './apparatus.js';
 import { findAtom, findBond, bondsOf, otherEnd, hydrogenCount, substituentSides, DEFAULT_BEND } from './model.js';
 
 /**
@@ -537,6 +538,13 @@ export function renderDoc(doc, opts = {}) {
   const wrap = (kind, id, s, inner) => `<g class="${s.cls}" data-kind="${kind}" data-id="${esc(id)}">${inner}</g>`;
   let out = '';
 
+  // Glassware first, under the molecules: an outline in the piece's frame, turned and moved.
+  for (const g of doc.apparatus) {
+    const def = PIECES[g.kind];
+    if (!def) continue;
+    const s = st('piece', g.id, group.has(g.id));
+    out += wrap('piece', g.id, s, `<g transform="translate(${n2(g.x)} ${n2(g.y)}) rotate(${n2(g.angle)})">${s.lit ? rectEl(def.box, 4, 'hl') : ''}<path class="gw" d="${def.d}"/>${rectEl(def.box, 2, 'hit')}</g>`);
+  }
   for (const b of doc.bonds) {
     const g = bondGeometry(L, b);
     if (!g) continue;
@@ -618,6 +626,7 @@ export function docBounds(doc, L) {
   for (const g of L.curved.values()) if (g) for (const p of [g.p0, g.c1, g.c2, g.p3]) { xs.push(p.x); ys.push(p.y); }
   for (const r of doc.reactionArrows) { const box = reactionShape(r).box; xs.push(box.l, box.r); ys.push(box.t, box.b); }
   for (const t of doc.texts) { xs.push(t.x - 10, t.x + 10); ys.push(t.y - 10, t.y + 10); }
+  for (const g of doc.apparatus) for (const c of corners(g)) { xs.push(c.x); ys.push(c.y); }
   if (!xs.length) return null;
   return { l: Math.min(...xs), r: Math.max(...xs), t: Math.min(...ys), b: Math.max(...ys) };
 }
