@@ -47,4 +47,5 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 5 | Enregistrer/ouvrir, SVG ré-éditable, PNG 300 ppp, copier vers Word et Google Docs | Aller-retour JSON et SVG sans perte | faite |
 | 6 | Vérifications pédagogiques (liste ci-dessus) | Une erreur d'étudiant typique par test ; aucune sur la SN2 correcte | faite |
 | 7 | Outil Groupe (Ph, OMe, OEt, CO₂H, CHO, CN, NO₂, OAc, Boc, dessinés en entier) ; menu Modèles : SN2, SN1, E2, E1, addition électrophile, addition nucléophile au carbonyle (les cycles restent à l'outil Cycle) | Chaque groupe et chaque modèle s'insère sans avertissement | faite |
-| 8 | Mode exercice, mode présentation, import SMILES/MOL, tablette, anglais | — | plus tard |
+| 8 | Tablette et stylet : pincer pour zoomer, deux doigts pour déplacer la vue, outils à toucher qui agissent au relâchement, cibles agrandies au doigt, élément d'un atome changeable dans le panneau | Test du pincement ; scénario tactile : pincement sans effet de bord, dessin et changement d'élément au doigt | faite |
+| 9 | Mode exercice, mode présentation, import SMILES/MOL, interface en anglais (un chantier à la fois) | — | plus tard |

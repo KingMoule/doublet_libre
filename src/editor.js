@@ -5,7 +5,7 @@ import { renderDoc, defaultBend, bendFromControl, docBounds, esc, STYLE } from '
 import { ELEMENT_KEYS } from './chem.js';
 import {
   add, sub, dist, cross, angleOf, angleDiff, angularGaps, fromAngle, snapAngle, nextBondAngle,
-  zigzag, ringAt, ringOnBond, ringOnAtom,
+  zigzag, ringAt, ringOnBond, ringOnAtom, pinchView,
 } from './geometry.js';
 import { sampleSN2 } from './sample.js';
 import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
@@ -122,6 +122,7 @@ export function startEditor(root) {
     ring: { size: 6, aromatic: false },
     element: 'C',
     group: 'Ph',
+    /** @type {{a: {x:number,y:number}, b: {x:number,y:number}, view: {x:number,y:number,w:number,h:number}} | null} */ pinch: null,
     /** @type {import('./checks.js').Warning[]} */ warnings: [],
     /** @type {any} */ layout: null,
     view: { x: 0, y: 0, w: 800, h: 500 },
@@ -345,61 +346,76 @@ export function startEditor(root) {
     svg.classList.add('panning');
   }
 
+  /** Pointers currently down, for two-finger gestures. @type {Map<number, {x: number, y: number}>} */
+  const pointers = new Map();
+  const TAP_TOOLS = new Set(['erase', 'ring', 'text', 'atom', 'group', 'lonePair', 'charge', 'partial']);
+
+  /**
+   * What a simple touch does with the current tool. It runs on release, and only if the pointer
+   * did not move, so the first finger of a pinch changes nothing.
+   * @param {Hit | null} hit @param {{x:number,y:number}} p @param {boolean} shift
+   */
+  function tap(hit, p, shift) {
+    const tool = S.tool;
+    if (tool === 'erase') { if (hit && hit.kind !== 'handle') commit((d) => deleteHit(d, hit)); return; }
+    if (tool === 'bond') { if (hit?.kind === 'bond') commit((d) => M.cycleBondOrder(d, hit.id)); return; }
+    if (tool === 'ring') { commit((d) => addRingAt(d, hit, p)); return; }
+    if (tool === 'text') {
+      if (hit?.kind === 'text') { S.selection = hit; render(); renderPanel(); }
+      else if (!hit) commit((d) => { S.selection = { kind: 'text', id: M.addText(d, { x: p.x, y: p.y, text: '+' }).id }; });
+      return;
+    }
+    // Touching an atom's lone pair or charge counts as touching the atom.
+    const id = hit?.kind === 'atom' || hit?.kind === 'charge' ? hit.id
+      : hit?.kind === 'mark' ? S.doc.marks.find((m) => m.id === hit.id)?.atom : undefined;
+    if (tool === 'atom') {
+      if (id) commit((d) => M.setElement(d, id, S.element));
+      else if (!hit) commit((d) => { M.addAtom(d, { element: S.element, x: p.x, y: p.y }); });
+      return;
+    }
+    if (!id) return;
+    commit((d) => {
+      if (tool === 'group') attachGroup(d, id, S.group, nextBondAngle(bondAngles(d, id)));
+      else if (tool === 'lonePair') M.addMark(d, id, shift ? 'radical' : 'lonePair');
+      else if (tool === 'charge') { const a = M.findAtom(d, id); if (a) a.charge += shift ? -1 : 1; }
+      else if (tool === 'partial') M.cyclePartial(d, id);
+    });
+  }
+
   svg.addEventListener('pointerdown', (e) => {
     if (e.button === 2) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { svg.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+    if (pointers.size === 2) {
+      // A second finger drops whatever the first started: the two now zoom and pan.
+      const [a, b] = [...pointers.values()];
+      S.drag = null;
+      S.preview = null;
+      S.marquee = null;
+      S.pinch = { a, b, view: { ...S.view } };
+      userMovedView = true;
+      render();
+      return;
+    }
+    if (pointers.size > 2) return;
     const p = toDoc(e);
     const hit = hitOf(e.target);
-    try { svg.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
     if (e.button === 1 || S.space) { startPan(e); return; }
-    if (S.tool === 'erase') {
-      if (hit && hit.kind !== 'handle') commit((d) => deleteHit(d, hit));
+    if (TAP_TOOLS.has(S.tool) || (S.tool === 'bond' && hit?.kind === 'bond')) {
+      S.drag = { type: 'tap', hit, start: p, shift: e.shiftKey, moved: false };
       return;
     }
     if (S.tool === 'bond' || S.tool === 'chain') {
-      if (hit?.kind === 'bond' && S.tool === 'bond') commit((d) => M.cycleBondOrder(d, hit.id));
-      else if (hit?.kind === 'atom' || !hit) S.drag = { type: S.tool, atomId: hit?.id ?? null, start: p, moved: false };
-      return;
-    }
-    if (S.tool === 'ring') {
-      commit((d) => addRingAt(d, hit, p));
-      return;
-    }
-    if (S.tool === 'group') {
-      if (hit?.kind !== 'atom') return;
-      const id = hit.id;
-      commit((d) => { attachGroup(d, id, S.group, nextBondAngle(bondAngles(d, id))); });
+      if (hit?.kind === 'atom' || !hit) S.drag = { type: S.tool, atomId: hit?.id ?? null, start: p, moved: false };
       return;
     }
     if (S.tool === 'rxn') {
       if (!hit) S.drag = { type: 'rxnNew', start: p, moved: false };
       return;
     }
-    if (S.tool === 'text') {
-      if (hit?.kind === 'text') { S.selection = hit; render(); renderPanel(); return; }
-      if (hit) return;
-      commit((d) => { S.selection = { kind: 'text', id: M.addText(d, { x: p.x, y: p.y, text: '+' }).id }; });
-      return;
-    }
     if (S.tool === 'curved') {
       const from = arrowSource(hit, p);
       if (from) S.drag = { type: 'curved', from, start: p, moved: false };
-      return;
-    }
-    if (S.tool === 'atom') {
-      if (hit?.kind === 'atom') commit((d) => M.setElement(d, hit.id, S.element));
-      else if (!hit) commit((d) => { M.addAtom(d, { element: S.element, x: p.x, y: p.y }); });
-      return;
-    }
-    if (S.tool === 'lonePair' || S.tool === 'charge' || S.tool === 'partial') {
-      if (hit?.kind !== 'atom') return;
-      const id = hit.id;
-      const tool = S.tool;
-      commit((d) => {
-        const a = /** @type {M.Atom} */ (M.findAtom(d, id));
-        if (tool === 'lonePair') M.addMark(d, id, e.shiftKey ? 'radical' : 'lonePair');
-        else if (tool === 'charge') a.charge += e.shiftKey ? -1 : 1;
-        else M.cyclePartial(d, id);
-      });
       return;
     }
     if (!hit) {
@@ -444,6 +460,14 @@ export function startEditor(root) {
   });
 
   svg.addEventListener('pointermove', (e) => {
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (S.pinch) {
+      if (pointers.size < 2) return;
+      const [a, b] = [...pointers.values()];
+      const v = pinchView(S.pinch.view, svg.getBoundingClientRect(), S.pinch.a, S.pinch.b, a, b);
+      if (v.w >= 60 && v.w <= 6000) { S.view = v; applyView(); }
+      return;
+    }
     const D = S.drag;
     if (!D) {
       const hit = hitOf(e.target);
@@ -531,8 +555,18 @@ export function startEditor(root) {
   }
 
   svg.addEventListener('pointerup', (e) => {
+    pointers.delete(e.pointerId);
+    if (S.pinch) {
+      if (pointers.size < 2) { S.pinch = null; endDrag(e); }
+      return;
+    }
     const D = endDrag(e);
     if (!D || D.type === 'pan') return;
+    if (D.type === 'tap') {
+      if (!D.moved) tap(D.hit, D.start, D.shift);
+      else render();
+      return;
+    }
     const p = toDoc(e);
     if (D.type === 'bond' || D.type === 'chain') {
       const points = sketch(D, p, e);
@@ -567,7 +601,12 @@ export function startEditor(root) {
     else { render(); renderPanel(); }
   });
 
-  svg.addEventListener('pointercancel', (e) => { endDrag(e); render(); });
+  svg.addEventListener('pointercancel', (e) => {
+    pointers.delete(e.pointerId);
+    S.pinch = null;
+    endDrag(e);
+    render();
+  });
   svg.addEventListener('pointerleave', () => {
     if (!S.drag && S.hover) { S.hover = null; render(); updateStatus(); }
   });
@@ -777,7 +816,8 @@ export function startEditor(root) {
 
   function updateStatus() {
     const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : null;
-    statusEl.textContent = hovered ?? fr.status[S.tool];
+    const touch = S.tool === 'select' && matchMedia('(pointer: coarse)').matches;
+    statusEl.textContent = hovered ?? (touch ? fr.status.selectTouch : fr.status[S.tool]);
   }
 
   // ---------- properties panel ----------
@@ -827,6 +867,7 @@ export function startEditor(root) {
       const a = M.findAtom(d, sel.id);
       if (a) {
         html = `<h2>${P.titles.atom}</h2><dl class="kv"><dt>${P.element}</dt><dd>${esc(a.element)}</dd><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd><dt>${P.hydrogens}</dt><dd>${M.hydrogenCount(d, a)}</dd></dl>
+          <div class="row">${ELEMENTS.map((el) => btn(`el-${el}`, el, a.element === el)).join('')}</div>
           <div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div>
           <div class="col">${btn('lp-add', P.addLonePair)}${btn('lp-remove', P.removeLonePair)}</div>${removeBtn}`;
       }
@@ -898,6 +939,7 @@ export function startEditor(root) {
     if (!act || !sel) return;
     commit((d) => {
       if (act === 'delete') { deleteHit(d, sel); return; }
+      if (act.startsWith('el-')) { M.setElement(d, sel.id, act.slice(3)); return; }
       if (act === 'charge-1' || act === 'charge+1') { const a = M.findAtom(d, sel.id); if (a) a.charge += act === 'charge+1' ? 1 : -1; return; }
       if (act === 'lp-add') { M.addMark(d, sel.id, 'lonePair'); return; }
       if (act === 'lp-remove') {

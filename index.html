@@ -156,10 +156,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .status { grid-area: status; display: flex; gap: 1rem; justify-content: space-between; padding: 0.45rem 0.9rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.82rem; }
 .status .zoom { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+/* Fingers: wider click areas and handles, taller buttons, no double-tap zoom. */
+@media (pointer: coarse) {
+  #canvas [data-kind="atom"] > .hit, #canvas [data-kind="text"] > .hit, #canvas [data-kind="rxn"] > .hit { stroke: transparent; stroke-width: 14px; }
+  #canvas [data-kind="bond"] > .hit, #canvas [data-kind="curved"] > .hit { stroke-width: 22px; }
+  #canvas .handle rect { transform-box: fill-box; transform-origin: center; transform: scale(1.8); }
+  .top button, .menu summary, .panel button { min-height: 40px; }
+  button, summary, .tool { touch-action: manipulation; }
+}
+
 @media (max-width: 760px) {
   html, body { height: auto; }
   .app { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 60vh auto auto; grid-template-areas: "top" "tools" "stage" "panel" "status"; }
-  .tools { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--rule); }
+  .tools { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--rule); }
   .tool { width: 52px; }
   .panel { border-left: 0; border-top: 1px solid var(--rule); }
 }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   angleOf, fromAngle, snapAngle, angleDiff, angularGaps, nextBondAngle, boxExit, dist, sub,
-  ringAt, ringOnBond, ringOnAtom, zigzag,
+  ringAt, ringOnBond, ringOnAtom, zigzag, pinchView,
 } from '../src/geometry.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} should be close to ${b}`);
@@ -75,6 +75,26 @@ test('a chain zigzags at 120° along its direction (GR-3.2.1)', () => {
   close(angleOf(sub(pts[1], pts[0])), 330);
   close(pts[3].x, 4 * 34.641016, 1e-4);
   close(pts[3].y, 0);
+});
+
+test('pinching: fingers twice as far apart halve the view, the point between them stays put', () => {
+  const view = { x: 0, y: 0, w: 400, h: 300 };
+  const rect = { left: 0, top: 0, width: 800, height: 600 };
+  const v = pinchView(view, rect, { x: 300, y: 300 }, { x: 500, y: 300 }, { x: 200, y: 300 }, { x: 600, y: 300 });
+  close(v.w, 200);
+  close(v.h, 150);
+  // the midpoint (400, 300) on screen showed doc (200, 150) before, and still does
+  close(v.x + (400 / 800) * v.w, 200);
+  close(v.y + (300 / 600) * v.h, 150);
+});
+
+test('two fingers moving together pan the view', () => {
+  const view = { x: 0, y: 0, w: 400, h: 300 };
+  const rect = { left: 0, top: 0, width: 800, height: 600 };
+  const v = pinchView(view, rect, { x: 300, y: 300 }, { x: 500, y: 300 }, { x: 400, y: 400 }, { x: 600, y: 400 });
+  close(v.w, 400);
+  close(v.x, -50, 1e-9);
+  close(v.y, -50, 1e-9);
 });
 
 test('distance from a box centre to its edge', () => {
