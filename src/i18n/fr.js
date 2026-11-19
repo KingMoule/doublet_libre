@@ -35,7 +35,7 @@ export const fr = {
     opened: (name) => `Ouvert : ${name}`,
   },
   status: {
-    select: 'Glissez une molécule pour la déplacer : les flèches courbes suivent. Glissez le fond pour sélectionner, Maj + clic pour ajouter un élément, Ctrl+C puis Ctrl+V pour copier la sélection. Espace + glisser pour se déplacer, molette pour zoomer.',
+    select: 'Glissez une molécule pour la déplacer, le fond pour sélectionner ; Maj + clic ajoute un élément. Ctrl+C, Ctrl+V : copier, coller. Espace + glisser : déplacer la vue ; molette : zoomer.',
     bond: 'Cliquez sur le fond pour poser une liaison, sur un atome pour en ajouter une, sur une liaison pour changer son ordre. Glissez pour choisir la direction.',
     chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
     ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',

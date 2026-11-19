@@ -158,6 +158,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Status line */
 .status { grid-area: status; display: flex; gap: 1rem; justify-content: space-between; padding: 0.45rem 0.9rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.82rem; }
+/* Two lines always kept for the help text, so that the canvas never moves when it changes length. */
+#status { line-height: 1.35; height: calc(2 * 1.35em); overflow: hidden; }
 .status .zoom { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* Fingers: wider click areas and handles, taller buttons, no double-tap zoom. */
@@ -175,6 +177,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .tools { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--rule); }
   .tool { width: 52px; }
   .panel { border-left: 0; border-top: 1px solid var(--rule); }
+  #status { height: auto; }
 }
 </style>
 </head>

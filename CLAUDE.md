@@ -20,7 +20,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Une phase à la fois. Écrire d'abord le test qui échoue, puis le code qui le fait passer.
 - Une tâche est finie quand `node --test` passe, et que le rendu a été vu dans le navigateur si l'affichage a changé. Montrer la commande lancée et sa sortie.
 - Vérification visuelle : rejouer un scénario de vrais événements de pointeur et de clavier dans l'app, puis juger le SVG obtenu. Les tests ne voient pas le CSS, et les captures du navigateur intégré ne sont pas fiables quand la fenêtre est réduite.
-- Une fenêtre, un menu ou une barre se vérifient aux bords avec `node scripts/edges.mjs` : il ouvre chaque outil et chaque menu du haut sur six tailles d'écran (ordinateur, tablette, téléphone, debout et couchés) et signale ce qui sort de l'écran, cache son bouton ou devient inaccessible.
+- Une fenêtre, un menu ou une barre se vérifient aux bords avec `node scripts/edges.mjs` : il ouvre chaque outil et chaque menu du haut sur six tailles d'écran (ordinateur, tablette, téléphone, debout et couchés) et signale ce qui sort de l'écran, cache son bouton ou devient inaccessible, ainsi qu'une aide de la barre du bas qui dépasse ses deux lignes (une aide plus longue se raccourcit).
 - Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
 - Après avoir ouvert la PR, activer sa fusion automatique (squash) : GitHub la fusionne seulement quand le test `test` est vert. Si un test échoue, corriger plutôt que fusionner.
