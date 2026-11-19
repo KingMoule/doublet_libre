@@ -3,7 +3,7 @@ import {
   add, sub, scale, norm, mid, dot, cross, fromAngle, angleOf, angleDiff, angularGaps, boxExit,
 } from './geometry.js';
 import { formatChem, H_FIRST } from './chem.js';
-import { findAtom, findBond, bondsOf, otherEnd, neighbors, hydrogenCount, DEFAULT_BEND } from './model.js';
+import { findAtom, findBond, bondsOf, otherEnd, hydrogenCount, substituentSides, DEFAULT_BEND } from './model.js';
 
 /**
  * Layout and SVG rendering of a document.
@@ -365,22 +365,8 @@ function bondGeometry(L, bond) {
  */
 export function doubleBondSide(doc, bond) {
   if (bond.doubleSide === 0 || bond.doubleSide === 1 || bond.doubleSide === -1) return bond.doubleSide;
-  const a = findAtom(doc, bond.a);
-  const b = findAtom(doc, bond.b);
-  if (!a || !b) return 0;
-  const d = sub(b, a);
-  let s = 0;
-  /** @type {number[][]} */
-  const sides = [];
-  for (const [end, other] of [[bond.a, bond.b], [bond.b, bond.a]]) {
-    const list = [];
-    for (const nId of neighbors(doc, end)) {
-      const n = nId !== other && findAtom(doc, nId);
-      if (n) list.push(Math.sign(cross(d, sub(n, a))));
-    }
-    sides.push(list);
-    s += list.reduce((t, x) => t + x, 0);
-  }
+  const sides = substituentSides(doc, bond);
+  const s = [...sides[0], ...sides[1]].reduce((t, x) => t + x, 0);
   if (s !== 0) return Math.sign(s);
   if (sides[0].length > 0 && sides[1].length > 0) return sides[0].find((x) => x !== 0) ?? 1;
   return 0;
@@ -534,47 +520,48 @@ function reactionShape(ra) {
 
 /**
  * @param {Doc} doc
- * @param {{selection?: {kind: string, id: string} | null, hover?: {kind: string, id: string} | null,
- *   preview?: {from: Vec, to: Vec} | null}} [opts]
+ * @param {{selection?: {kind: string, id: string, ids?: string[]} | null, hover?: {kind: string, id: string} | null,
+ *   preview?: {points: Vec[]} | null, marquee?: {l: number, t: number, r: number, b: number} | null}} [opts]
  */
 export function renderDoc(doc, opts = {}) {
   const L = layout(doc);
   const sel = opts.selection ?? null;
   const hov = opts.hover ?? null;
-  /** @param {string} kind @param {string} id */
-  const st = (kind, id) => {
-    const s = !!sel && sel.kind === kind && sel.id === id;
+  const group = new Set(sel?.kind === 'group' ? sel.ids : []);
+  /** @param {string} kind @param {string} id @param {boolean} [inGroup] */
+  const st = (kind, id, inGroup = false) => {
+    const s = inGroup || (!!sel && sel.kind === kind && sel.id === id);
     const h = !!hov && hov.kind === kind && hov.id === id;
     return { lit: s || h, cls: `obj${s ? ' is-sel' : ''}${h ? ' is-hov' : ''}` };
   };
   /** @param {string} kind @param {string} id @param {{lit: boolean, cls: string}} s @param {string} inner */
-  const group = (kind, id, s, inner) => `<g class="${s.cls}" data-kind="${kind}" data-id="${esc(id)}">${inner}</g>`;
+  const wrap = (kind, id, s, inner) => `<g class="${s.cls}" data-kind="${kind}" data-id="${esc(id)}">${inner}</g>`;
   const circled = doc.style?.chargeCircled !== false;
   let out = '';
 
   for (const b of doc.bonds) {
     const g = bondGeometry(L, b);
     if (!g) continue;
-    const s = st('bond', b.id);
-    out += group('bond', b.id, s, `${s.lit ? lineEl(g.p, g.q, 'hl') : ''}${bondShape(doc, b, g)}${lineEl(g.p, g.q, 'hit')}`);
+    const s = st('bond', b.id, group.has(b.a) && group.has(b.b));
+    out += wrap('bond', b.id, s, `${s.lit ? lineEl(g.p, g.q, 'hl') : ''}${bondShape(doc, b, g)}${lineEl(g.p, g.q, 'hit')}`);
   }
   for (const info of L.atoms.values()) {
     const { atom, label } = info;
-    const s = st('atom', atom.id);
+    const s = st('atom', atom.id, group.has(atom.id));
     const hl = s.lit ? (label ? rectEl(label.box, 2, 'hl') : circleEl(atom, 9, 'hl')) : '';
     const vis = label ? label.runs.map((r) => `<text class="lbl" x="${n2(r.x)}" y="${n2(r.y)}">${tspans(r.segs, F)}</text>`).join('') : '';
     const hit = label ? rectEl(label.box, 3, 'hit') : circleEl(atom, 8, 'hit');
-    out += group('atom', atom.id, s, hl + vis + hit);
+    out += wrap('atom', atom.id, s, hl + vis + hit);
   }
   for (const m of doc.marks) {
     const pos = L.marks.get(m.id);
     if (!pos) continue;
     const s = st('mark', m.id);
-    out += group('mark', m.id, s, `${s.lit ? circleEl(pos.center, 6, 'hl') : ''}${markShape(pos)}${circleEl(pos.center, 5, 'hit')}`);
+    out += wrap('mark', m.id, s, `${s.lit ? circleEl(pos.center, 6, 'hl') : ''}${markShape(pos)}${circleEl(pos.center, 5, 'hit')}`);
   }
   for (const c of L.charges.values()) {
     const s = st('charge', c.atom);
-    out += group('charge', c.atom, s, `${s.lit ? circleEl(c.center, 7, 'hl') : ''}${chargeShape(c, circled)}${circleEl(c.center, 6, 'hit')}`);
+    out += wrap('charge', c.atom, s, `${s.lit ? circleEl(c.center, 7, 'hl') : ''}${chargeShape(c, circled)}${circleEl(c.center, 6, 'hit')}`);
   }
   for (const t of doc.texts) {
     const size = t.size ?? F * 1.3;
@@ -582,19 +569,19 @@ export function renderDoc(doc, opts = {}) {
     const w = segmentsWidth(segs, size);
     const box = { l: t.x - w / 2, r: t.x + w / 2, t: t.y - size / 2, b: t.y + size / 2 };
     const s = st('text', t.id);
-    out += group('text', t.id, s, `${s.lit ? rectEl(box, 2, 'hl') : ''}<text class="txt" x="${n2(t.x)}" y="${n2(t.y + 0.36 * size)}" font-size="${n2(size)}">${tspans(segs, size)}</text>${rectEl(box, 3, 'hit')}`);
+    out += wrap('text', t.id, s, `${s.lit ? rectEl(box, 2, 'hl') : ''}<text class="txt" x="${n2(t.x)}" y="${n2(t.y + 0.36 * size)}" font-size="${n2(size)}">${tspans(segs, size)}</text>${rectEl(box, 3, 'hit')}`);
   }
   for (const ra of doc.reactionArrows) {
     const r = reactionShape(ra);
     const s = st('rxn', ra.id);
-    out += group('rxn', ra.id, s, `${s.lit ? rectEl(r.box, 3, 'hl') : ''}${r.markup}${rectEl(r.box, 2, 'hit')}`);
+    out += wrap('rxn', ra.id, s, `${s.lit ? rectEl(r.box, 3, 'hl') : ''}${r.markup}${rectEl(r.box, 2, 'hit')}`);
   }
   for (const ca of doc.curvedArrows) {
     const g = L.curved.get(ca.id);
     if (!g) continue;
     const parts = curveParts(g);
     const s = st('curved', ca.id);
-    out += group('curved', ca.id, s, `${s.lit ? `<path class="hl" d="${parts.full}"/>` : ''}<path class="ea" d="${parts.path}"/><polygon class="eh" points="${parts.head(ca.electrons)}"/><path class="hit" d="${parts.full}"/>`);
+    out += wrap('curved', ca.id, s, `${s.lit ? `<path class="hl" d="${parts.full}"/>` : ''}<path class="ea" d="${parts.path}"/><polygon class="eh" points="${parts.head(ca.electrons)}"/><path class="hit" d="${parts.full}"/>`);
   }
   if (sel && (sel.kind === 'curved' || sel.kind === 'handle')) {
     const g = L.curved.get(sel.id);
@@ -605,7 +592,9 @@ export function renderDoc(doc, opts = {}) {
       });
     }
   }
-  if (opts.preview) out += `${lineEl(opts.preview.from, opts.preview.to, 'ghost')}${circleEl(opts.preview.to, 3, 'ghost-dot')}`;
+  const ghost = opts.preview?.points;
+  if (ghost && ghost.length > 1) out += `<polyline class="ghost" points="${pts(ghost)}"/>${circleEl(ghost[ghost.length - 1], 3, 'ghost-dot')}`;
+  if (opts.marquee) out += rectEl(opts.marquee, 0, 'marquee');
   return { markup: out, layout: L };
 }
 

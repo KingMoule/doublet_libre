@@ -3,21 +3,26 @@ import { fr } from './i18n/fr.js';
 import * as M from './model.js';
 import { renderDoc, defaultBend, bendFromControl, docBounds, esc, STYLE } from './render.js';
 import { ELEMENT_KEYS } from './chem.js';
-import { add, sub, dist, angleOf, fromAngle, snapAngle, nextBondAngle } from './geometry.js';
+import {
+  add, sub, dist, cross, angleOf, angleDiff, angularGaps, fromAngle, snapAngle, nextBondAngle,
+  zigzag, ringAt, ringOnBond, ringOnAtom,
+} from './geometry.js';
 import { sampleSN2 } from './sample.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
  * Every change goes through `commit`, which records a snapshot for undo first.
- * @typedef {{kind: string, id: string, index?: number}} Hit
+ * @typedef {{kind: string, id: string, index?: number, ids?: string[]}} Hit
  */
 
 const STORAGE_KEY = 'doublet.document.v1';
 const PROPOSAL_URL = 'https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'erase']);
 const ICONS = {
   select: '<path d="M6 3 L6 17 L9.5 13.5 L12 19 L14 18 L11.5 12.5 L16 12.5 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
   bond: '<path d="M4 17 L18 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  chain: '<path d="M2 15 L7 7 L12 15 L17 7 L21 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+  ring: '<path d="M11 3 L18 7 L18 15 L11 19 L4 15 L4 7 Z" fill="none" stroke="currentColor" stroke-width="1.6"/>',
   erase: '<path d="M9 18 L3.5 12.5 L12 4 L19 11 L12 18 Z M7 9 L14 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
 };
 
@@ -88,7 +93,9 @@ export function startEditor(root) {
     /** @type {Hit | null} */ hover: null,
     /** @type {Hit | null} */ selection: null,
     /** @type {any} */ drag: null,
-    /** @type {{from: {x:number,y:number}, to: {x:number,y:number}} | null} */ preview: null,
+    /** @type {{points: {x:number,y:number}[]} | null} */ preview: null,
+    /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
+    ring: { size: 6, aromatic: false },
     /** @type {any} */ layout: null,
     view: { x: 0, y: 0, w: 800, h: 500 },
     space: false,
@@ -99,7 +106,7 @@ export function startEditor(root) {
   // ---------- drawing and view ----------
 
   function render() {
-    const r = renderDoc(S.doc, { selection: S.selection, hover: S.hover, preview: S.preview });
+    const r = renderDoc(S.doc, { selection: S.selection, hover: S.hover, preview: S.preview, marquee: S.marquee });
     content.innerHTML = r.markup;
     S.layout = r.layout;
   }
@@ -171,6 +178,9 @@ export function startEditor(root) {
       case 'curved': case 'handle': return d.curvedArrows.some((c) => c.id === h.id);
       case 'rxn': return d.reactionArrows.some((r) => r.id === h.id);
       case 'text': return d.texts.some((t) => t.id === h.id);
+      case 'group':
+        h.ids = (h.ids ?? []).filter((id) => M.findAtom(d, id));
+        return h.ids.length > 0;
       default: return false;
     }
   }
@@ -203,6 +213,7 @@ export function startEditor(root) {
       case 'curved': case 'handle': M.removeCurvedArrow(d, h.id); break;
       case 'rxn': M.removeReactionArrow(d, h.id); break;
       case 'text': M.removeText(d, h.id); break;
+      case 'group': for (const id of h.ids ?? []) M.removeAtom(d, id); break;
       default: break;
     }
   }
@@ -213,15 +224,46 @@ export function startEditor(root) {
     return M.neighbors(d, atomId).map((id) => angleOf(sub(/** @type {M.Atom} */ (M.findAtom(d, id)), a)));
   }
 
-  /** New bond from an atom in a direction; joins an existing atom that sits at the far end. @param {M.Doc} d @param {string} atomId @param {number} angle */
-  function growBond(d, atomId, angle) {
-    const a = M.findAtom(d, atomId);
-    if (!a) return;
-    const end = add(a, fromAngle(angle, STYLE.bond));
-    const near = d.atoms.find((o) => o.id !== atomId && dist(o, end) < 8);
-    if (near) { M.addBond(d, atomId, near.id); return; }
-    const n = M.addAtom(d, { x: end.x, y: end.y });
-    M.addBond(d, atomId, n.id);
+  /**
+   * Points a bond or chain drag would add, from its first atom (or the empty spot clicked).
+   * A click gives one bond in the free direction; a bond drag snaps to 15°; a chain drag
+   * zigzags along the drag, one bond per 35 units, first bond away from existing bonds.
+   * @param {any} D @param {{x:number,y:number}} p @param {{clientX:number, clientY:number}} e
+   */
+  function sketch(D, p, e) {
+    const a = D.atomId ? M.findAtom(S.doc, D.atomId) : null;
+    const start = a ?? D.start;
+    const existing = a ? bondAngles(S.doc, a.id) : [];
+    if (!D.moved) return [start, add(start, fromAngle(nextBondAngle(existing), STYLE.bond))];
+    if (D.type === 'bond') {
+      const target = a && atomUnder(e, a.id);
+      return [start, target ?? add(start, fromAngle(snapAngle(angleOf(sub(p, start))), STYLE.bond))];
+    }
+    const v = sub(p, start);
+    const n = Math.max(1, Math.round(Math.hypot(v.x, v.y) / (STYLE.bond * Math.cos(Math.PI / 6))));
+    const dir = snapAngle(angleOf(v), 30);
+    const clear = (/** @type {number} */ s) => Math.min(360, ...existing.map((x) => angleDiff(x, dir + 30 * s)));
+    return [start, ...zigzag(start, dir, n, STYLE.bond, clear(-1) > clear(1) ? -1 : 1)];
+  }
+
+  /** Ring tool: on an atom (spiro or chain end), on a bond (fused, away from its neighbours), or alone. @param {M.Doc} d @param {Hit | null} hit @param {{x:number,y:number}} p */
+  function addRingAt(d, hit, p) {
+    const { size, aromatic } = S.ring;
+    const atom = hit?.kind === 'atom' ? M.findAtom(d, hit.id) : null;
+    const bond = hit?.kind === 'bond' ? M.findBond(d, hit.id) : null;
+    let points;
+    if (atom) {
+      const gap = angularGaps(bondAngles(d, atom.id))[0];
+      points = ringOnAtom(atom, gap ? gap.mid : 90, size, STYLE.bond);
+    } else if (bond) {
+      const A = /** @type {M.Atom} */ (M.findAtom(d, bond.a));
+      const B = /** @type {M.Atom} */ (M.findAtom(d, bond.b));
+      const s = M.substituentSides(d, bond).flat().reduce((t, x) => t + x, 0);
+      points = ringOnBond(A, B, size, s ? -Math.sign(s) : Math.sign(cross(sub(B, A), sub(p, A))) || 1);
+    } else {
+      points = ringAt(p, size, STYLE.bond);
+    }
+    M.addRing(d, points, aromatic && size === 6);
   }
 
   /** @param {{clientX: number, clientY: number}} e @param {string} exclude */
@@ -243,21 +285,26 @@ export function startEditor(root) {
     if (e.button === 2) return;
     const p = toDoc(e);
     const hit = hitOf(e.target);
-    svg.setPointerCapture(e.pointerId);
+    try { svg.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
     if (e.button === 1 || S.space) { startPan(e); return; }
     if (S.tool === 'erase') {
       if (hit && hit.kind !== 'handle') commit((d) => deleteHit(d, hit));
       return;
     }
-    if (S.tool === 'bond') {
-      if (hit?.kind === 'atom') S.drag = { type: 'bondFrom', atomId: hit.id, start: p, moved: false };
-      else if (hit?.kind === 'bond') commit((d) => M.cycleBondOrder(d, hit.id));
-      else if (!hit) S.drag = { type: 'bondNew', start: p, moved: false };
+    if (S.tool === 'bond' || S.tool === 'chain') {
+      if (hit?.kind === 'bond' && S.tool === 'bond') commit((d) => M.cycleBondOrder(d, hit.id));
+      else if (hit?.kind === 'atom' || !hit) S.drag = { type: S.tool, atomId: hit?.id ?? null, start: p, moved: false };
+      return;
+    }
+    if (S.tool === 'ring') {
+      commit((d) => addRingAt(d, hit, p));
       return;
     }
     if (!hit) {
-      if (S.selection) { S.selection = null; render(); renderPanel(); }
-      startPan(e);
+      S.selection = null;
+      S.drag = { type: 'marquee', start: p, moved: false };
+      render();
+      renderPanel();
       return;
     }
     const snap = M.serialize(S.doc);
@@ -265,9 +312,19 @@ export function startEditor(root) {
       S.drag = { type: 'handle', id: hit.id, index: hit.index ?? 0, start: p, snap, moved: false };
       return;
     }
-    S.selection = { kind: hit.kind, id: hit.id };
+    const sel = S.selection;
+    const grouped = sel?.kind === 'group' && !!sel.ids?.includes(hit.id);
+    if (hit.kind === 'atom' && e.shiftKey) {
+      const ids = sel?.kind === 'group' ? sel.ids ?? [] : sel?.kind === 'atom' ? [sel.id] : [];
+      const next = ids.includes(hit.id) ? ids.filter((x) => x !== hit.id) : [...ids, hit.id];
+      S.selection = next.length ? { kind: 'group', id: 'group', ids: next } : null;
+      render();
+      renderPanel();
+      return;
+    }
+    if (!grouped) S.selection = { kind: hit.kind, id: hit.id };
     if (hit.kind === 'atom') {
-      const ids = e.altKey ? new Set([hit.id]) : M.component(S.doc, hit.id);
+      const ids = grouped ? new Set(sel?.ids) : e.altKey ? new Set([hit.id]) : M.component(S.doc, hit.id);
       S.drag = { type: 'move', ids, last: p, start: p, snap, moved: false };
     } else if (hit.kind === 'bond') {
       const b = M.findBond(S.doc, hit.id);
@@ -342,13 +399,12 @@ export function startEditor(root) {
         if (a) a.chargeAngle = Math.round(angleOf(sub(p, a)));
         break;
       }
-      case 'bondFrom': {
-        const a = M.findAtom(d, D.atomId);
-        if (a) S.preview = { from: a, to: atomUnder(e, D.atomId) ?? add(a, fromAngle(snapAngle(angleOf(sub(p, a))), STYLE.bond)) };
+      case 'bond':
+      case 'chain':
+        S.preview = { points: sketch(D, p, e) };
         break;
-      }
-      case 'bondNew':
-        S.preview = { from: D.start, to: add(D.start, fromAngle(snapAngle(angleOf(sub(p, D.start))), STYLE.bond)) };
+      case 'marquee':
+        S.marquee = { l: Math.min(p.x, D.start.x), r: Math.max(p.x, D.start.x), t: Math.min(p.y, D.start.y), b: Math.max(p.y, D.start.y) };
         break;
       default:
         break;
@@ -370,22 +426,18 @@ export function startEditor(root) {
     const D = endDrag(e);
     if (!D || D.type === 'pan') return;
     const p = toDoc(e);
-    if (D.type === 'bondFrom') {
-      commit((d) => {
-        const a = M.findAtom(d, D.atomId);
-        if (!a) return;
-        if (!D.moved) { growBond(d, a.id, nextBondAngle(bondAngles(d, a.id))); return; }
-        const target = atomUnder(e, D.atomId);
-        if (target) M.addBond(d, a.id, target.id);
-        else growBond(d, a.id, snapAngle(angleOf(sub(p, a))));
-      });
+    if (D.type === 'bond' || D.type === 'chain') {
+      const points = sketch(D, p, e);
+      commit((d) => M.addPath(d, points));
       return;
     }
-    if (D.type === 'bondNew') {
-      commit((d) => {
-        const a = M.addAtom(d, { x: D.start.x, y: D.start.y });
-        growBond(d, a.id, D.moved ? snapAngle(angleOf(sub(p, D.start))) : 30);
-      });
+    if (D.type === 'marquee') {
+      const r = S.marquee;
+      S.marquee = null;
+      const ids = r ? S.doc.atoms.filter((a) => a.x >= r.l && a.x <= r.r && a.y >= r.t && a.y <= r.b).map((a) => a.id) : [];
+      S.selection = ids.length ? { kind: 'group', id: 'group', ids } : null;
+      render();
+      renderPanel();
       return;
     }
     if (D.moved) afterChange();
@@ -456,6 +508,11 @@ export function startEditor(root) {
         return;
       }
     }
+    if (S.tool === 'ring' && /^[3-8]$/.test(k)) {
+      S.ring = { size: Number(k), aromatic: false };
+      renderPanel();
+      return;
+    }
     if (!target) {
       const tool = TOOLS.find((t) => fr.toolKeys[t].toLowerCase() === k.toLowerCase());
       if (tool) setTool(tool);
@@ -484,6 +541,7 @@ export function startEditor(root) {
     for (const b of root.querySelectorAll('.tool')) b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === tool));
     svg.dataset.tool = tool;
     updateStatus();
+    renderPanel();
   }
 
   root.querySelector('.tools')?.addEventListener('click', (e) => {
@@ -535,10 +593,16 @@ export function startEditor(root) {
     const sel = S.selection;
     let html = '';
     const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
-    if (!sel) {
+    if (!sel && S.tool === 'ring') {
+      const { size, aromatic } = S.ring;
+      html = `<h2>${P.ringTitle}</h2><div class="seg">${[3, 4, 5, 6, 7, 8].map((n) => `<button type="button" data-ring="${n}" aria-pressed="${size === n && !aromatic}">${n}</button>`).join('')}</div>
+        <div class="col"><button type="button" data-ring="benzene" aria-pressed="${aromatic}">${P.benzene}</button></div><p class="muted small">${P.ringHint}</p>`;
+    } else if (!sel) {
       html = `<h2>${P.nothing}</h2><p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
         <h3>${P.phaseTitle}</h3><ul>${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul>
         <h3>${P.nextTitle}</h3><ul class="muted">${P.nextItems.map((x) => `<li>${x}</li>`).join('')}</ul>`;
+    } else if (sel.kind === 'group') {
+      html = `<h2>${P.group(sel.ids?.length ?? 0)}</h2><p class="muted">${P.groupHint}</p>${removeBtn}`;
     } else if (sel.kind === 'atom') {
       const a = M.findAtom(d, sel.id);
       if (a) {
@@ -588,6 +652,12 @@ export function startEditor(root) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
+    if (b.dataset.ring) {
+      const v = b.dataset.ring;
+      S.ring = v === 'benzene' ? { size: 6, aromatic: true } : { size: Number(v), aromatic: false };
+      renderPanel();
+      return;
+    }
     const act = b.dataset.action;
     const sel = S.selection;
     if (!act || !sel) return;

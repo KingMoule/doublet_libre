@@ -82,6 +82,25 @@ export function hydrogenCount(doc, atom) {
   return implicitHydrogens(atom.element, bondOrderSum(doc, atom.id), atom.charge, radicals);
 }
 
+/**
+ * For each end of a bond, the side of each of its other neighbours:
+ * +1 on the screen right of a→b, −1 on the left. Used to place double bonds and fused rings.
+ * @param {Doc} doc @param {Bond} bond @returns {[number[], number[]]}
+ */
+export function substituentSides(doc, bond) {
+  const a = findAtom(doc, bond.a);
+  const b = findAtom(doc, bond.b);
+  if (!a || !b) return [[], []];
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  /** @param {string} end @param {string} other */
+  const sides = (end, other) => neighbors(doc, end).filter((id) => id !== other).map((id) => {
+    const n = /** @type {Atom} */ (findAtom(doc, id));
+    return Math.sign(dx * (n.y - a.y) - dy * (n.x - a.x));
+  });
+  return [sides(bond.a, bond.b), sides(bond.b, bond.a)];
+}
+
 /** Atoms connected to atomId, itself included. @param {Doc} doc @param {string} atomId */
 export function component(doc, atomId) {
   const seen = new Set([atomId]);
@@ -122,6 +141,38 @@ export function addBond(doc, a, b, order = 1) {
   const bond = { id: nextId(doc, 'bonds'), a, b, order };
   doc.bonds.push(bond);
   return bond;
+}
+
+/**
+ * Atoms at the given points, bonded in sequence (and back to the first when closed).
+ * A point within 8 units of an existing atom reuses it: that is how chains and rings join.
+ * @param {Doc} doc @param {{x: number, y: number}[]} points @param {boolean} [closed]
+ */
+export function addPath(doc, points, closed = false) {
+  const ids = points.map((p) => (doc.atoms.find((a) => Math.hypot(a.x - p.x, a.y - p.y) < 8) ?? addAtom(doc, { x: p.x, y: p.y })).id);
+  const bonds = [];
+  for (let i = 0; i < ids.length - (closed ? 0 : 1); i++) {
+    const next = ids[(i + 1) % ids.length];
+    if (next !== ids[i]) bonds.push(addBond(doc, ids[i], next));
+  }
+  return { ids, bonds };
+}
+
+/**
+ * Ring through the given points, reusing atoms already there (fused rings).
+ * An aromatic ring gets a double bond wherever both atoms are still free of one (Kekulé form).
+ * @param {Doc} doc @param {{x: number, y: number}[]} points @param {boolean} [aromatic]
+ */
+export function addRing(doc, points, aromatic = false) {
+  const { ids, bonds } = addPath(doc, points, true);
+  if (aromatic) {
+    const hasDouble = (/** @type {string} */ id) => bondsOf(doc, id).some((b) => b.order === 2);
+    for (let i = 1; i <= bonds.length; i++) {
+      const b = bonds[i % bonds.length];
+      if (b.order === 1 && !hasDouble(b.a) && !hasDouble(b.b)) setBondOrder(doc, b.id, 2);
+    }
+  }
+  return ids;
 }
 
 /** @param {Doc} doc @param {string} atomId @param {Mark['kind']} kind @param {{value?: string, angle?: number}} [extra] */
