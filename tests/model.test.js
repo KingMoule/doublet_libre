@@ -69,6 +69,24 @@ test('bond order cycles 1 → 2 → 3 → 1 and a multiple bond loses its wedge'
   assert.equal(bond.order, 1);
 });
 
+// IUPAC ST-0.3: the narrow end of a wedge sits on the stereocentre, the bond's first atom.
+test('a bond takes the kind chosen in the Bond tool, and the same wedge again turns it round', () => {
+  const d = M.emptyDoc();
+  const a = M.addAtom(d, { x: 0, y: 0 });
+  const b = M.addAtom(d, { x: 40, y: 0 });
+  const bond = M.addBond(d, a.id, b.id);
+  M.setBondKind(d, bond.id, 'hash');
+  assert.deepEqual([bond.order, bond.stereo, bond.a], [1, 'hash', a.id]);
+  M.setBondKind(d, bond.id, 'hash');
+  assert.deepEqual([bond.stereo, bond.a, bond.b], ['hash', b.id, a.id]);
+  M.setBondKind(d, bond.id, 2);
+  assert.deepEqual([bond.order, bond.stereo], [2, undefined]);
+  M.setBondKind(d, bond.id, 'wedge');
+  assert.deepEqual([bond.order, bond.stereo], [1, 'wedge']);
+  M.setBondKind(d, bond.id, 1);
+  assert.deepEqual([bond.order, bond.stereo], [1, undefined]);
+});
+
 /** No atom may carry two double bonds in a Kekulé structure. */
 const doublesPerAtom = (d) => d.atoms.map((a) => M.bondsOf(d, a.id).filter((b) => b.order === 2).length);
 

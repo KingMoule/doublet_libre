@@ -13,6 +13,7 @@ export const fr = {
   toolsLabel: 'Outils',
   /** @type {{benzene: string, size: (n: number) => string}} */
   ringNames: { benzene: 'Benzène', size: (n) => `Cycle à ${n}` },
+  bondNames: { 1: 'Simple', 2: 'Double', 3: 'Triple', wedge: 'Coin plein : sort du plan', hash: 'Coin haché : entre dans le plan' },
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
     lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', group: 'Groupe', curved: 'Flèche courbe',
@@ -36,7 +37,7 @@ export const fr = {
   },
   status: {
     select: 'Glissez une molécule pour la déplacer, le fond pour sélectionner ; Maj + clic ajoute un élément. Ctrl+C, Ctrl+V : copier, coller. Espace + glisser : déplacer la vue ; molette : zoomer.',
-    bond: 'Cliquez sur le fond pour poser une liaison, sur un atome pour en ajouter une, sur une liaison pour changer son ordre. Glissez pour choisir la direction.',
+    bond: 'Type au choix à côté de l’outil. Cliquez sur le fond ou un atome pour poser une liaison, sur une liaison pour lui donner ce type (en simple : changer son ordre). Un coin part étroit de l’atome de départ ; recliquez-le pour le retourner.',
     chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
     ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',
     selectTouch: 'Glissez une molécule pour la déplacer, le fond pour sélectionner. Deux doigts : pincer pour zoomer, glisser pour déplacer la vue. Touchez un atome pour changer son élément dans le panneau.',

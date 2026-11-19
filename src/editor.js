@@ -37,6 +37,17 @@ const RING_ICON = (r) => {
   const circle = r.aromatic ? '<circle cx="11" cy="11" r="4" fill="none" stroke="currentColor" stroke-width="1.3"/>' : '';
   return `<polygon points="${pts.join(' ')}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>${circle}`;
 };
+/** @param {string} v a Bond tool choice: '1', '2', '3', 'wedge' or 'hash' */
+const bondKind = (v) => (v === 'wedge' || v === 'hash' ? v : /** @type {1 | 2 | 3} */ (Number(v)));
+/** A bond on the icons' diagonal, narrow end of a wedge at the bottom left. @param {string} v */
+const BOND_ICON = (v) => {
+  const seg = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ o) =>
+    `<path d="M${(x - 0.65 * o).toFixed(2)} ${(y - 0.76 * o).toFixed(2)} L${(x + 0.65 * o).toFixed(2)} ${(y + 0.76 * o).toFixed(2)}" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`;
+  if (v === 'wedge') return '<path d="M4 17 L16 2.7 L20 7.3 Z" fill="currentColor"/>';
+  if (v === 'hash') return [0.2, 0.4, 0.6, 0.8, 1].map((t) => seg(4 + 14 * t, 17 - 12 * t, 3 * t)).join('');
+  const offsets = { 1: [0], 2: [-1.6, 1.6], 3: [-2.6, 0, 2.6] }[/** @type {1 | 2 | 3} */ (Number(v))];
+  return offsets.map((o) => `<path d="M${4 + 0.65 * o} ${17 + 0.76 * o} L${18 + 0.65 * o} ${5 + 0.76 * o}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`).join('');
+};
 const ICONS = {
   select: '<path d="M6 3 L6 17 L9.5 13.5 L12 19 L14 18 L11.5 12.5 L16 12.5 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
   bond: '<path d="M4 17 L18 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
@@ -132,6 +143,7 @@ export function startEditor(root) {
     /** @type {{points: {x:number,y:number}[]} | null} */ preview: null,
     /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
     ring: { size: 6, aromatic: false },
+    bond: '1',
     element: 'C',
     group: 'Ph',
     /** @type {{a: {x:number,y:number}, b: {x:number,y:number}, view: {x:number,y:number,w:number,h:number}} | null} */ pinch: null,
@@ -372,7 +384,11 @@ export function startEditor(root) {
   function tap(hit, p, shift) {
     const tool = S.tool;
     if (tool === 'erase') { if (hit && hit.kind !== 'handle') commit((d) => deleteHit(d, hit)); return; }
-    if (tool === 'bond') { if (hit?.kind === 'bond') commit((d) => M.cycleBondOrder(d, hit.id)); return; }
+    if (tool === 'bond') {
+      // A single bond chosen: the click changes the order, as before; otherwise it gives the chosen kind.
+      if (hit?.kind === 'bond') commit((d) => (S.bond === '1' ? M.cycleBondOrder(d, hit.id) : M.setBondKind(d, hit.id, bondKind(S.bond))));
+      return;
+    }
     if (tool === 'ring') { commit((d) => addRingAt(d, hit, p)); return; }
     if (tool === 'text') {
       if (hit?.kind === 'text') { S.selection = hit; render(); renderPanel(); }
@@ -573,7 +589,10 @@ export function startEditor(root) {
     const p = toDoc(e);
     if (D.type === 'bond' || D.type === 'chain') {
       const points = sketch(D, p, e);
-      commit((d) => M.addPath(d, points));
+      commit((d) => {
+        const { bonds } = M.addPath(d, points);
+        if (D.type === 'bond' && S.bond !== '1') for (const b of bonds) M.setBondKind(d, b.id, bondKind(S.bond));
+      });
       return;
     }
     if (D.type === 'rxnNew') {
@@ -750,9 +769,15 @@ export function startEditor(root) {
     renderPanel();
   }
 
-  // Tool options (Atom: element, Ring: size): a small vertical window beside the tool.
+  // Tool options (Bond: order or wedge, Atom: element, Ring: size, Group): a small vertical window beside the tool.
   /** @type {Record<string, {choices: string[], label: (v: string) => string, title: (v: string) => string, current: () => string, choose: (v: string) => void, icon: () => string}>} */
   const OPTIONS = {
+    bond: {
+      choices: ['1', '2', '3', 'wedge', 'hash'],
+      label: (v) => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${BOND_ICON(v)}</svg>`,
+      title: (v) => fr.bondNames[/** @type {keyof typeof fr.bondNames} */ (v)], current: () => S.bond,
+      choose: (v) => { S.bond = v; }, icon: () => BOND_ICON(S.bond),
+    },
     atom: {
       choices: ELEMENTS, label: (v) => v, title: (v) => v, current: () => S.element,
       choose: (v) => { S.element = v; }, icon: () => TEXT_ICON(S.element),
