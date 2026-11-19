@@ -103,7 +103,8 @@ process.exit(failed ? 1 : 0);
  */
 async function connect(level) {
   /** @type {string | undefined} */ let url;
-  for (let i = 0; i < 200 && !url; i++) {
+  // Up to a minute: on a busy CI machine Chrome has taken more than 20 s to start.
+  for (let i = 0; i < 600 && !url; i++) {
     await new Promise((r) => setTimeout(r, 100));
     url = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/${level === 'page' ? 'list' : 'version'}`).then((r) => r.json())
       .then((j) => (level === 'page' ? j.find((/** @type {any} */ t) => t.type === 'page') : j)?.webSocketDebuggerUrl).catch(() => undefined);
