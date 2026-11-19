@@ -33,7 +33,7 @@ export const fr = {
     opened: (name) => `Ouvert : ${name}`,
   },
   status: {
-    select: 'Glissez une molécule pour la déplacer : les flèches courbes suivent. Glissez le fond pour sélectionner, Maj + clic pour ajouter un atome. Espace + glisser pour se déplacer, molette pour zoomer.',
+    select: 'Glissez une molécule pour la déplacer : les flèches courbes suivent. Glissez le fond pour sélectionner, Maj + clic pour ajouter un élément. Espace + glisser pour se déplacer, molette pour zoomer.',
     bond: 'Cliquez sur le fond pour poser une liaison, sur un atome pour en ajouter une, sur une liaison pour changer son ordre. Glissez pour choisir la direction.',
     chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
     ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',
@@ -119,7 +119,7 @@ export const fr = {
     benzene: 'Benzène',
     ringHint: 'Un cycle accolé à une liaison se place du côté libre. Le benzène garde des doubles liaisons alternées.',
     /** @param {number} n */
-    group: (n) => `${n} atomes sélectionnés`,
+    group: (n) => `${n} éléments sélectionnés`,
     groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer.',
   },
   groupNames: { Ph: 'Ph', OMe: 'OMe', OEt: 'OEt', CO2H: 'CO₂H', CHO: 'CHO', CN: 'CN', NO2: 'NO₂', OAc: 'OAc', Boc: 'Boc' },

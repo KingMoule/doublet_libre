@@ -208,7 +208,7 @@ export function startEditor(root) {
       case 'rxn': return d.reactionArrows.some((r) => r.id === h.id);
       case 'text': return d.texts.some((t) => t.id === h.id);
       case 'group':
-        h.ids = (h.ids ?? []).filter((id) => M.findAtom(d, id));
+        h.ids = (h.ids ?? []).filter((id) => M.findAtom(d, id) || d.texts.some((t) => t.id === id) || d.reactionArrows.some((r) => r.id === id));
         return h.ids.length > 0;
       default: return false;
     }
@@ -242,7 +242,7 @@ export function startEditor(root) {
       case 'curved': case 'handle': M.removeCurvedArrow(d, h.id); break;
       case 'rxn': M.removeReactionArrow(d, h.id); break;
       case 'text': M.removeText(d, h.id); break;
-      case 'group': for (const id of h.ids ?? []) M.removeAtom(d, id); break;
+      case 'group': for (const id of h.ids ?? []) { M.removeAtom(d, id); M.removeText(d, id); M.removeReactionArrow(d, id); } break;
       default: break;
     }
   }
@@ -432,8 +432,9 @@ export function startEditor(root) {
     }
     const sel = S.selection;
     const grouped = sel?.kind === 'group' && !!sel.ids?.includes(hit.id);
-    if (hit.kind === 'atom' && e.shiftKey) {
-      const ids = sel?.kind === 'group' ? sel.ids ?? [] : sel?.kind === 'atom' ? [sel.id] : [];
+    const movable = ['atom', 'text', 'rxn'];
+    if (movable.includes(hit.kind) && e.shiftKey) {
+      const ids = sel?.kind === 'group' ? sel.ids ?? [] : sel && movable.includes(sel.kind) ? [sel.id] : [];
       const next = ids.includes(hit.id) ? ids.filter((x) => x !== hit.id) : [...ids, hit.id];
       S.selection = next.length ? { kind: 'group', id: 'group', ids: next } : null;
       render();
@@ -452,7 +453,7 @@ export function startEditor(root) {
     } else if (hit.kind === 'charge') {
       S.drag = { type: 'rotateCharge', id: hit.id, start: p, snap, moved: false };
     } else if (hit.kind === 'rxn' || hit.kind === 'text') {
-      S.drag = { type: hit.kind === 'rxn' ? 'moveRxn' : 'moveText', id: hit.id, last: p, start: p, snap, moved: false };
+      S.drag = { type: 'move', ids: grouped ? new Set(sel?.ids) : new Set([hit.id]), last: p, start: p, snap, moved: false };
     }
     render();
     renderPanel();
@@ -489,21 +490,9 @@ export function startEditor(root) {
     const d = S.doc;
     switch (D.type) {
       case 'move':
-        M.moveAtoms(d, D.ids, p.x - D.last.x, p.y - D.last.y);
+        M.moveObjects(d, D.ids, p.x - D.last.x, p.y - D.last.y);
         D.last = p;
         break;
-      case 'moveRxn': {
-        const r = d.reactionArrows.find((x) => x.id === D.id);
-        if (r) { const dx = p.x - D.last.x; const dy = p.y - D.last.y; r.x1 += dx; r.x2 += dx; r.y1 += dy; r.y2 += dy; }
-        D.last = p;
-        break;
-      }
-      case 'moveText': {
-        const t = d.texts.find((x) => x.id === D.id);
-        if (t) { t.x += p.x - D.last.x; t.y += p.y - D.last.y; }
-        D.last = p;
-        break;
-      }
       case 'handle': {
         const g = S.layout?.curved.get(D.id);
         const ca = d.curvedArrows.find((c) => c.id === D.id);
@@ -591,7 +580,7 @@ export function startEditor(root) {
     if (D.type === 'marquee') {
       const r = S.marquee;
       S.marquee = null;
-      const ids = r ? S.doc.atoms.filter((a) => a.x >= r.l && a.x <= r.r && a.y >= r.t && a.y <= r.b).map((a) => a.id) : [];
+      const ids = r ? M.idsInRect(S.doc, r) : [];
       S.selection = ids.length ? { kind: 'group', id: 'group', ids } : null;
       render();
       renderPanel();
