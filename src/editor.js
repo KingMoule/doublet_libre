@@ -17,12 +17,18 @@ import { sampleSN2 } from './sample.js';
 
 const STORAGE_KEY = 'doublet.document.v1';
 const PROPOSAL_URL = 'https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'erase']);
+const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
+const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
 const ICONS = {
   select: '<path d="M6 3 L6 17 L9.5 13.5 L12 19 L14 18 L11.5 12.5 L16 12.5 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
   bond: '<path d="M4 17 L18 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   chain: '<path d="M2 15 L7 7 L12 15 L17 7 L21 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
   ring: '<path d="M11 3 L18 7 L18 15 L11 19 L4 15 L4 7 Z" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+  atom: TEXT_ICON('N'),
+  lonePair: '<circle cx="8" cy="11" r="2.2" fill="currentColor"/><circle cx="14" cy="11" r="2.2" fill="currentColor"/>',
+  charge: '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 11 H14.5 M11 7.5 V14.5" stroke="currentColor" stroke-width="1.4"/>',
+  partial: TEXT_ICON('δ'),
   erase: '<path d="M9 18 L3.5 12.5 L12 4 L19 11 L12 18 Z M7 9 L14 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
 };
 
@@ -96,6 +102,7 @@ export function startEditor(root) {
     /** @type {{points: {x:number,y:number}[]} | null} */ preview: null,
     /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
     ring: { size: 6, aromatic: false },
+    element: 'C',
     /** @type {any} */ layout: null,
     view: { x: 0, y: 0, w: 800, h: 500 },
     space: false,
@@ -298,6 +305,23 @@ export function startEditor(root) {
     }
     if (S.tool === 'ring') {
       commit((d) => addRingAt(d, hit, p));
+      return;
+    }
+    if (S.tool === 'atom') {
+      if (hit?.kind === 'atom') commit((d) => M.setElement(d, hit.id, S.element));
+      else if (!hit) commit((d) => { M.addAtom(d, { element: S.element, x: p.x, y: p.y }); });
+      return;
+    }
+    if (S.tool === 'lonePair' || S.tool === 'charge' || S.tool === 'partial') {
+      if (hit?.kind !== 'atom') return;
+      const id = hit.id;
+      const tool = S.tool;
+      commit((d) => {
+        const a = /** @type {M.Atom} */ (M.findAtom(d, id));
+        if (tool === 'lonePair') M.addMark(d, id, e.shiftKey ? 'radical' : 'lonePair');
+        else if (tool === 'charge') a.charge += e.shiftKey ? -1 : 1;
+        else M.cyclePartial(d, id);
+      });
       return;
     }
     if (!hit) {
@@ -561,7 +585,7 @@ export function startEditor(root) {
   }
 
   function updateStatus() {
-    const hovered = S.hover && S.tool !== 'erase' ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : null;
+    const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : null;
     statusEl.textContent = hovered ?? fr.status[S.tool];
   }
 
@@ -593,7 +617,9 @@ export function startEditor(root) {
     const sel = S.selection;
     let html = '';
     const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
-    if (!sel && S.tool === 'ring') {
+    if (!sel && S.tool === 'atom') {
+      html = `<h2>${P.elementTitle}</h2><div class="row">${ELEMENTS.map((el) => `<button type="button" data-element="${el}" aria-pressed="${S.element === el}">${el}</button>`).join('')}</div><p class="muted small">${P.elementHint}</p>`;
+    } else if (!sel && S.tool === 'ring') {
       const { size, aromatic } = S.ring;
       html = `<h2>${P.ringTitle}</h2><div class="seg">${[3, 4, 5, 6, 7, 8].map((n) => `<button type="button" data-ring="${n}" aria-pressed="${size === n && !aromatic}">${n}</button>`).join('')}</div>
         <div class="col"><button type="button" data-ring="benzene" aria-pressed="${aromatic}">${P.benzene}</button></div><p class="muted small">${P.ringHint}</p>`;
@@ -652,6 +678,11 @@ export function startEditor(root) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
+    if (b.dataset.element) {
+      S.element = b.dataset.element;
+      renderPanel();
+      return;
+    }
     if (b.dataset.ring) {
       const v = b.dataset.ring;
       S.ring = v === 'benzene' ? { size: 6, aromatic: true } : { size: Number(v), aromatic: false };

@@ -5,11 +5,14 @@
  */
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Prototype · phase 1',
+  badge: 'Prototype · phase 2',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
-  tools: { select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', erase: 'Gomme' },
-  toolKeys: { select: 'V', bond: 'B', chain: 'Z', ring: 'R', erase: 'E' },
+  tools: {
+    select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
+    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', erase: 'Gomme',
+  },
+  toolKeys: { select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', erase: 'E' },
   actions: {
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', sample: 'Exemple SN2', clear: 'Nouveau', proposal: 'Proposition',
   },
@@ -19,6 +22,10 @@ export const fr = {
     chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
     ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',
     erase: 'Cliquez sur un objet pour l’effacer.',
+    atom: 'Cliquez sur le fond pour poser un atome seul, sur un atome pour changer son élément. Élément au choix dans le panneau.',
+    lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',
+    charge: 'Cliquez sur un atome pour +1, Maj + clic pour −1. Les H implicites s’ajustent.',
+    partial: 'Cliquez sur un atome : δ+, puis δ−, puis rien.',
     hover: {
       atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
       bond: 'Liaison : tapez 1, 2 ou 3 pour l’ordre, W pour un coin plein, H pour un coin haché, Suppr pour l’effacer.',
@@ -39,12 +46,12 @@ export const fr = {
     phaseItems: [
       'Le rendu selon les règles de base de l’IUPAC.',
       'Des flèches courbes accrochées aux électrons : déplacez le bromoéthane, elles suivent.',
-      'Les outils Liaison, Chaîne et Cycle (3 à 8, benzène), avec raccourcis clavier.',
+      'Les outils Liaison, Chaîne, Cycle (3 à 8, benzène) et Atome, avec raccourcis clavier.',
+      'Les outils Doublet, Charge et δ ; glissez une annotation pour la faire tourner.',
       'La sélection de plusieurs atomes au cadre ou avec Maj + clic.',
     ],
     nextTitle: 'Prochaines phases',
     nextItems: [
-      'Phase 2 : outils Doublet, Charge et δ.',
       'Phase 3 : outil Flèche courbe.',
       'Phase 4 : outil Flèche de réaction.',
     ],
@@ -75,6 +82,8 @@ export const fr = {
     remove: 'Supprimer',
     markNames: { lonePair: 'Doublet libre', radical: 'Électron célibataire', partial: 'Charge partielle' },
     rotateHint: 'Glissez-la dans le dessin pour la faire tourner autour de son atome.',
+    elementTitle: 'Élément',
+    elementHint: 'Les H implicites s’écrivent seuls : un O posé seul devient H₂O, avec une charge − il devient HO⁻.',
     ringTitle: 'Cycle',
     benzene: 'Benzène',
     ringHint: 'Un cycle accolé à une liaison se place du côté libre. Le benzène garde des doubles liaisons alternées.',
