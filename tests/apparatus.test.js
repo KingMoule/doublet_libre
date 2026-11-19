@@ -137,3 +137,24 @@ test('a Claisen adapter leaves two free sockets, and a stopper closes one', () =
   assert.ok(A.place(d, stopper.id, sockets[1]));
   assert.equal(A.assembly(d, flask).size, 3);
 });
+
+test('a crystallising dish sits on the stirrer hotplate, and a flask sits in its bath', () => {
+  const { d, ids: [plate], piece } = withPieces('stirrer');
+  const bath = M.addPiece(d, { kind: 'bath', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, bath.id, A.worldJoints(piece(plate))[0]));
+  const floor = /** @type {A.WorldJoint} */ (A.worldJoints(bath).find((j) => j.kind === 'seat'));
+  const flask = M.addPiece(d, { kind: 'flask', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, flask.id, floor));
+  assert.equal(A.assembly(d, plate).size, 3);
+});
+
+test('a heating mantle also sits on the hotplate', () => {
+  const { d, ids: [plate], piece } = withPieces('stirrer');
+  const mantle = M.addPiece(d, { kind: 'mantle', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, mantle.id, A.worldJoints(piece(plate))[0]));
+  assert.ok(joined(d, plate, mantle.id));
+});
+
+test('a stand and a clamp are placed freely: they have no joint', () => {
+  assert.deepEqual([A.PIECES.stand.joints, A.PIECES.clamp.joints], [[], []]);
+});

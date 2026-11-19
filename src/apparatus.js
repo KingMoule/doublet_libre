@@ -4,10 +4,11 @@
  * A piece is drawn in its own frame, in drawing units (a bond is 40), then turned by its angle
  * about its origin and moved to (x, y). Its joints are where it fits another piece:
  * a ground-glass joint takes a joint of the other sex facing it; a seat (the bottom of a flask)
- * goes into a cup (a heating mantle). Pieces whose joints meet form one set-up.
+ * goes into a cup (a heating mantle); a flat base stands on a flat top (a hotplate).
+ * Pieces whose joints meet form one set-up. A stand and its clamps have no joint: they are placed freely.
  * @typedef {import('./model.js').Doc} Doc
  * @typedef {import('./model.js').Piece} Piece
- * @typedef {{x: number, y: number, dir: number, kind: 'joint' | 'seat', male: boolean}} Joint
+ * @typedef {{x: number, y: number, dir: number, kind: 'joint' | 'seat' | 'base', male: boolean}} Joint
  *   dir: the way the joint faces, in degrees (0 right, 90 down)
  * @typedef {Joint & {piece: string}} WorldJoint
  * @typedef {{d: string, box: {l: number, t: number, r: number, b: number}, joints: Joint[]}} PieceDef
@@ -102,14 +103,46 @@ export const PIECES = {
     d: 'M-30 0 L-42 0 L-42 44 Q-42 50 -36 50 L36 50 Q42 50 42 44 L42 0 L30 0 A30 30 0 0 1 -30 0 Z'
       + ' M28 40 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0',
     box: { l: -42, t: 0, r: 42, b: 50 },
-    joints: [{ x: 0, y: 28, dir: -90, kind: 'seat', male: false }],
+    joints: [
+      { x: 0, y: 28, dir: -90, kind: 'seat', male: false },
+      { x: 0, y: 50, dir: 90, kind: 'base', male: true },
+    ],
+  },
+  // Stirrer hotplate: a flat top that takes anything with a flat base, two knobs.
+  stirrer: {
+    d: 'M-48 0 L48 0 L48 6 L-48 6 Z M-44 6 L-44 34 Q-44 38 -40 38 L40 38 Q44 38 44 34 L44 6'
+      + ' M-30 22 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0 M20 22 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0',
+    box: { l: -48, t: 0, r: 48, b: 38 },
+    joints: [{ x: 0, y: 0, dir: -90, kind: 'base', male: false }],
+  },
+  // Crystallising dish as an ice or water bath: a flat base, a flask sits on its floor.
+  bath: {
+    d: 'M-46 -42 L-44 -40 L-44 0 L44 0 L44 -40 L46 -42'
+      + ' M-44 -28 Q-39 -31 -34 -28 Q-29 -25 -24 -28 M24 -28 Q29 -31 34 -28 Q39 -25 44 -28',
+    box: { l: -46, t: -42, r: 46, b: 0 },
+    joints: [
+      { x: 0, y: 0, dir: 90, kind: 'base', male: true },
+      { x: 0, y: -1, dir: -90, kind: 'seat', male: false },
+    ],
+  },
+  // Retort stand and clamp: placed freely, the clamp's jaws around a neck, its boss on the rod.
+  stand: {
+    d: 'M-45 0 L45 0 L45 8 L-45 8 Z M-35 0 L-35 -278 Q-33 -282 -31 -278 L-31 0',
+    box: { l: -45, t: -282, r: 45, b: 8 },
+    joints: [],
+  },
+  clamp: {
+    d: 'M-60 -3 L-16 -3 Q-16 -14 0 -14 Q10 -14 12 -9 M-60 3 L-16 3 Q-16 14 0 14 Q10 14 12 9'
+      + ' M-72 -8 L-60 -8 L-60 8 L-72 8 Z M-66 -8 L-66 -14 M-69 -14 L-63 -14',
+    box: { l: -72, t: -14, r: 12, b: 14 },
+    joints: [],
   },
 };
 
 /** The pieces of each glassware tool, in the order of its option window. */
 export const FAMILIES = {
   synthesis: ['flask', 'flask3', 'allihn', 'addfunnel', 'claisen', 'dryingtube', 'deanstark', 'stopper'],
-  heating: ['mantle'],
+  heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
 };
 
 const SNAP = 15;
@@ -172,10 +205,10 @@ function fitOnto(doc, ids, from, to) {
   for (const g of doc.apparatus) if (ids.has(g.id)) { g.x = r2(g.x + to.x - from.x); g.y = r2(g.y + to.y - from.y); }
 }
 
-/** Joints of the other pieces that nothing fits into yet. @param {Doc} doc @param {Set<string>} ids */
+/** Joints of the other pieces that nothing else fits into yet. @param {Doc} doc @param {Set<string>} ids the pieces being placed */
 function freeJoints(doc, ids) {
   const all = doc.apparatus.flatMap(worldJoints);
-  return all.filter((j) => !ids.has(j.piece) && !all.some((k) => k.piece !== j.piece && meet(j, k)));
+  return all.filter((j) => !ids.has(j.piece) && !all.some((k) => k.piece !== j.piece && !ids.has(k.piece) && meet(j, k)));
 }
 
 /**
