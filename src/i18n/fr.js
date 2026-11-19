@@ -23,7 +23,11 @@ export const fr = {
     select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', group: 'G', curved: 'F',
     rxn: 'W', text: 'T', erase: 'E', synthesis: 'S', heating: 'H',
   },
-  pieceNames: { flask: 'Ballon', allihn: 'Réfrigérant à boules', mantle: 'Chauffe-ballon' },
+  pieceNames: {
+    flask: 'Ballon', flask3: 'Ballon tricol', allihn: 'Réfrigérant à boules', addfunnel: 'Ampoule d’addition (isobare)',
+    claisen: 'Adaptateur de Claisen', dryingtube: 'Tube de garde (CaCl₂)', deanstark: 'Dean-Stark', stopper: 'Bouchon',
+    mantle: 'Chauffe-ballon',
+  },
   actions: {
     setup: 'Montage',
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau',
