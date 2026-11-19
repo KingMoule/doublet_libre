@@ -26,7 +26,7 @@ export const fr = {
   pieceNames: {
     flask: 'Ballon', flask3: 'Ballon tricol', allihn: 'Réfrigérant à boules', addfunnel: 'Ampoule d’addition (isobare)',
     claisen: 'Adaptateur de Claisen', dryingtube: 'Tube de garde (CaCl₂)', deanstark: 'Dean-Stark', stopper: 'Bouchon',
-    mantle: 'Chauffe-ballon',
+    mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince',
   },
   actions: {
     setup: 'Montage',
@@ -57,7 +57,7 @@ export const fr = {
     rxn: 'Glissez sur le fond pour tracer une flèche de réaction (clic : flèche de longueur standard), puis écrivez ses conditions dans le panneau.',
     text: 'Cliquez sur le fond pour poser un « + », puis changez le texte dans le panneau.',
     synthesis: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou le rodage libre d’une pièce pour l’y emboîter.',
-    heating: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou sous un ballon pour l’y placer.',
+    heating: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou sous un ballon ou un cristallisoir pour l’y placer. Support et pince se placent librement.',
     curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
     hover: {
       atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
