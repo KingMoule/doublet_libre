@@ -163,10 +163,11 @@ export function addBond(doc, a, b, order = 1) {
 /**
  * Atoms at the given points, bonded in sequence (and back to the first when closed).
  * A point within 8 units of an existing atom reuses it: that is how chains and rings join.
- * @param {Doc} doc @param {{x: number, y: number}[]} points @param {boolean} [closed]
+ * @param {Doc} doc @param {{x: number, y: number}[]} points @param {boolean} [closed] @param {boolean} [reuse]
  */
-export function addPath(doc, points, closed = false) {
-  const ids = points.map((p) => (doc.atoms.find((a) => Math.hypot(a.x - p.x, a.y - p.y) < 8) ?? addAtom(doc, { x: p.x, y: p.y })).id);
+export function addPath(doc, points, closed = false, reuse = true) {
+  const near = (/** @type {{x: number, y: number}} */ p) => (reuse ? doc.atoms.find((a) => Math.hypot(a.x - p.x, a.y - p.y) < 8) : undefined);
+  const ids = points.map((p) => (near(p) ?? addAtom(doc, { x: p.x, y: p.y })).id);
   const bonds = [];
   for (let i = 0; i < ids.length - (closed ? 0 : 1); i++) {
     const next = ids[(i + 1) % ids.length];
@@ -178,10 +179,10 @@ export function addPath(doc, points, closed = false) {
 /**
  * Ring through the given points, reusing atoms already there (fused rings).
  * An aromatic ring gets a double bond wherever both atoms are still free of one (Kekulé form).
- * @param {Doc} doc @param {{x: number, y: number}[]} points @param {boolean} [aromatic]
+ * @param {Doc} doc @param {{x: number, y: number}[]} points @param {boolean} [aromatic] @param {boolean} [reuse]
  */
-export function addRing(doc, points, aromatic = false) {
-  const { ids, bonds } = addPath(doc, points, true);
+export function addRing(doc, points, aromatic = false, reuse = true) {
+  const { ids, bonds } = addPath(doc, points, true, reuse);
   if (aromatic) {
     const hasDouble = (/** @type {string} */ id) => bondsOf(doc, id).some((b) => b.order === 2);
     for (let i = 1; i <= bonds.length; i++) {

@@ -8,20 +8,20 @@ const signed = (q) => (q > 0 ? `+${q}` : q < 0 ? `−${-q}` : '0');
 
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Première version',
+  badge: 'Version 1',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
-    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', curved: 'Flèche courbe',
+    lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', group: 'Groupe', curved: 'Flèche courbe',
     rxn: 'Flèche de réaction', text: 'Texte', erase: 'Gomme',
   },
   toolKeys: {
-    select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', curved: 'F',
+    select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', group: 'G', curved: 'F',
     rxn: 'W', text: 'T', erase: 'E',
   },
   actions: {
-    undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', sample: 'Exemple SN2', clear: 'Nouveau', proposal: 'Proposition',
+    undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau', proposal: 'Proposition',
     file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', png: 'Exporter en PNG', svg: 'Exporter en SVG', copy: 'Copier l’image',
   },
   files: {
@@ -42,6 +42,7 @@ export const fr = {
     lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',
     charge: 'Cliquez sur un atome pour +1, Maj + clic pour −1. Les H implicites s’ajustent.',
     partial: 'Cliquez sur un atome : δ+, puis δ−, puis rien.',
+    group: 'Cliquez sur un atome pour y accrocher le groupe choisi dans le panneau, dessiné en entier.',
     rxn: 'Glissez sur le fond pour tracer une flèche de réaction (clic : flèche de longueur standard), puis écrivez ses conditions dans le panneau.',
     text: 'Cliquez sur le fond pour poser un « + », puis changez le texte dans le panneau.',
     curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
@@ -63,7 +64,8 @@ export const fr = {
     counts: (d) => `${d.atoms.length} atomes · ${d.bonds.length} liaisons · ${d.curvedArrows.length} flèches courbes`,
     phaseTitle: 'Dans cette version',
     phaseItems: [
-      'Molécules selon les règles de base de l’IUPAC : liaisons, chaînes, cycles, atomes.',
+      'Molécules selon les règles de base de l’IUPAC : liaisons, chaînes, cycles, atomes, groupes.',
+      'Modèles : SN2, SN1, E2, E1, addition électrophile, addition nucléophile sur un carbonyle.',
       'Doublets, charges, δ, flèches courbes accrochées aux électrons, flèches de réaction.',
       'Avertissements : octet dépassé, flèche inversée, charge non conservée, résonance mal employée.',
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
@@ -79,7 +81,7 @@ export const fr = {
     ],
     nextTitle: 'Ensuite',
     nextItems: [
-      'Modèles de cycles, de groupes et de mécanismes types (SN1, SN2, E1, E2…).',
+      'Mode exercice préparé par le prof, mode présentation, tablette, interface en anglais.',
     ],
     titles: {
       atom: 'Atome', bond: 'Liaison', mark: 'Annotation', charge: 'Charge formelle',
@@ -108,6 +110,8 @@ export const fr = {
     remove: 'Supprimer',
     markNames: { lonePair: 'Doublet libre', radical: 'Électron célibataire', partial: 'Charge partielle' },
     rotateHint: 'Glissez-la dans le dessin pour la faire tourner autour de son atome.',
+    fgTitle: 'Groupe',
+    fgHint: 'Le groupe part dans la direction libre de l’atome cliqué, en zigzag. Ctrl+Z pour annuler.',
     elementTitle: 'Élément',
     elementHint: 'Les H implicites s’écrivent seuls : un O posé seul devient H₂O, avec une charge − il devient HO⁻.',
     ringTitle: 'Cycle',
@@ -116,6 +120,15 @@ export const fr = {
     /** @param {number} n */
     group: (n) => `${n} atomes sélectionnés`,
     groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer.',
+  },
+  groupNames: { Ph: 'Ph', OMe: 'OMe', OEt: 'OEt', CO2H: 'CO₂H', CHO: 'CHO', CN: 'CN', NO2: 'NO₂', OAc: 'OAc', Boc: 'Boc' },
+  templateNames: {
+    sn2: 'SN2 : bromoéthane + HO⁻',
+    sn1: 'SN1 : bromure de tert-butyle + H₂O',
+    e2: 'E2 : bromoéthane + HO⁻',
+    e1: 'E1 : bromure de tert-butyle + H₂O',
+    electrophilicAddition: 'Addition électrophile : propène + HBr',
+    carbonylAddition: 'Addition nucléophile sur la propanone',
   },
   warnings: {
     /** @param {number} n */

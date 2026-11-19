@@ -10,6 +10,8 @@ import {
 import { sampleSN2 } from './sample.js';
 import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
 import { checkDoc } from './checks.js';
+import { GROUPS, attachGroup } from './groups.js';
+import { TEMPLATES } from './templates.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
@@ -19,7 +21,7 @@ import { checkDoc } from './checks.js';
 
 const STORAGE_KEY = 'doublet.document.v1';
 const PROPOSAL_URL = 'https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'curved', 'rxn', 'text', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'text', 'erase']);
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
 const ICONS = {
@@ -31,6 +33,7 @@ const ICONS = {
   lonePair: '<circle cx="8" cy="11" r="2.2" fill="currentColor"/><circle cx="14" cy="11" r="2.2" fill="currentColor"/>',
   charge: '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 11 H14.5 M11 7.5 V14.5" stroke="currentColor" stroke-width="1.4"/>',
   partial: TEXT_ICON('δ'),
+  group: '<text x="11" y="15" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="currentColor">Ph</text>',
   rxn: '<path d="M3 11 H17" stroke="currentColor" stroke-width="1.6"/><path d="M15 7 L20 11 L15 15 Z" fill="currentColor"/>',
   text: TEXT_ICON('T'),
   curved: '<path d="M4 17 C5 6 15 4 17 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 12.5 L17.3 14.6 L18.6 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -58,7 +61,9 @@ function shell() {
       <button type="button" id="btn-undo">${fr.actions.undo}</button>
       <button type="button" id="btn-redo">${fr.actions.redo}</button>
       <button type="button" id="btn-fit">${fr.actions.fit}</button>
-      <button type="button" id="btn-sample">${fr.actions.sample}</button>
+      <details class="menu" id="templates-menu"><summary>${fr.actions.templates}</summary><div>
+        ${Object.keys(TEMPLATES).map((k) => `<button type="button" data-template="${k}">${fr.templateNames[/** @type {keyof typeof fr.templateNames} */ (k)]}</button>`).join('')}
+      </div></details>
       <details class="menu" id="file-menu"><summary>${fr.actions.file}</summary><div>
         <button type="button" id="btn-clear">${fr.actions.clear}</button>
         <button type="button" id="btn-open">${fr.actions.open}<kbd>Ctrl+O</kbd></button>
@@ -116,6 +121,7 @@ export function startEditor(root) {
     /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
     ring: { size: 6, aromatic: false },
     element: 'C',
+    group: 'Ph',
     /** @type {import('./checks.js').Warning[]} */ warnings: [],
     /** @type {any} */ layout: null,
     view: { x: 0, y: 0, w: 800, h: 500 },
@@ -356,6 +362,12 @@ export function startEditor(root) {
     }
     if (S.tool === 'ring') {
       commit((d) => addRingAt(d, hit, p));
+      return;
+    }
+    if (S.tool === 'group') {
+      if (hit?.kind !== 'atom') return;
+      const id = hit.id;
+      commit((d) => { attachGroup(d, id, S.group, nextBondAngle(bondAngles(d, id))); });
       return;
     }
     if (S.tool === 'rxn') {
@@ -666,7 +678,14 @@ export function startEditor(root) {
   $('#btn-redo').addEventListener('click', doRedo);
   const refit = () => { userMovedView = false; fit(); };
   $('#btn-fit').addEventListener('click', refit);
-  $('#btn-sample').addEventListener('click', () => { replaceDoc(sampleSN2()); refit(); });
+  /** @type {HTMLDetailsElement} */ const templatesMenu = $('#templates-menu');
+  templatesMenu.addEventListener('click', (e) => {
+    const key = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.template;
+    if (!key) return;
+    templatesMenu.open = false;
+    replaceDoc(TEMPLATES[/** @type {keyof typeof TEMPLATES} */ (key)]());
+    refit();
+  });
   $('#btn-clear').addEventListener('click', () => { replaceDoc(M.emptyDoc()); refit(); });
 
   // ---------- files ----------
@@ -789,7 +808,9 @@ export function startEditor(root) {
     const sel = S.selection;
     let html = '';
     const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
-    if (!sel && S.tool === 'atom') {
+    if (!sel && S.tool === 'group') {
+      html = `<h2>${P.fgTitle}</h2><div class="row">${Object.keys(GROUPS).map((g) => `<button type="button" data-group="${g}" aria-pressed="${S.group === g}">${fr.groupNames[/** @type {keyof typeof fr.groupNames} */ (g)]}</button>`).join('')}</div><p class="muted small">${P.fgHint}</p>`;
+    } else if (!sel && S.tool === 'atom') {
       html = `<h2>${P.elementTitle}</h2><div class="row">${ELEMENTS.map((el) => `<button type="button" data-element="${el}" aria-pressed="${S.element === el}">${el}</button>`).join('')}</div><p class="muted small">${P.elementHint}</p>`;
     } else if (!sel && S.tool === 'ring') {
       const { size, aromatic } = S.ring;
@@ -856,6 +877,11 @@ export function startEditor(root) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
+    if (b.dataset.group) {
+      S.group = b.dataset.group;
+      renderPanel();
+      return;
+    }
     if (b.dataset.element) {
       S.element = b.dataset.element;
       renderPanel();
