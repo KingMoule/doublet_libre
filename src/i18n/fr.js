@@ -45,7 +45,7 @@ export const fr = {
     lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',
     charge: 'Cliquez sur un atome pour +1, Maj + clic pour −1. Les H implicites s’ajustent.',
     partial: 'Cliquez sur un atome : δ+, puis δ−, puis rien.',
-    group: 'Cliquez sur un atome pour y accrocher le groupe choisi dans le panneau, dessiné en entier.',
+    group: 'Cliquez sur un atome pour y accrocher le groupe choisi à côté de l’outil, dessiné en entier. Il part dans la direction libre de l’atome, en zigzag.',
     rxn: 'Glissez sur le fond pour tracer une flèche de réaction (clic : flèche de longueur standard), puis écrivez ses conditions dans le panneau.',
     text: 'Cliquez sur le fond pour poser un « + », puis changez le texte dans le panneau.',
     curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
@@ -113,8 +113,6 @@ export const fr = {
     remove: 'Supprimer',
     markNames: { lonePair: 'Doublet libre', radical: 'Électron célibataire', partial: 'Charge partielle' },
     rotateHint: 'Glissez-la dans le dessin pour la faire tourner autour de son atome.',
-    fgTitle: 'Groupe',
-    fgHint: 'Le groupe part dans la direction libre de l’atome cliqué, en zigzag. Ctrl+Z pour annuler.',
     /** @param {number} n */
     group: (n) => `${n} éléments sélectionnés`,
     groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer.',
