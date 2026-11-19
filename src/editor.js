@@ -949,9 +949,11 @@ export function startEditor(root) {
     const d = S.doc;
     const sel = S.selection;
     let html = '';
-    const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
+    // Buttons for what the keyboard does, for tablets: copy, paste, delete.
+    const pasteBtn = clipboard ? btn('paste', P.paste) : '';
+    const removeBtn = `<div class="row end">${selectedIds() ? btn('copy', P.copy) : ''}${pasteBtn}${btn('delete', P.remove)}</div>`;
     if (!sel) {
-      html = `<h2>${P.nothing}</h2><p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
+      html = `<h2>${P.nothing}</h2>${pasteBtn ? `<div class="row">${pasteBtn}</div>` : ''}<p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
         <h3>${P.phaseTitle}</h3><ul>${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul>
         <h3>${P.shortcutsTitle}</h3><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul>
         <h3>${P.nextTitle}</h3><ul class="muted">${P.nextItems.map((x) => `<li>${x}</li>`).join('')}</ul>`;
@@ -1013,6 +1015,8 @@ export function startEditor(root) {
     if (!b) return;
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
     const act = b.dataset.action;
+    if (act === 'copy') { copySelection(); renderPanel(); return; }
+    if (act === 'paste') { pasteClipboard(); return; }
     const sel = S.selection;
     if (!act || !sel) return;
     commit((d) => {

@@ -77,7 +77,7 @@ export const fr = {
     shortcuts: [
       'Ctrl+Z, Ctrl+Y : annuler, rétablir',
       'Ctrl+S, Ctrl+O : enregistrer, ouvrir',
-      'Ctrl+C : copier l’image du dessin',
+      'Ctrl+C, Ctrl+V : copier, coller la sélection (sans sélection, Ctrl+C copie l’image)',
       'Suppr : effacer ce qui est survolé ou sélectionné ; Échap : désélectionner',
       'Espace + glisser : déplacer la vue ; molette : zoomer',
       'Lettre affichée sur un outil : le choisir',
@@ -111,6 +111,8 @@ export const fr = {
     insert: 'Insérer',
     textLabel: 'Texte',
     remove: 'Supprimer',
+    copy: 'Copier',
+    paste: 'Coller',
     markNames: { lonePair: 'Doublet libre', radical: 'Électron célibataire', partial: 'Charge partielle' },
     rotateHint: 'Glissez-la dans le dessin pour la faire tourner autour de son atome.',
     /** @param {number} n */
