@@ -66,7 +66,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .top { grid-area: top; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--rule); }
 .top .name { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.01em; }
 .top .badge { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 0.05rem 0.55rem; }
-.top .actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.top .actions { margin-left: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.top button.icon { display: grid; place-items: center; padding: 0.25rem 0.45rem; }
 .top button, .panel button { border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 0.25rem 0.65rem; cursor: pointer; }
 .top button:hover:not(:disabled), .panel button:hover { border-color: var(--accent); }
 .top button:disabled { opacity: 0.45; cursor: default; }
@@ -78,7 +79,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .top .menu button { border: 0; text-align: left; display: flex; justify-content: space-between; gap: 1rem; }
 .top .menu button:hover { background: var(--accent-soft); }
 .menu kbd { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
-.top a { color: var(--accent); font-size: 0.9rem; padding: 0 0.3rem; }
 
 /* Tool rail */
 .tools { grid-area: tools; display: flex; flex-direction: column; gap: 4px; padding: 8px; border-right: 1px solid var(--rule); }
