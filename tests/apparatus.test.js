@@ -233,3 +233,28 @@ test('a separatory funnel takes a stopper and pours through its stem', () => {
   assert.ok(A.place(d, stopper.id, top));
   assert.ok(A.worldJoints(piece(sep)).some((j) => j.kind === 'stem' && j.male && j.dir === 90));
 });
+
+test('a burette pours into an erlenmeyer standing on the stirrer (titration)', () => {
+  const { d, ids: [plate], piece } = withPieces('stirrer');
+  const flask = M.addPiece(d, { kind: 'erlenmeyer', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, flask.id, A.worldJoints(piece(plate))[0]));
+  const mouth = /** @type {A.WorldJoint} */ (A.worldJoints(flask).find((j) => j.kind === 'stem'));
+  const burette = M.addPiece(d, { kind: 'burette', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, burette.id, mouth));
+  assert.equal(A.assembly(d, plate).size, 3);
+});
+
+test('beakers, cylinders and test tubes take a stem in their mouth', () => {
+  for (const kind of ['beaker', 'cylinder', 'testtube']) {
+    const { d, ids: [vessel], piece } = withPieces(kind);
+    const mouth = /** @type {A.WorldJoint} */ (A.worldJoints(piece(vessel)).find((j) => j.kind === 'stem'));
+    const pipette = M.addPiece(d, { kind: 'pipette', x: 0, y: 0, angle: 0 });
+    assert.ok(A.place(d, pipette.id, mouth), kind);
+  }
+});
+
+test('a thermometer goes into a Thiele tube', () => {
+  const { d, ids: [thiele], piece } = withPieces('thiele');
+  const thermometer = M.addPiece(d, { kind: 'thermometer', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, thermometer.id, A.worldJoints(piece(thiele))[0]));
+});

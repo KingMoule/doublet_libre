@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as M from '../src/model.js';
-import { layout, renderDoc, doubleBondSide, controlPoints, bendFromControl, defaultBend } from '../src/render.js';
+import { layout, renderDoc, docBounds, doubleBondSide, controlPoints, bendFromControl, defaultBend } from '../src/render.js';
 import { sampleSN2 } from '../src/sample.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} should be close to ${b}`);
@@ -201,4 +201,11 @@ test('warned objects get an outline, never in an export', () => {
 test('selecting a curved arrow shows its two handles', () => {
   const { markup } = renderDoc(sampleSN2(), { selection: { kind: 'curved', id: 'ca1' } });
   assert.equal(count(markup, /data-kind="handle"/g), 2);
+});
+
+test('the bounds of a drawing take in the whole width of its texts, so an export does not cut them', () => {
+  const d = M.emptyDoc();
+  M.addText(d, { x: 0, y: 0, text: 'sortie d’eau', size: 12 });
+  const b = /** @type {{l: number, r: number}} */ (docBounds(d, layout(d)));
+  assert.ok(b.l < -25 && b.r > 25, `${b.l} … ${b.r}`);
 });
