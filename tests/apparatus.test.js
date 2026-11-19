@@ -106,3 +106,34 @@ test('a piece is drawn as an outline, turned and placed, with a hit area', () =>
   assert.match(markup, /<rect class="hit"/);
   assert.doesNotMatch(renderDoc(d, { plain: true }).markup, /class="hit"/);
 });
+
+test('a three-neck flask takes an addition funnel on a side neck, leaning with it', () => {
+  const { d, ids: [flask], piece } = withPieces('flask3');
+  const side = /** @type {A.WorldJoint} */ (A.worldJoints(piece(flask)).find((j) => j.dir === -62));
+  const funnel = M.addPiece(d, { kind: 'addfunnel', x: side.x, y: side.y, angle: 0 });
+  assert.ok(A.place(d, funnel.id, side));
+  assert.equal(funnel.angle, 28);
+  assert.ok(joined(d, flask, funnel.id));
+});
+
+test('a Dean-Stark goes on a flask and takes the condenser above its trap', () => {
+  const { d, ids: [flask], piece } = withPieces('flask');
+  const trap = M.addPiece(d, { kind: 'deanstark', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, trap.id, A.worldJoints(piece(flask))[0]));
+  const top = /** @type {A.WorldJoint} */ (A.worldJoints(trap).find((j) => !j.male));
+  assert.equal(top.x, 35);
+  const condenser = M.addPiece(d, { kind: 'allihn', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, condenser.id, top));
+  assert.equal(A.assembly(d, flask).size, 3);
+});
+
+test('a Claisen adapter leaves two free sockets, and a stopper closes one', () => {
+  const { d, ids: [flask], piece } = withPieces('flask');
+  const claisen = M.addPiece(d, { kind: 'claisen', x: 0, y: 0, angle: 0 });
+  A.place(d, claisen.id, A.worldJoints(piece(flask))[0]);
+  const sockets = A.worldJoints(claisen).filter((j) => !j.male);
+  assert.equal(sockets.length, 2);
+  const stopper = M.addPiece(d, { kind: 'stopper', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, stopper.id, sockets[1]));
+  assert.equal(A.assembly(d, flask).size, 3);
+});

@@ -38,6 +38,65 @@ export const PIECES = {
       { x: 0, y: -90, dir: -90, kind: 'joint', male: false },
     ],
   },
+  // Three-neck flask: a straight middle neck and two side necks leaning out by 28°.
+  flask3: {
+    d: 'M32.9 -45.9 L27.8 -39.6 L19.1 -23.1 A30 30 0 1 1 -19.1 -23.1 L-27.8 -39.6 L-32.9 -45.9'
+      + ' M-19.7 -53 L-17.2 -45.2 L-8.5 -28.8 A30 30 0 0 1 -6 -29.4 L-6 -52 L-7.5 -60'
+      + ' M7.5 -60 L6 -52 L6 -29.4 A30 30 0 0 1 8.5 -28.8 L17.2 -45.2 L19.7 -53',
+    box: { l: -33, t: -60, r: 33, b: 30 },
+    joints: [
+      { x: 0, y: -60, dir: -90, kind: 'joint', male: false },
+      { x: -26.29, y: -49.45, dir: -118, kind: 'joint', male: false },
+      { x: 26.29, y: -49.45, dir: -62, kind: 'joint', male: false },
+      { x: 0, y: 30, dir: 90, kind: 'seat', male: true },
+    ],
+  },
+  // Pressure-equalising addition funnel: a socket on top, a tap, a cone below, and the side tube.
+  addfunnel: {
+    d: 'M-7.5 -80 L-6 -72 L-6 -62 Q-14 -62 -14 -54 L-14 0 L-3 16 L-3 25 M3 25 L3 16 L14 0 L14 -54 Q14 -62 6 -62 L6 -72 L7.5 -80'
+      + ' M-9 25 L9 25 L9 31 L-9 31 Z M9 28 L14 28 M-3 31 L-3 40 L-5 44 L-5 50 L-4.5 60 M3 31 L3 40 L5 44 L5 50 L4.5 60'
+      + ' M6 -70 L22 -70 L22 46 L5 46 M6 -66 L19 -66 L19 42 L5 42',
+    box: { l: -14, t: -80, r: 22, b: 60 },
+    joints: [
+      { x: 0, y: 50, dir: 90, kind: 'joint', male: true },
+      { x: 0, y: -80, dir: -90, kind: 'joint', male: false },
+    ],
+  },
+  // Claisen adapter: one cone below, two sockets above, the second on an arm to the right.
+  claisen: {
+    d: 'M-4.5 50 L-5 40 L-6 40 L-6 -42 L-7.5 -50 M7.5 -50 L6 -42 L6 -4 L24 -22 L24 -42 L22.5 -50'
+      + ' M37.5 -50 L36 -42 L36 -18 L6 12 L6 40 L5 40 L4.5 50',
+    box: { l: -7.5, t: -50, r: 37.5, b: 50 },
+    joints: [
+      { x: 0, y: 40, dir: 90, kind: 'joint', male: true },
+      { x: 0, y: -50, dir: -90, kind: 'joint', male: false },
+      { x: 30, y: -50, dir: -90, kind: 'joint', male: false },
+    ],
+  },
+  // Drying tube (calcium chloride): a cone below, a bulb of grains, an open end.
+  dryingtube: {
+    d: 'M-4.5 40 L-5 30 L-5 7.9 A12 12 0 0 1 -3 -14.6 L-3 -40 M3 -40 L3 -14.6 A12 12 0 0 1 5 7.9 L5 30 L4.5 40'
+      + [[-5, -6], [2, -8], [6, -2], [-2, 0], [-7, 3], [4, 5], [0, -12]].map(([x, y]) => ` M${x - 1.6} ${y} a1.6 1.6 0 1 0 3.2 0 a1.6 1.6 0 1 0 -3.2 0`).join(''),
+    box: { l: -12, t: -40, r: 12, b: 40 },
+    joints: [{ x: 0, y: 30, dir: 90, kind: 'joint', male: true }],
+  },
+  // Dean-Stark trap: vapour rises on the left, condenses above the graduated trap on the right.
+  deanstark: {
+    d: 'M-4.5 70 L-5 60 L-5 -40 L29 -40 L29 -62 L27.5 -70 M42.5 -70 L41 -62 L41 48 L37 54'
+      + ' M4.5 70 L5 60 L5 -26 L29 -26 L29 48 L33 54 M29 54 L41 54 L41 60 L29 60 Z M41 57 L46 57 M33 60 L33 68 M37 60 L37 68'
+      + [-10, 0, 10, 20, 30, 40].map((y) => ` M29 ${y} L33 ${y}`).join(''),
+    box: { l: -5, t: -70, r: 46, b: 70 },
+    joints: [
+      { x: 0, y: 60, dir: 90, kind: 'joint', male: true },
+      { x: 35, y: -70, dir: -90, kind: 'joint', male: false },
+    ],
+  },
+  // Stopper: a cone and its head.
+  stopper: {
+    d: 'M-5 0 L-4.5 10 L4.5 10 L5 0 M-8 0 L8 0 L8 -8 Q8 -14 0 -14 Q-8 -14 -8 -8 Z',
+    box: { l: -8, t: -14, r: 8, b: 10 },
+    joints: [{ x: 0, y: 0, dir: 90, kind: 'joint', male: true }],
+  },
   // Heating mantle: a cup that takes the bottom of a flask, and a knob.
   mantle: {
     d: 'M-30 0 L-42 0 L-42 44 Q-42 50 -36 50 L36 50 Q42 50 42 44 L42 0 L30 0 A30 30 0 0 1 -30 0 Z'
@@ -49,7 +108,7 @@ export const PIECES = {
 
 /** The pieces of each glassware tool, in the order of its option window. */
 export const FAMILIES = {
-  synthesis: ['flask', 'allihn'],
+  synthesis: ['flask', 'flask3', 'allihn', 'addfunnel', 'claisen', 'dryingtube', 'deanstark', 'stopper'],
   heating: ['mantle'],
 };
 
