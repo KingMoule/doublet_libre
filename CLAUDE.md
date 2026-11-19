@@ -11,6 +11,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Tests : `node --test` ; un seul fichier : `node --test tests/render.test.js`
 - Types : `npx -y -p typescript@5.6.3 tsc -p jsconfig.json` (aussi lancé par la CI)
 - Aperçu : `node scripts/serve.mjs` puis http://localhost:8765 (configuration `doublet` dans `.claude/launch.json`)
+- Image d'un document : `node scripts/snapshot.mjs doc.json out.png` (Edge ou Chrome sans fenêtre)
 
 ## Façon de travailler
 

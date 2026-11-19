@@ -17,7 +17,7 @@ import { sampleSN2 } from './sample.js';
 
 const STORAGE_KEY = 'doublet.document.v1';
 const PROPOSAL_URL = 'https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'curved', 'erase']);
+const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'curved', 'rxn', 'text', 'erase']);
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
 const ICONS = {
@@ -29,6 +29,8 @@ const ICONS = {
   lonePair: '<circle cx="8" cy="11" r="2.2" fill="currentColor"/><circle cx="14" cy="11" r="2.2" fill="currentColor"/>',
   charge: '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 11 H14.5 M11 7.5 V14.5" stroke="currentColor" stroke-width="1.4"/>',
   partial: TEXT_ICON('δ'),
+  rxn: '<path d="M3 11 H17" stroke="currentColor" stroke-width="1.6"/><path d="M15 7 L20 11 L15 15 Z" fill="currentColor"/>',
+  text: TEXT_ICON('T'),
   curved: '<path d="M4 17 C5 6 15 4 17 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 12.5 L17.3 14.6 L18.6 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
   erase: '<path d="M9 18 L3.5 12.5 L12 4 L19 11 L12 18 Z M7 9 L14 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
 };
@@ -282,6 +284,12 @@ export function startEditor(root) {
     return fromAtom && partner ? { between: [fromAtom, partner] } : null;
   }
 
+  /** End of a new reaction arrow: dragged (15° steps, at least 40 long) or 80 to the right on a click. @param {any} D @param {{x:number,y:number}} p */
+  function rxnEnd(D, p) {
+    if (!D.moved) return add(D.start, { x: 80, y: 0 });
+    return add(D.start, fromAngle(snapAngle(angleOf(sub(p, D.start))), Math.max(40, dist(p, D.start))));
+  }
+
   /** Ring tool: on an atom (spiro or chain end), on a bond (fused, away from its neighbours), or alone. @param {M.Doc} d @param {Hit | null} hit @param {{x:number,y:number}} p */
   function addRingAt(d, hit, p) {
     const { size, aromatic } = S.ring;
@@ -334,6 +342,16 @@ export function startEditor(root) {
     }
     if (S.tool === 'ring') {
       commit((d) => addRingAt(d, hit, p));
+      return;
+    }
+    if (S.tool === 'rxn') {
+      if (!hit) S.drag = { type: 'rxnNew', start: p, moved: false };
+      return;
+    }
+    if (S.tool === 'text') {
+      if (hit?.kind === 'text') { S.selection = hit; render(); renderPanel(); return; }
+      if (hit) return;
+      commit((d) => { S.selection = { kind: 'text', id: M.addText(d, { x: p.x, y: p.y, text: '+' }).id }; });
       return;
     }
     if (S.tool === 'curved') {
@@ -464,6 +482,9 @@ export function startEditor(root) {
       case 'curved':
         S.preview = { points: [D.start, p] };
         break;
+      case 'rxnNew':
+        S.preview = { points: [D.start, rxnEnd(D, p)] };
+        break;
       case 'marquee':
         S.marquee = { l: Math.min(p.x, D.start.x), r: Math.max(p.x, D.start.x), t: Math.min(p.y, D.start.y), b: Math.max(p.y, D.start.y) };
         break;
@@ -490,6 +511,14 @@ export function startEditor(root) {
     if (D.type === 'bond' || D.type === 'chain') {
       const points = sketch(D, p, e);
       commit((d) => M.addPath(d, points));
+      return;
+    }
+    if (D.type === 'rxnNew') {
+      const end = rxnEnd(D, p);
+      commit((d) => {
+        const ra = M.addReactionArrow(d, { x1: D.start.x, y1: D.start.y, x2: end.x, y2: end.y, kind: 'forward', above: '', below: '' });
+        S.selection = { kind: 'rxn', id: ra.id };
+      });
       return;
     }
     if (D.type === 'curved') {
@@ -700,8 +729,8 @@ export function startEditor(root) {
         const opts = Object.entries(fr.kinds).map(([k, label]) => `<option value="${k}"${r.kind === k ? ' selected' : ''}>${label}</option>`).join('');
         html = `<h2>${P.titles.rxn}</h2>
           <label for="rx-kind">${P.kind}</label><select id="rx-kind">${opts}</select>
-          <label for="rx-above">${P.above}</label><input id="rx-above" type="text" autocomplete="off" value="${esc(r.above)}">
-          <label for="rx-below">${P.below}</label><input id="rx-below" type="text" autocomplete="off" value="${esc(r.below)}">
+          <label for="rx-above">${P.above}</label><textarea id="rx-above" rows="2">${esc(r.above)}</textarea>
+          <label for="rx-below">${P.below}</label><textarea id="rx-below" rows="2">${esc(r.below)}</textarea>
           <p class="muted small">${P.formatHint}</p>
           <p class="label">${P.insert}</p><div class="row">${['Δ', 'hν', '°C', '⁻', '→'].map((s) => `<button type="button" data-insert="${s}">${s}</button>`).join('')}</div>${removeBtn}`;
       }
@@ -777,12 +806,12 @@ export function startEditor(root) {
   panel.addEventListener('change', () => { S.fieldSession = false; });
   panel.addEventListener('focusin', (e) => {
     const el = /** @type {HTMLElement} */ (e.target);
-    if (el.tagName === 'INPUT') S.lastField = el.id;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') S.lastField = el.id;
   });
 
   /** @param {string} s */
   function insertText(s) {
-    const el = S.lastField ? /** @type {HTMLInputElement | null} */ (panel.querySelector(`#${S.lastField}`)) : null;
+    const el = S.lastField ? /** @type {HTMLInputElement | HTMLTextAreaElement | null} */ (panel.querySelector(`#${S.lastField}`)) : null;
     if (!el) return;
     const start = el.selectionStart ?? el.value.length;
     const end = el.selectionEnd ?? start;

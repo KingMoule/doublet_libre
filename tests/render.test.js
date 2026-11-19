@@ -152,6 +152,31 @@ test('the marquee is drawn while selecting', () => {
   assert.match(markup, /class="marquee"/);
 });
 
+test('numbered steps stack: last line nearest the arrow above, first line nearest below', () => {
+  const d = M.emptyDoc();
+  M.addReactionArrow(d, { x1: 0, y1: 0, x2: 100, y2: 0, kind: 'forward', above: '1. NaOH\n2. H3O^+', below: 'THF\n0 °C' });
+  const ys = [...renderDoc(d).markup.matchAll(/<text class="cond" x="[^"]+" y="([^"]+)">(.*?)<\/text>/g)]
+    .map((m) => ({ y: Number(m[1]), text: m[2].replace(/<[^>]+>/g, '') }));
+  const y = (t) => ys.find((l) => l.text.startsWith(t)).y;
+  assert.equal(ys.length, 4);
+  assert.ok(y('1.') < y('2.') && y('2.') < 0, 'steps read top to bottom above the arrow');
+  assert.ok(0 < y('THF') && y('THF') < y('0 °C'), 'below the arrow, first line first');
+});
+
+test('each reaction arrow kind has its own shape', () => {
+  const shape = (kind) => {
+    const d = M.emptyDoc();
+    M.addReactionArrow(d, { x1: 0, y1: 0, x2: 100, y2: 0, kind, above: '', below: '' });
+    const m = renderDoc(d).markup;
+    return { heads: count(m, /class="rxh"/g), lines: count(m, /<line x1/g), polyline: count(m, /<polyline/g) };
+  };
+  assert.deepEqual(shape('forward'), { heads: 1, lines: 1, polyline: 0 });
+  assert.deepEqual(shape('equilibrium'), { heads: 2, lines: 2, polyline: 0 });
+  assert.deepEqual(shape('resonance'), { heads: 2, lines: 1, polyline: 0 });
+  assert.deepEqual(shape('retro'), { heads: 0, lines: 2, polyline: 1 });
+  assert.deepEqual(shape('noReaction'), { heads: 1, lines: 3, polyline: 0 });
+});
+
 test('selecting a curved arrow shows its two handles', () => {
   const { markup } = renderDoc(sampleSN2(), { selection: { kind: 'curved', id: 'ca1' } });
   assert.equal(count(markup, /data-kind="handle"/g), 2);
