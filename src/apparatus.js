@@ -350,10 +350,13 @@ const turnVec = (v, deg) => {
 
 /** Where a piece's joints are in the drawing, and which way they face. @param {Piece} g @returns {WorldJoint[]} */
 export function worldJoints(g) {
-  return (PIECES[g.kind]?.joints ?? []).map((j) => {
-    const p = turnVec(j, g.angle);
-    return { ...j, x: g.x + p.x, y: g.y + p.y, dir: norm(j.dir + g.angle), piece: g.id };
-  });
+  return (PIECES[g.kind]?.joints ?? []).map((j) => ({ ...j, ...toWorld(g, j), dir: norm(j.dir + g.angle), piece: g.id }));
+}
+
+/** A point of a piece's own frame, in the drawing. @param {Piece} g @param {{x: number, y: number}} p */
+export function toWorld(g, p) {
+  const v = turnVec(p, g.angle);
+  return { x: g.x + v.x, y: g.y + v.y };
 }
 
 /** Two joints that can fit together: same kind, other sex. @param {Joint} a @param {Joint} b */
@@ -440,8 +443,5 @@ export function place(doc, id, p) {
 /** The four corners of a piece's box, in the drawing. @param {Piece} g */
 export function corners(g) {
   const b = PIECES[g.kind]?.box ?? { l: -10, t: -10, r: 10, b: 10 };
-  return [[b.l, b.t], [b.r, b.t], [b.r, b.b], [b.l, b.b]].map(([x, y]) => {
-    const p = turnVec({ x, y }, g.angle);
-    return { x: g.x + p.x, y: g.y + p.y };
-  });
+  return [[b.l, b.t], [b.r, b.t], [b.r, b.b], [b.l, b.b]].map(([x, y]) => toWorld(g, { x, y }));
 }

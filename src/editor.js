@@ -11,7 +11,7 @@ import { sampleSN2 } from './sample.js';
 import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
 import { checkDoc } from './checks.js';
 import { GROUPS, attachGroup } from './groups.js';
-import { TEMPLATES } from './templates.js';
+import { TEMPLATES, SETUP_TEMPLATES } from './templates.js';
 import * as A from './apparatus.js';
 
 /**
@@ -110,6 +110,8 @@ function shell() {
       <button type="button" id="btn-mode" aria-pressed="false">${fr.actions.setup}</button>
       <details class="menu" id="templates-menu"><summary>${fr.actions.templates}</summary><div>
         ${Object.keys(TEMPLATES).map((k) => `<button type="button" data-template="${k}">${fr.templateNames[/** @type {keyof typeof fr.templateNames} */ (k)]}</button>`).join('')}
+        <p class="menu-head">${fr.actions.setups}</p>
+        ${Object.keys(SETUP_TEMPLATES).map((k) => `<button type="button" data-setup="${k}">${fr.setupNames[/** @type {keyof typeof fr.setupNames} */ (k)]}</button>`).join('')}
       </div></details>
       <details class="menu" id="file-menu"><summary>${fr.actions.file}</summary><div>
         <button type="button" id="btn-clear">${fr.actions.clear}</button>
@@ -905,6 +907,7 @@ export function startEditor(root) {
   const refit = () => { userMovedView = false; fit(); };
   $('#btn-fit').addEventListener('click', refit);
   // An open menu shifts just enough to stay on screen: the buttons wrap, so it may sit near either edge.
+  // On a short screen it scrolls rather than run off the bottom.
   for (const d of root.querySelectorAll('.top details')) {
     d.addEventListener('toggle', () => {
       const m = d.querySelector(':scope > div');
@@ -912,14 +915,20 @@ export function startEditor(root) {
       m.style.left = '0px';
       const r = m.getBoundingClientRect();
       m.style.left = `${Math.max(8 - r.left, Math.min(0, innerWidth - 8 - r.right))}px`;
+      m.style.maxHeight = `${innerHeight - r.top - 8}px`;
     });
   }
   /** @type {HTMLDetailsElement} */ const templatesMenu = $('#templates-menu');
   templatesMenu.addEventListener('click', (e) => {
-    const key = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.template;
-    if (!key) return;
+    const b = /** @type {HTMLElement} */ (e.target).closest('button');
+    const key = b?.dataset.template;
+    const setup = b?.dataset.setup;
+    if (!key && !setup) return;
     templatesMenu.open = false;
-    replaceDoc(TEMPLATES[/** @type {keyof typeof TEMPLATES} */ (key)]());
+    // A lab set-up opens in the Montage mode, a mechanism in the other.
+    if (setup) replaceDoc(SETUP_TEMPLATES[/** @type {keyof typeof SETUP_TEMPLATES} */ (setup)]());
+    else replaceDoc(TEMPLATES[/** @type {keyof typeof TEMPLATES} */ (key)]());
+    setMode(setup ? 'setup' : 'mechanism');
     refit();
   });
   $('#btn-clear').addEventListener('click', () => { replaceDoc(M.emptyDoc()); refit(); });

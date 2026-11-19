@@ -34,7 +34,7 @@ export const fr = {
     mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince',
   },
   actions: {
-    setup: 'Montage',
+    setup: 'Montage', setups: 'Montages',
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau',
     file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', png: 'Exporter en PNG', svg: 'Exporter en SVG', copy: 'Copier l’image',
   },
@@ -144,6 +144,8 @@ export const fr = {
     groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer, Ctrl+C puis Ctrl+V pour les copier.',
   },
   groupNames: { Ph: 'Ph', OMe: 'OMe', OEt: 'OEt', CO2H: 'CO₂H', CHO: 'CHO', CN: 'CN', NO2: 'NO₂', OAc: 'OAc', Boc: 'Boc' },
+  setupNames: { reflux: 'Montage à reflux', distillation: 'Distillation simple', deanStark: 'Dean-Stark' },
+  setupLabels: { waterIn: 'entrée d’eau', waterOut: 'sortie d’eau' },
   templateNames: {
     sn2: 'SN2 : bromoéthane + HO⁻',
     sn1: 'SN1 : bromure de tert-butyle + H₂O',

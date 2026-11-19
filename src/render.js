@@ -625,7 +625,12 @@ export function docBounds(doc, L) {
   for (const c of L.charges.values()) { xs.push(c.center.x); ys.push(c.center.y); }
   for (const g of L.curved.values()) if (g) for (const p of [g.p0, g.c1, g.c2, g.p3]) { xs.push(p.x); ys.push(p.y); }
   for (const r of doc.reactionArrows) { const box = reactionShape(r).box; xs.push(box.l, box.r); ys.push(box.t, box.b); }
-  for (const t of doc.texts) { xs.push(t.x - 10, t.x + 10); ys.push(t.y - 10, t.y + 10); }
+  for (const t of doc.texts) {
+    const size = t.size ?? STYLE.text;
+    const half = segmentsWidth(formatChem(t.text), size) / 2;
+    xs.push(t.x - half, t.x + half);
+    ys.push(t.y - size / 2, t.y + size / 2);
+  }
   for (const g of doc.apparatus) for (const c of corners(g)) { xs.push(c.x); ys.push(c.y); }
   if (!xs.length) return null;
   return { l: Math.min(...xs), r: Math.max(...xs), t: Math.min(...ys), b: Math.max(...ys) };

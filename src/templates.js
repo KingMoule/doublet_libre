@@ -1,7 +1,9 @@
 // @ts-check
-import { emptyDoc, addAtom, addBond, addMark, addCurvedArrow, addReactionArrow, addText } from './model.js';
+import { emptyDoc, addAtom, addBond, addMark, addCurvedArrow, addReactionArrow, addText, addPiece } from './model.js';
 import { defaultBend } from './render.js';
 import { sampleSN2 } from './sample.js';
+import { worldJoints, place, toWorld } from './apparatus.js';
+import { fr } from './i18n/fr.js';
 
 /**
  * The mechanisms of the course, built with the same functions as the tools.
@@ -175,3 +177,69 @@ export const TEMPLATES = {
   electrophilicAddition,
   carbonylAddition,
 };
+
+// ---------- lab set-ups ----------
+
+/**
+ * Builds a set-up from the bottom up: each piece is fitted onto a joint of the one before.
+ * @param {string} kind the piece at the bottom, at the origin
+ */
+function setupBuilder(kind) {
+  const d = emptyDoc();
+  const first = addPiece(d, { kind, x: 0, y: 0, angle: 0 });
+  /** @param {import('./model.js').Piece} g @param {string} jointKind @param {boolean} male @param {number} [i] */
+  const joint = (g, jointKind, male, i = 0) => worldJoints(g).filter((j) => j.kind === jointKind && j.male === male)[i];
+  return {
+    d, first, joint,
+    /** Fits a new piece onto a joint. @param {string} k @param {import('./apparatus.js').WorldJoint} j */
+    put(k, j) {
+      const g = addPiece(d, { kind: k, x: j.x, y: j.y, angle: 0 });
+      place(d, g.id, j);
+      return g;
+    },
+    /** Labels the water inlet (low) and outlet (high) of a condenser, given its two arms in its own frame. */
+    water(/** @type {import('./model.js').Piece} */ g, /** @type {{x: number, y: number}} */ inlet, /** @type {{x: number, y: number}} */ outlet) {
+      for (const [p, text] of /** @type {[{x: number, y: number}, string][]} */ ([[inlet, fr.setupLabels.waterIn], [outlet, fr.setupLabels.waterOut]])) {
+        // Beyond the end of the arm, in the condenser's own frame, so it follows a tilted condenser.
+        const w = toWorld(g, { x: p.x + Math.sign(p.x) * 45, y: p.y });
+        addText(d, { x: Math.round(w.x), y: Math.round(w.y), text, size: 12 });
+      }
+    },
+  };
+}
+
+/** Heating under reflux: mantle, flask, bulb condenser. */
+function reflux() {
+  const s = setupBuilder('mantle');
+  const flask = s.put('flask', s.joint(s.first, 'seat', false));
+  const condenser = s.put('allihn', s.joint(flask, 'joint', false));
+  s.water(condenser, { x: 22, y: 50 }, { x: -22, y: -52 });
+  return s.d;
+}
+
+/** Simple distillation: head and thermometer, Liebig condenser down the side arm, adapter, receiver in an ice bath. */
+function distillation() {
+  const s = setupBuilder('mantle');
+  const flask = s.put('flask', s.joint(s.first, 'seat', false));
+  const head = s.put('head', s.joint(flask, 'joint', false));
+  s.put('thermometer', s.joint(head, 'joint', false));
+  const condenser = s.put('liebig', s.joint(head, 'joint', true, 1));
+  const adapter = s.put('adapter', s.joint(condenser, 'joint', true));
+  const receiver = s.put('flask', s.joint(adapter, 'joint', true));
+  s.put('bath', s.joint(receiver, 'seat', true));
+  s.water(condenser, { x: 19, y: 48 }, { x: -19, y: -48 });
+  return s.d;
+}
+
+/** Dean-Stark: the water collects in the graduated trap under the condenser. */
+function deanStark() {
+  const s = setupBuilder('mantle');
+  const flask = s.put('flask', s.joint(s.first, 'seat', false));
+  const trap = s.put('deanstark', s.joint(flask, 'joint', false));
+  const condenser = s.put('allihn', s.joint(trap, 'joint', false));
+  s.water(condenser, { x: 22, y: 50 }, { x: -22, y: -52 });
+  return s.d;
+}
+
+/** Lab set-up templates, opened in the Montage mode. */
+export const SETUP_TEMPLATES = { reflux, distillation, deanStark };
