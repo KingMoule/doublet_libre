@@ -88,6 +88,14 @@ test('a new arrow bulges away from its molecule', () => {
   assert.ok(c1.y < 100, 'C1 sits below the C–Br bond, so the arrow curves above it');
 });
 
+test('a short arrow, from a bond to one of its atoms, gets a tall arc instead of a flat one', () => {
+  const d = sampleSN2();
+  const [[t1, n1]] = defaultBend(d, { bond: 'b2' }, { atom: 'a4' });
+  const [[, nLong]] = defaultBend(d, { mark: 'm1' }, { atom: 'a3' });
+  assert.ok(Math.abs(n1) >= 1 && Math.abs(nLong) < 1, `short ${n1}, long ${nLong}`);
+  assert.equal(t1, 0);
+});
+
 test('a control point dragged by hand survives the round trip through the arrow frame', () => {
   const raw0 = { x: 0, y: 0 };
   const raw3 = { x: 100, y: 20 };

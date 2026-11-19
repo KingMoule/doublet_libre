@@ -34,5 +34,5 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 
 - Sous Windows, modifier les fichiers avec les outils Edit et Write, jamais avec PowerShell : PowerShell 5 lit l'UTF-8 comme de l'ANSI et casse les accents.
 
-- Le dessin est gardé dans `localStorage` : après avoir changé `sample.js`, cliquer « Exemple SN2 » pour le voir.
+- Le dessin est gardé dans `localStorage` : après avoir changé `sample.js` ou `templates.js`, rouvrir le modèle par le menu Modèles pour le voir.
 - Les tests de rendu comparent des fragments de SVG arrondis au centième : changer une taille de police casse leurs valeurs attendues.

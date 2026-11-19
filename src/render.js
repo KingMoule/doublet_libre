@@ -323,9 +323,11 @@ export function defaultBend(doc, from, to) {
   const L = layout(doc);
   const s = anchorRaw(doc, L, from);
   const e = anchorRaw(doc, L, to);
+  if (!s || !e) return /** @type {[[number, number], [number, number]]} */ (DEFAULT_BEND.map((x) => [...x]));
+  // A short hop (a bond to its own atom) needs a tall arc, or the head lands on the curve's start.
+  const short = Math.hypot(e.p.x - s.p.x, e.p.y - s.p.y) < 30;
   /** @type {[[number, number], [number, number]]} */
-  const base = [[DEFAULT_BEND[0][0], DEFAULT_BEND[0][1]], [DEFAULT_BEND[1][0], DEFAULT_BEND[1][1]]];
-  if (!s || !e) return base;
+  const base = short ? [[0, 1.5], [0.15, 1]] : [[DEFAULT_BEND[0][0], DEFAULT_BEND[0][1]], [DEFAULT_BEND[1][0], DEFAULT_BEND[1][1]]];
   const m = mid(s.p, e.p);
   const D = sub(e.p, s.p);
   const N = { x: D.y, y: -D.x };
