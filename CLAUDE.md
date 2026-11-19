@@ -38,3 +38,4 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Le dessin est gardé dans `localStorage` : après avoir changé `sample.js` ou `templates.js`, rouvrir le modèle par le menu Modèles pour le voir.
 - Les tests de rendu comparent des fragments de SVG arrondis au centième : changer une taille de police casse leurs valeurs attendues.
 - Retirer un élément d'interface, c'est aussi retirer ses restes : chercher son identifiant dans tout le dépôt (texte dans `fr.js`, constante, règle CSS).
+- Un attribut `data-*` écouté par un parent ne se réutilise pas ailleurs : un clic dans la petite fenêtre d'options remonte jusqu'à la barre d'outils, qui réagit à tout `data-tool` (d'où `data-for` sur la fenêtre).
