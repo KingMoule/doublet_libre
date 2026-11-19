@@ -7,7 +7,7 @@
 export function sampleSN2() {
   return {
     version: 1,
-    style: { chargeCircled: true },
+    style: {},
     atoms: [
       { id: 'a1', element: 'O', x: 100, y: 100, charge: -1 },
       { id: 'a2', element: 'C', x: 180, y: 134.64, charge: 0 },

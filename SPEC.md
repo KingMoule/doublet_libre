@@ -19,7 +19,8 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 
 - **Formule topologique** : carbones implicites, angles de 120°, longueur constante, hétéroatomes avec leurs H (OH, NH₂, HO– inversé).
 - **Doublets libres** accrochés à l'atome, en deux points au-dessus, en dessous, à gauche ou à droite du symbole.
-- **Charges formelles** en haut à droite, cerclées ou non ; **δ+ / δ−** accrochés à l'atome.
+- **Charges formelles** « + », « − », « 2+ » en exposant en haut à droite, sans cercle ; **δ+ / δ−** accrochés à l'atome.
+- **Grille hexagonale** au fond, de côté égal à la liaison : un atome, une liaison, une chaîne ou un cycle posés sur le fond s'y accrochent, et le zigzag suit ses arêtes. Glisser reste libre (pas de 15°).
 - **Flèches courbes** : source = doublet, liaison ou électron seul ; cible = atome, liaison ou liaison en formation ; pleine (2 e⁻) ou demi-flèche (1 e⁻) ; elles suivent les molécules.
 - **Flèche de réaction** distincte : → ⇌ ↔ ⇒ et pas de réaction ; conditions au-dessus et en dessous, liées à la flèche ; H2O devient H₂O.
 
@@ -27,7 +28,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 
 - Automatique : zigzag à 120° (GR-3.2.1) ; carbone sans étiquette dès qu'il est lié (GR-2.1.2) ; HO– quand la liaison part à droite (GR-2.1.6) ; charge en haut à droite (GR-5.1) ; doublets sur les axes du symbole (GR-5.2) ; double liaison décalée vers le côté substitué, centrée pour un C=O de cétone (GR-1.10) ; bout étroit du coin sur le centre stéréogène (ST-0.3).
 - Avertissement (`src/checks.js`) : octet dépassé, C ou N à cinq liaisons compris (S, P, Si et I exemptés, GR-8.2) ; flèche probablement inversée (part d'un atome +, arrive sur un atome −) ; charge non conservée de part et d'autre d'une flèche de réaction ; ↔ entre structures au squelette σ différent ; charges formelles et partielles sur une même molécule (GR-5.6). Une flèche ne peut pas partir d'un H ou d'un H⁺ : l'outil n'accepte que des électrons comme départ.
-- Style : charge cerclée ou non ; conditions tout au-dessus ou réparties ; doublet en trait (non IUPAC) en option.
+- Style : conditions tout au-dessus ou réparties ; doublet en trait (non IUPAC) en option.
 
 ## Format de fichier
 

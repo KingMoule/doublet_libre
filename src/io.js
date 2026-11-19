@@ -18,7 +18,7 @@ const EXPORT_CSS = [
   '.lbl{font-family:Arial,Helvetica,sans-serif;font-size:15px;fill:#17212B}',
   '.pc,.chgt,.cond{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:#17212B;text-anchor:middle}',
   '.txt{font-family:Arial,Helvetica,sans-serif;fill:#17212B;text-anchor:middle}',
-  '.lp circle{fill:#17212B}.chg circle{fill:none;stroke:#17212B;stroke-width:1.1}.chg line{stroke:#17212B;stroke-width:1.2}',
+  '.lp circle{fill:#17212B}',
   '.rx line,.rx polyline{stroke:#17212B;stroke-width:1.4;fill:none}.rxh{fill:#17212B}',
   '.ea{fill:none;stroke:#C2304A;stroke-width:1.5;stroke-linecap:round}.eh{fill:#C2304A}',
 ].join('');

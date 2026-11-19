@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   angleOf, fromAngle, snapAngle, angleDiff, angularGaps, nextBondAngle, boxExit, dist, sub,
-  ringAt, ringOnBond, ringOnAtom, zigzag, pinchView,
+  ringAt, ringOnBond, ringOnAtom, zigzag, pinchView, hexVertex, hexCenter, hexEdges,
 } from '../src/geometry.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} should be close to ${b}`);
@@ -95,6 +95,39 @@ test('two fingers moving together pan the view', () => {
   close(v.w, 400);
   close(v.x, -50, 1e-9);
   close(v.y, -50, 1e-9);
+});
+
+test('the hexagonal paper: nearest vertex and its kind, nearest cell centre', () => {
+  const v = hexVertex({ x: 30, y: 4 }, 40);
+  close(v.x, 34.641016, 1e-5);
+  close(v.y, 0);
+  assert.equal(v.up, true, 'this vertex has an edge going up');
+  const b = hexVertex({ x: -3, y: 22 }, 40);
+  assert.deepEqual([Math.round(b.x), Math.round(b.y), b.up], [0, 20, false]);
+  const c = hexCenter({ x: 40, y: 45 }, 40);
+  close(c.x, 34.641016, 1e-5);
+  close(c.y, 40);
+});
+
+test('a zigzag started on a grid vertex stays on the grid', () => {
+  const L = 40;
+  for (const p of [{ x: 12, y: 18 }, { x: 40, y: 3 }]) {
+    const start = hexVertex(p, L);
+    let prev = { x: start.x, y: start.y };
+    let angle = start.up ? 330 : 30;
+    assert.ok(hexEdges(start.up).includes(angle));
+    for (let k = 0; k < 6; k++) {
+      const next = { x: prev.x + 40 * Math.cos((angle * Math.PI) / 180), y: prev.y - 40 * Math.sin((angle * Math.PI) / 180) };
+      const snapped = hexVertex(next, L);
+      close(dist(next, snapped), 0, 1e-6);
+      angle = nextBondAngle([angleOf(sub(prev, next))]);
+      prev = next;
+    }
+  }
+});
+
+test('a hexagon centred on a cell lies exactly on the grid', () => {
+  for (const p of ringAt(hexCenter({ x: 100, y: 90 }, 40), 6, 40)) close(dist(p, hexVertex(p, 40)), 0, 1e-6);
 });
 
 test('distance from a box centre to its edge', () => {
