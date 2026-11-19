@@ -24,7 +24,9 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Une fenêtre, un menu ou une barre se vérifient aux bords avec `node scripts/edges.mjs` : il ouvre chaque outil et chaque menu du haut sur six tailles d'écran (ordinateur, tablette, téléphone, debout et couchés) et signale ce qui sort de l'écran, cache son bouton ou devient inaccessible, ainsi qu'une aide de la barre du bas qui dépasse ses deux lignes (une aide plus longue se raccourcit).
 - Une nouvelle pièce de verrerie se montre d'abord en image (`snapshot.mjs` : chaque pièce seule, puis dans un montage) ; la PR suit l'accord sur le dessin.
 - Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
+- Un tracé calculé (pièce penchée, coudée) garde son calcul en commentaire à côté, pour qu'on puisse le refaire.
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
+- Partir de `main` seulement après avoir vu la PR précédente fusionnée (`gh pr view N --json state` doit dire `MERGED`). Ne pas l'enchaîner avec `&&` : `gh pr view` réussit aussi quand la PR est encore ouverte.
 - Après avoir ouvert la PR, activer sa fusion automatique (squash) : GitHub la fusionne seulement quand le test `test` est vert. Si un test échoue, corriger plutôt que fusionner.
 
 ## Choix qui ne se voient pas dans le code
