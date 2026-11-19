@@ -37,6 +37,7 @@ export const fr = {
     bond: 'Cliquez sur le fond pour poser une liaison, sur un atome pour en ajouter une, sur une liaison pour changer son ordre. Glissez pour choisir la direction.',
     chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
     ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',
+    selectTouch: 'Glissez une molécule pour la déplacer, le fond pour sélectionner. Deux doigts : pincer pour zoomer, glisser pour déplacer la vue. Touchez un atome pour changer son élément dans le panneau.',
     erase: 'Cliquez sur un objet pour l’effacer.',
     atom: 'Cliquez sur le fond pour poser un atome seul, sur un atome pour changer son élément. Élément au choix dans le panneau.',
     lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',

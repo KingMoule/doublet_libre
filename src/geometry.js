@@ -143,6 +143,24 @@ export function ringOnAtom(atom, dirDeg, n, L) {
 }
 
 /**
+ * View after a two-finger gesture: zoom by the change in finger spread, keeping under the
+ * fingers' midpoint the document point that was under it when the gesture started.
+ * @param {{x: number, y: number, w: number, h: number}} view at the start of the gesture
+ * @param {{left: number, top: number, width: number, height: number}} rect canvas on screen
+ * @param {Vec} a0 @param {Vec} b0 fingers at the start @param {Vec} a1 @param {Vec} b1 fingers now
+ */
+export function pinchView(view, rect, a0, b0, a1, b1) {
+  const k = dist(a0, b0) / (dist(a1, b1) || 1);
+  const m0 = mid(a0, b0);
+  const m1 = mid(a1, b1);
+  const docX = view.x + ((m0.x - rect.left) / rect.width) * view.w;
+  const docY = view.y + ((m0.y - rect.top) / rect.height) * view.h;
+  const w = view.w * k;
+  const h = view.h * k;
+  return { x: docX - ((m1.x - rect.left) / rect.width) * w, y: docY - ((m1.y - rect.top) / rect.height) * h, w, h };
+}
+
+/**
  * Distance from the centre of a box to its edge along a unit direction.
  * @param {Vec} u @param {number} halfW @param {number} halfH
  */
