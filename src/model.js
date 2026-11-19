@@ -299,6 +299,47 @@ export function moveObjects(doc, ids, dx, dy) {
   for (const ra of doc.reactionArrows) if (ids.has(ra.id)) { ra.x1 += dx; ra.x2 += dx; ra.y1 += dy; ra.y2 += dy; }
 }
 
+/**
+ * The part of a document made of the given atoms, texts and reaction arrows, as a copy. Bonds, marks
+ * and curved arrows come along when everything they point at is in it.
+ * @param {Doc} doc @param {Set<string>} ids
+ */
+export function extract(doc, ids) {
+  const part = emptyDoc();
+  part.atoms = doc.atoms.filter((a) => ids.has(a.id));
+  part.bonds = doc.bonds.filter((b) => ids.has(b.a) && ids.has(b.b));
+  part.marks = doc.marks.filter((m) => ids.has(m.atom));
+  part.texts = doc.texts.filter((t) => ids.has(t.id));
+  part.reactionArrows = doc.reactionArrows.filter((r) => ids.has(r.id));
+  part.curvedArrows = doc.curvedArrows.filter((c) => anchorExists(part, c.from) && anchorExists(part, c.to));
+  return /** @type {Doc} */ (structuredClone(part));
+}
+
+/**
+ * Adds a copy of a part made by extract, moved by (dx, dy), with fresh ids.
+ * Returns the ids of its atoms, texts and reaction arrows, as a selection.
+ * @param {Doc} doc @param {Doc} part @param {number} dx @param {number} dy
+ */
+export function paste(doc, part, dx, dy) {
+  /** @type {Map<string, string>} */ const ids = new Map();
+  /** @param {keyof typeof ID_PREFIX} list @param {string} old */
+  const fresh = (list, old) => { const id = nextId(doc, list); ids.set(old, id); return id; };
+  const to = (/** @type {string} */ old) => /** @type {string} */ (ids.get(old));
+  /** @param {Anchor} an @returns {Anchor} */
+  const anchor = (an) => ('mark' in an ? { mark: to(an.mark) } : 'bond' in an ? { bond: to(an.bond) }
+    : 'atom' in an ? { atom: to(an.atom) } : { between: [to(an.between[0]), to(an.between[1])] });
+  const p = /** @type {Doc} */ (structuredClone(part));
+  for (const a of p.atoms) doc.atoms.push({ ...a, id: fresh('atoms', a.id), x: a.x + dx, y: a.y + dy });
+  for (const b of p.bonds) doc.bonds.push({ ...b, id: fresh('bonds', b.id), a: to(b.a), b: to(b.b) });
+  for (const m of p.marks) doc.marks.push({ ...m, id: fresh('marks', m.id), atom: to(m.atom) });
+  for (const t of p.texts) doc.texts.push({ ...t, id: fresh('texts', t.id), x: t.x + dx, y: t.y + dy });
+  for (const r of p.reactionArrows) {
+    doc.reactionArrows.push({ ...r, id: fresh('reactionArrows', r.id), x1: r.x1 + dx, y1: r.y1 + dy, x2: r.x2 + dx, y2: r.y2 + dy });
+  }
+  for (const c of p.curvedArrows) doc.curvedArrows.push({ ...c, id: fresh('curvedArrows', c.id), from: anchor(c.from), to: anchor(c.to) });
+  return [...p.atoms, ...p.texts, ...p.reactionArrows].map((o) => to(o.id));
+}
+
 /** @param {Doc} doc @param {string} id @param {1 | 2 | 3} order */
 export function setBondOrder(doc, id, order) {
   const b = findBond(doc, id);

@@ -636,6 +636,42 @@ export function startEditor(root) {
     applyView();
   }).observe(svg);
 
+  // ---------- copy and paste ----------
+
+  /** @type {M.Doc | null} */ let clipboard = null;
+  let pastes = 0;
+
+  /** The atoms, texts and reaction arrows to copy: the whole molecule for an atom or a bond. */
+  function selectedIds() {
+    const sel = S.selection;
+    if (sel?.kind === 'group') return new Set(sel.ids);
+    if (sel?.kind === 'atom') return M.component(S.doc, sel.id);
+    if (sel?.kind === 'bond') { const b = M.findBond(S.doc, sel.id); return b ? M.component(S.doc, b.a) : null; }
+    if (sel?.kind === 'rxn' || sel?.kind === 'text') return new Set([sel.id]);
+    return null;
+  }
+
+  /** Copies the selection; false when nothing copyable is selected. */
+  function copySelection() {
+    const ids = selectedIds();
+    if (!ids) return false;
+    clipboard = M.extract(S.doc, ids);
+    pastes = 0;
+    return true;
+  }
+
+  /** Pastes one bond length further down and right each time, on the grid, and selects the copy. */
+  function pasteClipboard() {
+    const part = clipboard;
+    if (!part) return;
+    pastes += 1;
+    const step = STYLE.bond * pastes;
+    const a = part.atoms[0];
+    const v = a ? hexVertex({ x: a.x + step, y: a.y + step }, STYLE.bond) : null;
+    const [dx, dy] = a && v ? [v.x - a.x, v.y - a.y] : [step, step];
+    commit((d) => { S.selection = { kind: 'group', id: 'group', ids: M.paste(d, part, dx, dy) }; });
+  }
+
   // ---------- keyboard ----------
 
   /** @param {EventTarget | null} t */
@@ -649,7 +685,8 @@ export function startEditor(root) {
     if (ctrl && k.toLowerCase() === 'y') { e.preventDefault(); doRedo(); return; }
     if (ctrl && k.toLowerCase() === 's') { e.preventDefault(); saveDoc(); return; }
     if (ctrl && k.toLowerCase() === 'o') { e.preventDefault(); fileInput.click(); return; }
-    if (ctrl && k.toLowerCase() === 'c' && !String(window.getSelection())) { e.preventDefault(); copyImage(); return; }
+    if (ctrl && k.toLowerCase() === 'c' && !String(window.getSelection())) { e.preventDefault(); if (!copySelection()) copyImage(); return; }
+    if (ctrl && k.toLowerCase() === 'v' && clipboard) { e.preventDefault(); pasteClipboard(); return; }
     if (ctrl || e.altKey) return;
     if (k === ' ') { S.space = true; svg.classList.add('pannable'); e.preventDefault(); return; }
     if (k === 'Escape') { S.selection = null; showFlyout(null); render(); renderPanel(); return; }
