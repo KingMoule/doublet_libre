@@ -362,6 +362,19 @@ export function setStereo(doc, id, stereo) {
   else { b.stereo = stereo; b.order = 1; }
 }
 
+/**
+ * Gives a bond the kind chosen in the Bond tool: an order, or a wedge. The same wedge again
+ * turns it round, as its narrow end marks the stereocentre (IUPAC ST-0.3).
+ * @param {Doc} doc @param {string} id @param {1 | 2 | 3 | 'wedge' | 'hash'} kind
+ */
+export function setBondKind(doc, id, kind) {
+  const b = findBond(doc, id);
+  if (!b) return;
+  if (typeof kind === 'number') { setBondOrder(doc, id, kind); delete b.stereo; return; }
+  if (b.stereo === kind) [b.a, b.b] = [b.b, b.a];
+  setStereo(doc, id, kind);
+}
+
 /** @param {Doc} doc @param {string} id @param {string} element */
 export function setElement(doc, id, element) {
   const a = findAtom(doc, id);
