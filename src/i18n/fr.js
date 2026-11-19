@@ -17,17 +17,18 @@ export const fr = {
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
     lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', group: 'Groupe', curved: 'Flèche courbe',
-    rxn: 'Flèche de réaction', text: 'Texte', erase: 'Gomme', synthesis: 'Synthèse', distillation: 'Distillation', heating: 'Chauffage et support',
+    rxn: 'Flèche de réaction', text: 'Texte', erase: 'Gomme', synthesis: 'Synthèse', distillation: 'Distillation', separation: 'Séparation', heating: 'Chauffage et support',
   },
   toolKeys: {
     select: 'V', bond: 'B', chain: 'Z', ring: 'R', atom: 'A', lonePair: 'L', charge: 'Q', partial: 'D', group: 'G', curved: 'F',
-    rxn: 'W', text: 'T', erase: 'E', synthesis: 'S', distillation: 'K', heating: 'H',
+    rxn: 'W', text: 'T', erase: 'E', synthesis: 'S', distillation: 'K', separation: 'P', heating: 'H',
   },
   pieceNames: {
     flask: 'Ballon', flask3: 'Ballon tricol', allihn: 'Réfrigérant à boules', addfunnel: 'Ampoule d’addition (isobare)',
     claisen: 'Adaptateur de Claisen', dryingtube: 'Tube de garde (CaCl₂)', deanstark: 'Dean-Stark', stopper: 'Bouchon',
     vigreux: 'Colonne de Vigreux', head: 'Tête de distillation', thermometer: 'Thermomètre', liebig: 'Réfrigérant droit',
     adapter: 'Allonge coudée', vacadapter: 'Allonge à vide', soxhlet: 'Extracteur de Soxhlet', rotavap: 'Évaporateur rotatif',
+    sepfunnel: 'Ampoule à décanter', funnel: 'Entonnoir', filterpaper: 'Papier filtre plissé', buchner: 'Büchner', filterflask: 'Fiole à vide',
     mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince',
   },
   actions: {
@@ -60,6 +61,7 @@ export const fr = {
     text: 'Cliquez sur le fond pour poser un « + », puis changez le texte dans le panneau.',
     synthesis: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou le rodage libre d’une pièce pour l’y emboîter.',
     distillation: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou le rodage libre d’une pièce pour l’y emboîter : elle en prend l’angle.',
+    separation: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, le goulot d’une fiole pour y mettre une tige, un entonnoir pour y mettre le papier.',
     heating: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou sous un ballon ou un cristallisoir pour l’y placer. Support et pince se placent librement.',
     curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
     hover: {

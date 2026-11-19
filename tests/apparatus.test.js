@@ -203,3 +203,33 @@ test('a rotary evaporator takes a leaning evaporating flask and a hanging receiv
   assert.ok(A.place(d, receiver.id, outlet));
   assert.equal(receiver.angle, 0);
 });
+
+test('a Büchner funnel stands in the mouth of a filter flask', () => {
+  const { d, ids: [flask], piece } = withPieces('filterflask');
+  const mouth = /** @type {A.WorldJoint} */ (A.worldJoints(piece(flask)).find((j) => j.kind === 'stem'));
+  const buchner = M.addPiece(d, { kind: 'buchner', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, buchner.id, mouth));
+  assert.ok(joined(d, flask, buchner.id));
+});
+
+test('a fluted filter paper sits in a funnel, and the funnel in a flask mouth', () => {
+  const { d, ids: [funnel], piece } = withPieces('funnel');
+  const cone = /** @type {A.WorldJoint} */ (A.worldJoints(piece(funnel)).find((j) => j.kind === 'paper'));
+  const paper = M.addPiece(d, { kind: 'filterpaper', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, paper.id, cone));
+  const flask = M.addPiece(d, { kind: 'filterflask', x: 0, y: 200, angle: 0 });
+  const mouth = /** @type {A.WorldJoint} */ (A.worldJoints(flask).find((j) => j.kind === 'stem'));
+  const stem = /** @type {A.WorldJoint} */ (A.worldJoints(piece(funnel)).find((j) => j.kind === 'stem'));
+  const block = A.assembly(d, funnel);
+  M.moveObjects(d, block, mouth.x - stem.x + 8, mouth.y - stem.y);
+  assert.ok(A.snap(d, block));
+  assert.equal(A.assembly(d, flask.id).size, 3);
+});
+
+test('a separatory funnel takes a stopper and pours through its stem', () => {
+  const { d, ids: [sep], piece } = withPieces('sepfunnel');
+  const top = /** @type {A.WorldJoint} */ (A.worldJoints(piece(sep)).find((j) => j.kind === 'joint'));
+  const stopper = M.addPiece(d, { kind: 'stopper', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, stopper.id, top));
+  assert.ok(A.worldJoints(piece(sep)).some((j) => j.kind === 'stem' && j.male && j.dir === 90));
+});
