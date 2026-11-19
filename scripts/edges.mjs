@@ -92,7 +92,7 @@ async function connect(level) {
     url = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/${level === 'page' ? 'list' : 'version'}`).then((r) => r.json())
       .then((j) => (level === 'page' ? j.find((/** @type {any} */ t) => t.type === 'page') : j)?.webSocketDebuggerUrl).catch(() => undefined);
   }
-  if (!url) throw new Error(`The browser did not start.\n${browserLog}`);
+  if (!url) throw new Error(`The browser did not start: ${browserPath}\n${browserLog}`);
   const ws = new WebSocket(url);
   await new Promise((ok, ko) => { ws.onopen = ok; ws.onerror = ko; });
   /** @type {Map<number, (msg: any) => void>} */ const pending = new Map();
