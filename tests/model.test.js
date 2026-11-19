@@ -192,3 +192,14 @@ test('pasting adds a moved copy with fresh ids and links rewired to the copy', (
   assert.equal(d.reactionArrows.at(-1)?.x1, 295);
   assert.deepEqual(M.validateDoc(d), []);
 });
+
+test('a text size is a whole number of points, from 10 to 48', () => {
+  const d = M.emptyDoc();
+  const t = M.addText(d, { x: 0, y: 0, text: '+' });
+  M.setTextSize(d, t.id, 21.5);
+  assert.equal(t.size, 22);
+  M.setTextSize(d, t.id, 4);
+  assert.equal(t.size, 10);
+  M.setTextSize(d, t.id, 99);
+  assert.equal(t.size, 48);
+});

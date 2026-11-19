@@ -24,6 +24,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 - **Grille hexagonale** au fond, de côté égal à la liaison : un atome, une liaison, une chaîne ou un cycle posés sur le fond s'y accrochent, et le zigzag suit ses arêtes. Glisser reste libre (pas de 15°).
 - **Flèches courbes** : source = doublet, liaison ou électron seul ; cible = atome, liaison ou liaison en formation ; pleine (2 e⁻) ou demi-flèche (1 e⁻) ; elles suivent les molécules.
 - **Copier-coller** : Ctrl+C copie la sélection (toute la molécule pour un atome ou une liaison, avec ses doublets, charges et flèches courbes internes) ; Ctrl+V colle une copie décalée d'une liaison, sur la grille, déjà sélectionnée. Sans sélection, Ctrl+C copie l'image.
+- **Texte** libre (« + », légende) : taille réglable dans le panneau avec − et +, par pas de 2 points.
 - **Flèche de réaction** distincte : → ⇌ ↔ ⇒ et pas de réaction ; conditions au-dessus et en dessous, liées à la flèche ; H2O devient H₂O.
 
 ## Règles de dessin (IUPAC 2008 « GR », stéréo 2006 « ST »)

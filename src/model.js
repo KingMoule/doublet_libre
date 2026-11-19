@@ -231,6 +231,12 @@ export function addText(doc, p) {
   return text;
 }
 
+/** A text size is a whole number of points, from 10 to 48. @param {Doc} doc @param {string} id @param {number} size */
+export function setTextSize(doc, id, size) {
+  const t = doc.texts.find((x) => x.id === id);
+  if (t) t.size = Math.min(48, Math.max(10, Math.round(size)));
+}
+
 /** Curved arrows whose source or target disappeared are removed with it. @param {Doc} doc */
 export function pruneArrows(doc) {
   doc.curvedArrows = doc.curvedArrows.filter((c) => anchorExists(doc, c.from) && anchorExists(doc, c.to));
