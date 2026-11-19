@@ -17,6 +17,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Partir de `SPEC.md`. Une fonctionnalité qui n'y est pas se propose d'abord, avant d'être codée.
 - Une phase à la fois. Écrire d'abord le test qui échoue, puis le code qui le fait passer.
 - Une tâche est finie quand `node --test` passe, et que le rendu a été vu dans le navigateur si l'affichage a changé. Montrer la commande lancée et sa sortie.
+- Vérification visuelle : rejouer un scénario de vrais événements de pointeur et de clavier dans l'app, puis juger le SVG obtenu. Les tests ne voient pas le CSS, et les captures du navigateur intégré ne sont pas fiables quand la fenêtre est réduite.
 - Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
 
