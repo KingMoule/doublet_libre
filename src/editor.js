@@ -74,7 +74,7 @@ function shell() {
       <input type="file" id="file-input" accept=".json,.svg,application/json,image/svg+xml" hidden>
     </div>
   </header>
-  <nav class="tools" aria-label="${fr.toolsLabel}">${tools}</nav>
+  <nav class="tools" aria-label="${fr.toolsLabel}">${tools}<div class="flyout" id="element-flyout" hidden>${ELEMENTS.map((el) => `<button type="button" data-element="${el}">${el}</button>`).join('')}</div></nav>
   <main class="stage">
     <svg id="canvas" role="application" aria-label="${fr.canvasLabel}">
       <defs><pattern id="hexp" width="69.282" height="120" patternUnits="userSpaceOnUse"><path class="hexline" d="M0,20 L34.641,0 L69.282,20 M0,20 L0,60 M0,60 L34.641,80 L69.282,60 M34.641,80 L34.641,120"/></pattern></defs>
@@ -638,7 +638,7 @@ export function startEditor(root) {
     if (ctrl && k.toLowerCase() === 'c' && !String(window.getSelection())) { e.preventDefault(); copyImage(); return; }
     if (ctrl || e.altKey) return;
     if (k === ' ') { S.space = true; svg.classList.add('pannable'); e.preventDefault(); return; }
-    if (k === 'Escape') { S.selection = null; render(); renderPanel(); return; }
+    if (k === 'Escape') { S.selection = null; showFlyout(false); render(); renderPanel(); return; }
     const target = S.hover ?? S.selection;
     if (k === 'Delete' || k === 'Backspace') {
       if (target && target.kind !== 'handle') { e.preventDefault(); commit((d) => deleteHit(d, target)); }
@@ -694,9 +694,35 @@ export function startEditor(root) {
     S.tool = tool;
     for (const b of root.querySelectorAll('.tool')) b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === tool));
     svg.dataset.tool = tool;
+    showFlyout(tool === 'atom');
     updateStatus();
     renderPanel();
   }
+
+  // Element chooser: a small vertical window beside the Atom tool.
+  /** @type {HTMLElement} */ const flyout = $('#element-flyout');
+  /** @type {HTMLElement} */ const atomBtn = $('[data-tool="atom"]');
+  /** @param {boolean} open */
+  function showFlyout(open) {
+    flyout.hidden = !open;
+    if (!open) return;
+    const r = atomBtn.getBoundingClientRect();
+    flyout.style.left = `${r.right + 6}px`;
+    flyout.style.top = `${r.top}px`;
+    for (const b of flyout.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.element === S.element));
+  }
+  flyout.addEventListener('click', (e) => {
+    const el = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.element;
+    if (!el) return;
+    S.element = el;
+    const icon = atomBtn.querySelector('svg');
+    if (icon) icon.innerHTML = TEXT_ICON(el);
+    showFlyout(false);
+  });
+  document.addEventListener('pointerdown', (e) => {
+    const t = /** @type {Node} */ (e.target);
+    if (!flyout.hidden && !flyout.contains(t) && !atomBtn.contains(t)) showFlyout(false);
+  });
 
   root.querySelector('.tools')?.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-tool]'));
@@ -839,8 +865,6 @@ export function startEditor(root) {
     const removeBtn = `<div class="row end">${btn('delete', P.remove)}</div>`;
     if (!sel && S.tool === 'group') {
       html = `<h2>${P.fgTitle}</h2><div class="row">${Object.keys(GROUPS).map((g) => `<button type="button" data-group="${g}" aria-pressed="${S.group === g}">${fr.groupNames[/** @type {keyof typeof fr.groupNames} */ (g)]}</button>`).join('')}</div><p class="muted small">${P.fgHint}</p>`;
-    } else if (!sel && S.tool === 'atom') {
-      html = `<h2>${P.elementTitle}</h2><div class="row">${ELEMENTS.map((el) => `<button type="button" data-element="${el}" aria-pressed="${S.element === el}">${el}</button>`).join('')}</div><p class="muted small">${P.elementHint}</p>`;
     } else if (!sel && S.tool === 'ring') {
       const { size, aromatic } = S.ring;
       html = `<h2>${P.ringTitle}</h2><div class="seg">${[3, 4, 5, 6, 7, 8].map((n) => `<button type="button" data-ring="${n}" aria-pressed="${size === n && !aromatic}">${n}</button>`).join('')}</div>
@@ -909,11 +933,6 @@ export function startEditor(root) {
     if (b.dataset.insert) { insertText(b.dataset.insert); return; }
     if (b.dataset.group) {
       S.group = b.dataset.group;
-      renderPanel();
-      return;
-    }
-    if (b.dataset.element) {
-      S.element = b.dataset.element;
       renderPanel();
       return;
     }
