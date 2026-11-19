@@ -111,6 +111,7 @@ export const fr = {
     formatHint: 'Les chiffres qui suivent un symbole passent en indice : H2O devient H₂O. ^+ met en exposant. Entrée ajoute une ligne, pour les étapes « 1. … 2. … ».',
     insert: 'Insérer',
     textLabel: 'Texte',
+    textSize: 'Taille',
     remove: 'Supprimer',
     copy: 'Copier',
     paste: 'Coller',

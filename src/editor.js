@@ -1025,7 +1025,10 @@ export function startEditor(root) {
       if (a) html = `<h2>${P.titles.charge}</h2><dl class="kv"><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd></dl><div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div><p class="muted">${P.rotateHint}</p>${removeBtn}`;
     } else if (sel.kind === 'text') {
       const t = d.texts.find((x) => x.id === sel.id);
-      if (t) html = `<h2>${P.titles.text}</h2><label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">${removeBtn}`;
+      if (t) {
+        html = `<h2>${P.titles.text}</h2><label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">
+          <dl class="kv"><dt>${P.textSize}</dt><dd>${Math.round(t.size ?? STYLE.text)}</dd></dl><div class="row">${btn('size-2', '−')}${btn('size+2', '+')}</div>${removeBtn}`;
+      }
     }
     // Warnings: all of them when nothing is selected, otherwise those about the selection.
     const shown = sel ? S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id))) : S.warnings;
@@ -1047,6 +1050,7 @@ export function startEditor(root) {
     commit((d) => {
       if (act === 'delete') { deleteHit(d, sel); return; }
       if (act.startsWith('el-')) { M.setElement(d, sel.id, act.slice(3)); return; }
+      if (act === 'size-2' || act === 'size+2') { const t = d.texts.find((x) => x.id === sel.id); if (t) M.setTextSize(d, t.id, (t.size ?? STYLE.text) + Number(act.slice(4))); return; }
       if (act === 'charge-1' || act === 'charge+1') { const a = M.findAtom(d, sel.id); if (a) a.charge += act === 'charge+1' ? 1 : -1; return; }
       if (act === 'lp-add') { M.addMark(d, sel.id, 'lonePair'); return; }
       if (act === 'lp-remove') {

@@ -17,7 +17,7 @@ import { findAtom, findBond, bondsOf, otherEnd, hydrogenCount, substituentSides,
 
 /** Drawing style in document units. The double-bond gap is 18 % of the bond, as in ACS 1996. */
 export const STYLE = Object.freeze({
-  bond: 40, font: 15, small: 12, line: 1.6, gap: 7.2, dotR: 1.5, dotHalf: 3, wedge: 6.5, headLen: 8, headHalf: 3.6,
+  bond: 40, font: 15, text: 19.5, small: 12, line: 1.6, gap: 7.2, dotR: 1.5, dotHalf: 3, wedge: 6.5, headLen: 8, headHalf: 3.6,
 });
 const F = STYLE.font;
 const AXES = [90, 270, 0, 180]; // lone pairs: above, below, right, left of the symbol (GR-5.2)
@@ -562,7 +562,7 @@ export function renderDoc(doc, opts = {}) {
     out += wrap('charge', c.atom, s, `${s.lit ? circleEl(c.center, 7, 'hl') : ''}${chargeShape(c)}${circleEl(c.center, 6, 'hit')}`);
   }
   for (const t of doc.texts) {
-    const size = t.size ?? F * 1.3;
+    const size = t.size ?? STYLE.text;
     const segs = formatChem(t.text);
     const w = segmentsWidth(segs, size);
     const box = { l: t.x - w / 2, r: t.x + w / 2, t: t.y - size / 2, b: t.y + size / 2 };
