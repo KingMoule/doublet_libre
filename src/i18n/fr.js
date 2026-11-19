@@ -21,7 +21,7 @@ export const fr = {
     rxn: 'W', text: 'T', erase: 'E',
   },
   actions: {
-    undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau', proposal: 'Proposition',
+    undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau',
     file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', png: 'Exporter en PNG', svg: 'Exporter en SVG', copy: 'Copier l’image',
   },
   files: {

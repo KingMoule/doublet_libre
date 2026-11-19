@@ -20,7 +20,6 @@ import { TEMPLATES } from './templates.js';
  */
 
 const STORAGE_KEY = 'doublet.document.v1';
-const PROPOSAL_URL = 'https://claude.ai/artifact/YERTS84ftfKtSyN5jv4F6S';
 const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'text', 'erase']);
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="currentColor">${t}</text>`;
@@ -58,8 +57,8 @@ function shell() {
   <header class="top">
     <b class="name">${fr.appName}</b><span class="badge">${fr.badge}</span>
     <div class="actions">
-      <button type="button" id="btn-undo">${fr.actions.undo}</button>
-      <button type="button" id="btn-redo">${fr.actions.redo}</button>
+      <button type="button" id="btn-undo" class="icon" title="${fr.actions.undo} (Ctrl+Z)" aria-label="${fr.actions.undo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3.5 L2.5 7 L6 10.5 M2.5 7 H11 A4.5 4.5 0 0 1 11 16 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" id="btn-redo" class="icon" title="${fr.actions.redo} (Ctrl+Y)" aria-label="${fr.actions.redo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M12 3.5 L15.5 7 L12 10.5 M15.5 7 H7 A4.5 4.5 0 0 0 7 16 H11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" id="btn-fit">${fr.actions.fit}</button>
       <details class="menu" id="templates-menu"><summary>${fr.actions.templates}</summary><div>
         ${Object.keys(TEMPLATES).map((k) => `<button type="button" data-template="${k}">${fr.templateNames[/** @type {keyof typeof fr.templateNames} */ (k)]}</button>`).join('')}
@@ -73,7 +72,6 @@ function shell() {
         <button type="button" id="btn-copy">${fr.actions.copy}<kbd>Ctrl+C</kbd></button>
       </div></details>
       <input type="file" id="file-input" accept=".json,.svg,application/json,image/svg+xml" hidden>
-      <a href="${PROPOSAL_URL}" target="_blank" rel="noopener">${fr.actions.proposal}</a>
     </div>
   </header>
   <nav class="tools" aria-label="${fr.toolsLabel}">${tools}</nav>
