@@ -177,6 +177,12 @@ test('each reaction arrow kind has its own shape', () => {
   assert.deepEqual(shape('noReaction'), { heads: 1, lines: 3, polyline: 0 });
 });
 
+test('warned objects get an outline, never in an export', () => {
+  const d = sampleSN2();
+  assert.equal(count(renderDoc(d, { warnings: ['a3', 'a4', 'ca1', 'ra1'] }).markup, /class="warn"/g), 4);
+  assert.equal(count(renderDoc(d, { plain: true }).markup, /class="warn"/g), 0);
+});
+
 test('selecting a curved arrow shows its two handles', () => {
   const { markup } = renderDoc(sampleSN2(), { selection: { kind: 'curved', id: 'ca1' } });
   assert.equal(count(markup, /data-kind="handle"/g), 2);

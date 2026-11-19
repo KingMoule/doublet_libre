@@ -9,6 +9,7 @@ import {
 } from './geometry.js';
 import { sampleSN2 } from './sample.js';
 import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
+import { checkDoc } from './checks.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
@@ -115,6 +116,7 @@ export function startEditor(root) {
     /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
     ring: { size: 6, aromatic: false },
     element: 'C',
+    /** @type {import('./checks.js').Warning[]} */ warnings: [],
     /** @type {any} */ layout: null,
     view: { x: 0, y: 0, w: 800, h: 500 },
     space: false,
@@ -125,7 +127,10 @@ export function startEditor(root) {
   // ---------- drawing and view ----------
 
   function render() {
-    const r = renderDoc(S.doc, { selection: S.selection, hover: S.hover, preview: S.preview, marquee: S.marquee });
+    S.warnings = checkDoc(S.doc);
+    const r = renderDoc(S.doc, {
+      selection: S.selection, hover: S.hover, preview: S.preview, marquee: S.marquee, warnings: S.warnings.flatMap((w) => w.ids),
+    });
     content.innerHTML = r.markup;
     S.layout = r.layout;
   }
@@ -839,7 +844,12 @@ export function startEditor(root) {
       const t = d.texts.find((x) => x.id === sel.id);
       if (t) html = `<h2>${P.titles.text}</h2><label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">${removeBtn}`;
     }
-    panel.innerHTML = html;
+    // Warnings: all of them when nothing is selected, otherwise those about the selection.
+    const shown = sel ? S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id))) : S.warnings;
+    const warnHtml = shown.length
+      ? `<div class="warnings"><h3>${fr.warnings.title(shown.length)}</h3><ul>${shown.map((w) => `<li>${fr.warnings[w.code](/** @type {any} */ (w.params))}</li>`).join('')}</ul></div>`
+      : '';
+    panel.innerHTML = sel ? html + warnHtml : warnHtml + html;
   }
 
   panel.addEventListener('click', (e) => {

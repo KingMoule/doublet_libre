@@ -525,7 +525,8 @@ function reactionShape(ra) {
  * @param {Doc} doc
  * @param {{selection?: {kind: string, id: string, ids?: string[]} | null, hover?: {kind: string, id: string} | null,
  *   preview?: {points: Vec[]} | null, marquee?: {l: number, t: number, r: number, b: number} | null,
- *   plain?: boolean}} [opts] plain: drawing only, without the invisible click areas (for export)
+ *   plain?: boolean, warnings?: string[]}} [opts] plain: drawing only, without the invisible click areas (for export);
+ *   warnings: ids of objects to outline
  */
 export function renderDoc(doc, opts = {}) {
   const L = layout(doc);
@@ -595,6 +596,14 @@ export function renderDoc(doc, opts = {}) {
         out += `<g class="handle" data-kind="handle" data-id="${esc(sel.id)}" data-index="${i}"><rect x="${n2(c.x - 4)}" y="${n2(c.y - 4)}" width="8" height="8"/></g>`;
       });
     }
+  }
+  for (const id of opts.warnings ?? []) {
+    const info = L.atoms.get(id);
+    const g = L.curved.get(id);
+    const ra = doc.reactionArrows.find((r) => r.id === id);
+    if (info) out += info.label ? rectEl(info.label.box, 4, 'warn') : circleEl(info.atom, 11, 'warn');
+    else if (g) out += `<path class="warn" d="${curveParts(g).full}"/>`;
+    else if (ra) out += rectEl(reactionShape(ra).box, 4, 'warn');
   }
   const ghost = opts.preview?.points;
   if (ghost && ghost.length > 1) out += `<polyline class="ghost" points="${pts(ghost)}"/>${circleEl(ghost[ghost.length - 1], 3, 'ghost-dot')}`;

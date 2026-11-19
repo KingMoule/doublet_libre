@@ -3,9 +3,12 @@
  * Textes de l’interface, en français.
  * Pour ajouter une langue : copier ce fichier (en.js), traduire les valeurs, changer l’import dans editor.js.
  */
+/** @param {number} q */
+const signed = (q) => (q > 0 ? `+${q}` : q < 0 ? `−${-q}` : '0');
+
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Prototype · phase 5',
+  badge: 'Première version',
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
   tools: {
@@ -58,16 +61,12 @@ export const fr = {
     intro: 'Cliquez sur un objet du dessin pour voir et changer ses propriétés.',
     /** @param {{atoms: unknown[], bonds: unknown[], curvedArrows: unknown[]}} d */
     counts: (d) => `${d.atoms.length} atomes · ${d.bonds.length} liaisons · ${d.curvedArrows.length} flèches courbes`,
-    phaseTitle: 'Dans ce prototype',
+    phaseTitle: 'Dans cette version',
     phaseItems: [
-      'Le rendu selon les règles de base de l’IUPAC.',
-      'Des flèches courbes accrochées aux électrons : déplacez le bromoéthane, elles suivent.',
-      'Les outils Liaison, Chaîne, Cycle (3 à 8, benzène) et Atome, avec raccourcis clavier.',
-      'Les outils Doublet, Charge et δ ; glissez une annotation pour la faire tourner.',
-      'L’outil Flèche courbe : d’un doublet ou d’une liaison vers un atome, une liaison ou une liaison qui se forme.',
-      'Les outils Flèche de réaction (→ ⇌ ↔ ⇒, conditions sur plusieurs lignes) et Texte.',
-      'La sélection de plusieurs atomes au cadre ou avec Maj + clic.',
-      'Le menu Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG (qui se rouvre dans l’app), copier l’image.',
+      'Molécules selon les règles de base de l’IUPAC : liaisons, chaînes, cycles, atomes.',
+      'Doublets, charges, δ, flèches courbes accrochées aux électrons, flèches de réaction.',
+      'Avertissements : octet dépassé, flèche inversée, charge non conservée, résonance mal employée.',
+      'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
     ],
     shortcutsTitle: 'Raccourcis',
     shortcuts: [
@@ -78,9 +77,9 @@ export const fr = {
       'Espace + glisser : déplacer la vue ; molette : zoomer',
       'Lettre affichée sur un outil : le choisir',
     ],
-    nextTitle: 'Prochaines phases',
+    nextTitle: 'Ensuite',
     nextItems: [
-      'Phase 6 : avertissements pédagogiques (octet, flèche qui part d’un H⁺…).',
+      'Modèles de cycles, de groupes et de mécanismes types (SN1, SN2, E1, E2…).',
     ],
     titles: {
       atom: 'Atome', bond: 'Liaison', mark: 'Annotation', charge: 'Charge formelle',
@@ -117,6 +116,17 @@ export const fr = {
     /** @param {number} n */
     group: (n) => `${n} atomes sélectionnés`,
     groupHint: 'Glissez l’un d’eux pour les déplacer ensemble. Suppr pour les effacer.',
+  },
+  warnings: {
+    /** @param {number} n */
+    title: (n) => (n === 1 ? '1 avertissement' : `${n} avertissements`),
+    /** @param {{element: string, electrons: number}} p */
+    octet: (p) => `${p.element} porte ${p.electrons} électrons : c’est plus que l’octet (8 au plus, sauf pour S, P et I).`,
+    arrowDirection: () => 'Flèche probablement inversée : elle part d’un atome chargé + ou arrive sur un atome chargé −. Les électrons vont du site riche vers le site pauvre.',
+    mixedCharges: () => 'Charges formelles et charges partielles sur la même molécule : n’en montrez qu’une sorte (IUPAC GR-5.6).',
+    /** @param {{left: number, right: number}} p */
+    charge: (p) => `Charge totale ${signed(p.left)} avant la flèche et ${signed(p.right)} après : elle doit se conserver.`,
+    resonance: () => '↔ relie des formes de résonance, qui gardent les mêmes atomes et les mêmes liaisons σ. Pour une réaction, utilisez → ou ⇌.',
   },
   kinds: {
     forward: 'Réaction →', equilibrium: 'Équilibre ⇌', resonance: 'Résonance ↔', retro: 'Rétrosynthèse ⇒', noReaction: 'Pas de réaction',
