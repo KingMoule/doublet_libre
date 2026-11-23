@@ -911,6 +911,7 @@ export function startEditor(root) {
     if (!v || !flyout.dataset.for) return;
     chooseOption(flyout.dataset.for, v);
     showFlyout(null);
+    renderPanel();
   });
   document.addEventListener('pointerdown', (e) => {
     const t = /** @type {Node} */ (e.target);
@@ -1044,10 +1045,9 @@ export function startEditor(root) {
   }
 
   function updateStatus() {
-    const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] ?? null : null;
-    const touch = S.tool === 'select' && matchMedia('(pointer: coarse)').matches;
-    const setup = S.mode === 'setup' && S.tool === 'select';
-    statusEl.textContent = hovered ?? (setup ? fr.status.selectSetup : touch ? fr.status.selectTouch : fr.status[S.tool]);
+    // The help line is for what the pointer is over; how to use the tool is in the panel.
+    const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : '';
+    statusEl.textContent = hovered ?? '';
   }
 
   // ---------- properties panel ----------
@@ -1081,10 +1081,22 @@ export function startEditor(root) {
     const pasteBtn = clipboard ? btn('paste', P.paste) : '';
     const removeBtn = `<div class="row end">${selectedIds() ? btn('copy', P.copy) : ''}${pasteBtn}${btn('delete', P.remove)}</div>`;
     if (!sel) {
-      html = `<h2>${P.nothing}</h2>${pasteBtn ? `<div class="row">${pasteBtn}</div>` : ''}<p class="muted">${P.intro}</p><p class="counts">${P.counts(d)}</p>
-        <h3>${P.phaseTitle}</h3><ul>${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul>
-        <h3>${P.shortcutsTitle}</h3><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul>
-        <h3>${P.nextTitle}</h3><ul class="muted">${P.nextItems.map((x) => `<li>${x}</li>`).join('')}</ul>`;
+      // Nothing selected: how to use the chosen tool, then whether the mechanism holds together.
+      const touch = matchMedia('(pointer: coarse)').matches;
+      const key = S.tool !== 'select' ? S.tool : S.mode === 'setup' ? 'selectSetup' : touch ? 'selectTouch' : 'select';
+      const steps = /** @type {Record<string, string[]>} */ (fr.steps)[key];
+      const icon = root.querySelector(`.tool[data-tool="${S.tool}"] svg`)?.outerHTML ?? '';
+      const check = S.mode === 'setup' ? `<p class="tip">${P.setupTip}</p>`
+        : S.warnings.length ? `<h3>${P.checkTitle}</h3>${warningsBox(S.warnings)}`
+        : d.atoms.length ? `<h3>${P.checkTitle}</h3><p class="ok">${fr.warnings.none}</p>` : '';
+      html = `<h3>${P.toolTitle}</h3>
+        <div class="tool-card"><span class="tool-icon">${icon}</span><h2>${fr.tools[S.tool]}</h2><kbd>${fr.toolKeys[S.tool]}</kbd></div>
+        <p class="label">${P.howTo}</p><ol class="steps">${steps.map((x) => `<li>${x}</li>`).join('')}</ol>
+        ${pasteBtn ? `<div class="row">${pasteBtn}</div>` : ''}${check}
+        <div class="more"><p class="counts">${P.counts(d)}</p>
+          <details data-k="shortcuts"><summary>${P.shortcutsTitle}</summary><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul></details>
+          <details data-k="news"><summary>${P.newsTitle}</summary><ul class="small">${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul><p class="muted small">${P.nextTitle} : ${P.nextItems.join(' ')}</p></details>
+        </div>`;
     } else if (sel.kind === 'group') {
       html = `<h2>${P.group(sel.ids?.length ?? 0)}</h2><p class="muted">${P.groupHint}</p>${removeBtn}`;
     } else if (sel.kind === 'atom') {
@@ -1139,12 +1151,18 @@ export function startEditor(root) {
           <dl class="kv"><dt>${P.textSize}</dt><dd>${Math.round(t.size ?? STYLE.text)}</dd></dl><div class="row">${btn('size-2', '−')}${btn('size+2', '+')}</div>${removeBtn}`;
       }
     }
-    // Warnings: all of them when nothing is selected, otherwise those about the selection.
-    const shown = sel ? S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id))) : S.warnings;
-    const warnHtml = shown.length
-      ? `<div class="warnings"><h3>${fr.warnings.title(shown.length)}</h3><ul>${shown.map((w) => `<li>${fr.warnings[w.code](/** @type {any} */ (w.params))}</li>`).join('')}</ul></div>`
-      : '';
-    panel.innerHTML = sel ? html + warnHtml : warnHtml + html;
+    // With a selection, the warnings about it; the others are in the panel of the tool.
+    const shown = sel ? S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id))) : [];
+    // Redrawing the panel after each change must not close what the student opened.
+    const open = [...panel.querySelectorAll('details[open]')].map((x) => x.getAttribute('data-k'));
+    panel.innerHTML = html + warningsBox(shown);
+    for (const k of open) panel.querySelector(`details[data-k="${k}"]`)?.setAttribute('open', '');
+  }
+
+  /** @param {typeof S.warnings} list */
+  function warningsBox(list) {
+    if (!list.length) return '';
+    return `<div class="warnings"><h3>${fr.warnings.title(list.length)}</h3><ul>${list.map((w) => `<li>${fr.warnings[w.code](/** @type {any} */ (w.params))}</li>`).join('')}</ul></div>`;
   }
 
   panel.addEventListener('click', (e) => {

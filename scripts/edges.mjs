@@ -47,7 +47,7 @@ const CHECK = `(async () => {
   if (innerWidth > 760) {
     const { fr } = await import('/src/i18n/fr.js');
     const el = document.querySelector('#status');
-    const texts = { ...fr.status, ...fr.status.hover, ...fr.files, opened: fr.files.opened('mecanisme.doublet.json') };
+    const texts = { ...fr.status.hover, ...fr.files, opened: fr.files.opened('mecanisme.doublet.json') };
     for (const [key, text] of Object.entries(texts)) {
       if (typeof text !== 'string') continue;
       el.textContent = text;
