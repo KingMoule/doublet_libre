@@ -5,7 +5,7 @@ import { renderDoc, defaultBend, bendFromControl, docBounds, esc, STYLE } from '
 import { ELEMENT_KEYS } from './chem.js';
 import {
   add, sub, dist, cross, angleOf, angleDiff, angularGaps, fromAngle, snapAngle, nextBondAngle,
-  zigzag, ringAt, ringOnBond, ringOnAtom, pinchView, hexVertex, hexCenter, hexEdges, normDeg,
+  zigzag, ringAt, ringOnBond, ringOnAtom, pinchView, zoomView, hexVertex, hexCenter, hexEdges, normDeg,
 } from './geometry.js';
 import { sampleSN2 } from './sample.js';
 import { exportSVG, docFromText, setPngDpi, POINTS_PER_UNIT } from './io.js';
@@ -121,7 +121,6 @@ function shell() {
     <div class="actions">
       <button type="button" id="btn-undo" class="icon" title="${fr.actions.undo} (Ctrl+Z)" aria-label="${fr.actions.undo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3.5 L2.5 7 L6 10.5 M2.5 7 H11 A4.5 4.5 0 0 1 11 16 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" id="btn-redo" class="icon" title="${fr.actions.redo} (Ctrl+Y)" aria-label="${fr.actions.redo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M12 3.5 L15.5 7 L12 10.5 M15.5 7 H7 A4.5 4.5 0 0 0 7 16 H11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button type="button" id="btn-fit">${fr.actions.fit}</button>
       <span class="sep" aria-hidden="true"></span>
       <details class="menu" id="templates-menu"><summary>${fr.actions.templates}</summary><div>
         ${Object.keys(TEMPLATES).map((k) => `<button type="button" data-template="${k}">${fr.templateNames[/** @type {keyof typeof fr.templateNames} */ (k)]}</button>`).join('')}
@@ -147,9 +146,15 @@ function shell() {
       <rect id="bg" fill="url(#hexp)"/>
       <g id="content"></g>
     </svg>
+    <div class="zoom-bar" role="group" aria-label="${fr.zoom.label}">
+      <button type="button" id="btn-zoom-out" title="${fr.zoom.out}" aria-label="${fr.zoom.out}">−</button>
+      <span id="zoom" class="zoom"></span>
+      <button type="button" id="btn-zoom-in" title="${fr.zoom.in}" aria-label="${fr.zoom.in}">+</button>
+      <button type="button" id="btn-fit"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6 V2 H6 M10 2 H14 V6 M14 10 V14 H10 M6 14 H2 V10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>${fr.actions.fit}</button>
+    </div>
   </main>
   <aside class="panel" id="panel" aria-live="polite"></aside>
-  <footer class="status"><span id="status"></span><span id="zoom" class="zoom"></span></footer>`;
+  <footer class="status"><span id="status"></span></footer>`;
 }
 
 /** @returns {M.Doc | null} */
@@ -295,11 +300,15 @@ export function startEditor(root) {
     updateStatus();
   }
 
+  // Whether the drawing is kept in this browser, which the help line says when it has nothing else to say.
+  let stored = true;
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, M.serialize(S.doc));
+      stored = true;
     } catch {
       /* storage unavailable: the drawing still works, it is just not kept */
+      stored = false;
     }
   }
 
@@ -704,17 +713,23 @@ export function startEditor(root) {
 
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const p = toDoc(e);
-    const v = S.view;
-    const w = Math.min(6000, Math.max(60, v.w * Math.exp(e.deltaY * 0.0015)));
-    const k = w / v.w;
-    S.view = { x: p.x - (p.x - v.x) * k, y: p.y - (p.y - v.y) * k, w, h: v.h * k };
+    S.view = zoomView(S.view, toDoc(e), Math.exp(e.deltaY * 0.0015));
     applyView();
   }, { passive: false });
 
   // Keep the centre of the view when the canvas changes size; refit until the user moves the view.
   let userMovedView = false;
   svg.addEventListener('wheel', () => { userMovedView = true; }, { passive: true });
+  // Zoom buttons, for a tablet or a mouse without a wheel: by 1.25 around the centre of the view.
+  /** @param {number} k */
+  const zoomCentre = (k) => {
+    const v = S.view;
+    S.view = zoomView(v, { x: v.x + v.w / 2, y: v.y + v.h / 2 }, k);
+    userMovedView = true;
+    applyView();
+  };
+  $('#btn-zoom-in').addEventListener('click', () => zoomCentre(1 / 1.25));
+  $('#btn-zoom-out').addEventListener('click', () => zoomCentre(1.25));
   new ResizeObserver(() => {
     if (!userMovedView) { fit(); return; }
     const { w, h } = size();
@@ -998,15 +1013,15 @@ export function startEditor(root) {
 
   function saveDoc() {
     download(new Blob([M.serialize(S.doc)], { type: 'application/json' }), `${FILE_NAME}.doublet.json`);
-    statusEl.textContent = fr.files.saved;
+    message(fr.files.saved);
   }
 
   async function copyImage() {
     try {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob() })]);
-      statusEl.textContent = fr.files.copied;
+      message(fr.files.copied);
     } catch {
-      statusEl.textContent = fr.files.copyFailed;
+      message(fr.files.copyFailed);
     }
   }
 
@@ -1016,9 +1031,9 @@ export function startEditor(root) {
     try {
       replaceDoc(docFromText(await file.text()));
       refit();
-      statusEl.textContent = fr.files.opened(file.name);
+      message(fr.files.opened(file.name));
     } catch {
-      statusEl.textContent = fr.files.badFile;
+      message(fr.files.badFile);
     } finally {
       fileInput.value = '';
     }
@@ -1047,7 +1062,14 @@ export function startEditor(root) {
   function updateStatus() {
     // The help line is for what the pointer is over; how to use the tool is in the panel.
     const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : '';
-    statusEl.textContent = hovered ?? '';
+    statusEl.classList.toggle('kept', !hovered && stored);
+    statusEl.textContent = hovered || (stored ? fr.files.kept : '');
+  }
+
+  /** A message about files (saved, copied…), until the pointer moves over something. @param {string} text */
+  function message(text) {
+    statusEl.classList.remove('kept');
+    statusEl.textContent = text;
   }
 
   // ---------- properties panel ----------
