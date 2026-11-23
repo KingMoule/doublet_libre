@@ -21,7 +21,16 @@ import * as A from './apparatus.js';
  */
 
 const STORAGE_KEY = 'doublet.document.v1';
-const TOOLS = /** @type {const} */ (['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'partial', 'group', 'curved', 'rxn', 'synthesis', 'distillation', 'separation', 'glassware', 'heating', 'text', 'erase']);
+/** The tools in groups, separated by a line on the rail: select; skeleton; electrons; glassware; reaction and text; eraser. */
+const TOOL_GROUPS = /** @type {const} */ ([
+  ['select'],
+  ['bond', 'chain', 'ring', 'atom', 'group'],
+  ['lonePair', 'charge', 'partial', 'curved'],
+  ['synthesis', 'distillation', 'separation', 'glassware', 'heating'],
+  ['rxn', 'text'],
+  ['erase'],
+]);
+const TOOLS = TOOL_GROUPS.flat();
 /** The glassware tools: each puts down the piece chosen in its option window. @type {Record<string, string[]>} */
 const FAMILIES = A.FAMILIES;
 /** The tools on the rail in each mode: drawing a mechanism, or a lab set-up. @type {Record<'mechanism' | 'setup', string[]>} */
@@ -99,7 +108,9 @@ function hitOf(el) {
 const sameHit = (a, b) => (a === null || b === null ? a === b : a.kind === b.kind && a.id === b.id && a.index === b.index);
 
 function shell() {
-  const tools = TOOLS.map((t) => `<button type="button" class="tool" data-tool="${t}" aria-pressed="false" title="${fr.tools[t]} (${fr.toolKeys[t]})"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${ICONS[t]}</svg><span class="tool-name">${fr.tools[t]}</span><kbd>${fr.toolKeys[t]}</kbd></button>`).join('');
+  /** @param {typeof TOOLS[number]} t */
+  const tool = (t) => `<button type="button" class="tool" data-tool="${t}" aria-pressed="false" title="${fr.tools[t]} (${fr.toolKeys[t]})"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${ICONS[t]}</svg><span class="tool-name">${fr.tools[t]}</span><kbd>${fr.toolKeys[t]}</kbd></button>`;
+  const tools = TOOL_GROUPS.map((g) => `<div class="tool-group">${g.map(tool).join('')}</div>`).join('');
   return `
   <header class="top">
     <b class="name">${fr.appName}</b>
@@ -834,6 +845,10 @@ export function startEditor(root) {
     for (const b of root.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b instanceof HTMLElement && b.dataset.mode === mode));
     for (const b of root.querySelectorAll('.tool')) {
       if (b instanceof HTMLElement) b.hidden = !MODE_TOOLS[mode].includes(b.dataset.tool ?? '');
+    }
+    // A group with no tool in this mode goes too, and with it its separating line.
+    for (const g of root.querySelectorAll('.tool-group')) {
+      if (g instanceof HTMLElement) g.hidden = !g.querySelector('.tool:not([hidden])');
     }
     setTool(MODE_TOOLS[mode].includes(S.tool) ? S.tool : 'select');
   }

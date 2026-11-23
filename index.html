@@ -90,10 +90,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Tool rail */
 .tools { grid-area: tools; display: flex; flex-direction: column; gap: 4px; padding: 8px; border-right: 1px solid var(--rule); min-height: 0; overflow-y: auto; scrollbar-width: none; }
-.tool { position: relative; display: grid; place-items: center; height: 44px; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; color: var(--ink); }
+.tool { position: relative; display: grid; place-items: center; height: 42px; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; color: var(--ink); }
 .tool:hover { background: var(--accent-soft); }
 .tool[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-.tool[hidden] { display: none; }
+.tool[hidden], .tool-group[hidden] { display: none; }
+/* A line between two groups of tools that are both shown. */
+.tool-group { display: flex; flex-direction: column; gap: 4px; }
+.tool-group:not([hidden]) ~ .tool-group:not([hidden]) { border-top: 1px solid var(--rule); padding-top: 4px; }
 .tool .tool-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .tool kbd { position: absolute; right: 4px; bottom: 2px; font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); }
 .flyout { position: fixed; z-index: 10; max-height: calc(100vh - 16px); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.25); }
@@ -187,6 +190,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .tools { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--rule); }
   .tool { width: 52px; }
   .top .sep { display: none; }
+  /* Tools in a row on a phone: no groups, so that they wrap in as few rows as before. */
+  .tool-group { display: contents; }
   .panel { border-left: 0; border-top: 1px solid var(--rule); }
   #status { height: auto; }
 }
