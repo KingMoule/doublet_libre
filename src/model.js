@@ -203,11 +203,14 @@ export function addMark(doc, atomId, kind, extra = {}) {
   return mark;
 }
 
-/** Partial charge of an atom, one step further: none → δ+ → δ− → none. @param {Doc} doc @param {string} atomId */
-export function cyclePartial(doc, atomId) {
+/**
+ * Puts the chosen partial charge on an atom, or changes the one it has; the same sign again takes it off.
+ * @param {Doc} doc @param {string} atomId @param {string} value 'δ+' or 'δ−'
+ */
+export function setPartial(doc, atomId, value) {
   const m = doc.marks.find((x) => x.atom === atomId && x.kind === 'partial');
-  if (!m) addMark(doc, atomId, 'partial', { value: 'δ+' });
-  else if (m.value === 'δ+') m.value = 'δ−';
+  if (!m) addMark(doc, atomId, 'partial', { value });
+  else if (m.value !== value) m.value = value;
   else removeMark(doc, m.id);
 }
 

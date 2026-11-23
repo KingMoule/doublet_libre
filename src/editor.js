@@ -94,6 +94,13 @@ const ICONS = {
   glassware: PIECE_ICON('erlenmeyer'),
   heating: PIECE_ICON('mantle'),
 };
+/** Tools with two variants, chosen in their option window; Shift + click gives the other one. Each: [value, icon]. */
+const VARIANTS = {
+  lonePair: [['lonePair', ICONS.lonePair], ['radical', '<circle cx="11" cy="11" r="2.2" fill="currentColor"/>']],
+  charge: [['+1', ICONS.charge], ['-1', '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 11 H14.5" stroke="currentColor" stroke-width="1.4"/>']],
+  partial: [['δ+', TEXT_ICON('δ+')], ['δ−', TEXT_ICON('δ−')]],
+  curved: [['2', ICONS.curved], ['1', '<path d="M4 17 C5 6 15 4 17 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 12.5 L17.3 14.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>']],
+};
 
 /** @param {EventTarget | null} el @returns {Hit | null} */
 function hitOf(el) {
@@ -195,6 +202,8 @@ export function startEditor(root) {
     piece: Object.fromEntries(Object.entries(FAMILIES).map(([f, kinds]) => [f, kinds[0]])),
     element: 'C',
     group: 'Ph',
+    /** The variant each two-variant tool puts down. @type {Record<string, string>} */
+    variant: Object.fromEntries(Object.entries(VARIANTS).map(([tool, choices]) => [tool, choices[0][0]])),
     /** @type {{a: {x:number,y:number}, b: {x:number,y:number}, view: {x:number,y:number,w:number,h:number}} | null} */ pinch: null,
     /** @type {import('./checks.js').Warning[]} */ warnings: [],
     /** @type {any} */ layout: null,
@@ -431,6 +440,12 @@ export function startEditor(root) {
   const pointers = new Map();
   const TAP_TOOLS = new Set(['erase', 'ring', 'text', 'atom', 'group', 'lonePair', 'charge', 'partial', ...Object.keys(FAMILIES)]);
 
+  /** What a two-variant tool puts down: the chosen variant, or the other one with Shift. @param {keyof typeof VARIANTS} tool @param {boolean} shift */
+  function variantOf(tool, shift) {
+    const [a, b] = VARIANTS[tool].map((x) => x[0]);
+    return (S.variant[tool] === a) !== shift ? a : b;
+  }
+
   /**
    * What a simple touch does with the current tool. It runs on release, and only if the pointer
    * did not move, so the first finger of a pinch changes nothing.
@@ -472,9 +487,9 @@ export function startEditor(root) {
     if (!id) return;
     commit((d) => {
       if (tool === 'group') attachGroup(d, id, S.group, nextBondAngle(bondAngles(d, id)));
-      else if (tool === 'lonePair') M.addMark(d, id, shift ? 'radical' : 'lonePair');
-      else if (tool === 'charge') { const a = M.findAtom(d, id); if (a) a.charge += shift ? -1 : 1; }
-      else if (tool === 'partial') M.cyclePartial(d, id);
+      else if (tool === 'lonePair') M.addMark(d, id, /** @type {'lonePair' | 'radical'} */ (variantOf('lonePair', shift)));
+      else if (tool === 'charge') { const a = M.findAtom(d, id); if (a) a.charge += Number(variantOf('charge', shift)); }
+      else if (tool === 'partial') M.setPartial(d, id, variantOf('partial', shift));
     });
   }
 
@@ -684,7 +699,7 @@ export function startEditor(root) {
     if (D.type === 'curved') {
       const to = D.moved ? arrowTarget(e, p, D.from) : null;
       if (!to) { render(); return; }
-      const single = e.shiftKey || ('mark' in D.from && S.doc.marks.find((m) => m.id === D.from.mark)?.kind === 'radical');
+      const single = variantOf('curved', e.shiftKey) === '1' || ('mark' in D.from && S.doc.marks.find((m) => m.id === D.from.mark)?.kind === 'radical');
       commit((d) => { M.addCurvedArrow(d, D.from, to, single ? 1 : 2, defaultBend(d, D.from, to)); });
       return;
     }
@@ -868,9 +883,19 @@ export function startEditor(root) {
     setTool(MODE_TOOLS[mode].includes(S.tool) ? S.tool : 'select');
   }
 
-  // Tool options (Bond: order or wedge, Atom: element, Ring: size, Group, glassware): a small vertical window beside the tool.
-  /** @type {Record<string, {choices: string[], label: (v: string) => string, title: (v: string) => string, current: () => string, choose: (v: string) => void, icon: () => string}>} */
+  // Tool options (Bond: order or wedge, Atom: element, Ring: size, Group, glassware, two-variant tools): a small vertical window beside the tool.
+  // `named`: each choice has a name beside its icon, so the window lines them up on the left.
+  /** @type {Record<string, {choices: string[], label: (v: string) => string, title: (v: string) => string, current: () => string, choose: (v: string) => void, icon: () => string, named?: boolean}>} */
   const OPTIONS = {
+    ...Object.fromEntries(Object.entries(VARIANTS).map(([tool, pairs]) => {
+      const icons = Object.fromEntries(pairs);
+      const name = (/** @type {string} */ v) => /** @type {Record<string, Record<string, string>>} */ (fr.variants)[tool][v];
+      return [tool, {
+        choices: pairs.map((x) => x[0]), named: true, title: name,
+        label: (/** @type {string} */ v) => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${icons[v]}</svg><span>${name(v)}</span>`,
+        current: () => S.variant[tool], choose: (/** @type {string} */ v) => { S.variant[tool] = v; }, icon: () => icons[S.variant[tool]],
+      }];
+    })),
     bond: {
       choices: ['1', '2', '3', 'wedge', 'hash'],
       label: (v) => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${BOND_ICON(v)}</svg>`,
@@ -895,7 +920,7 @@ export function startEditor(root) {
     },
     // A glassware tool keeps its family's icon: a tall piece such as a condenser is a mere bar at 22 pixels.
     ...Object.fromEntries(Object.entries(FAMILIES).map(([tool, kinds]) => [tool, {
-      choices: kinds, label: (/** @type {string} */ v) => `${PIECE_ICON(v)}<span>${pieceName(v)}</span>`, title: pieceName,
+      choices: kinds, named: true, label: (/** @type {string} */ v) => `${PIECE_ICON(v)}<span>${pieceName(v)}</span>`, title: pieceName,
       current: () => S.piece[tool], choose: (/** @type {string} */ v) => { S.piece[tool] = v; }, icon: () => PIECE_ICON(kinds[0]),
     }])),
   };
@@ -908,6 +933,7 @@ export function startEditor(root) {
     flyout.hidden = !o;
     if (!o || !tool) return;
     flyout.dataset.for = tool;
+    flyout.classList.toggle('named', !!o.named);
     flyout.innerHTML = o.choices.map((v) => `<button type="button" data-choice="${v}" title="${o.title(v)}" aria-label="${o.title(v)}" aria-pressed="${v === o.current()}">${o.label(v)}</button>`).join('');
     // Beside the tool, or below it when the screen is too narrow (tools in a row, on a phone).
     const r = toolBtn(tool).getBoundingClientRect();

@@ -110,13 +110,15 @@ test('a ring drawn on an existing bond reuses its atoms (naphthalene stays Kekul
   assert.equal(d.bonds.filter((x) => x.order === 2).length, 5);
 });
 
-test('the δ tool cycles δ+ → δ− → nothing on an atom', () => {
+test('the δ tool puts the chosen sign, changes the other one, and takes the same one off', () => {
   const d = M.emptyDoc();
   const a = M.addAtom(d, { element: 'O', x: 0, y: 0 });
   const values = [];
-  for (let i = 0; i < 3; i++) {
-    M.cyclePartial(d, a.id);
-    values.push(d.marks.find((m) => m.atom === a.id && m.kind === 'partial')?.value ?? null);
+  for (const v of ['δ+', 'δ−', 'δ−']) {
+    M.setPartial(d, a.id, v);
+    const partials = d.marks.filter((m) => m.atom === a.id && m.kind === 'partial');
+    assert.ok(partials.length <= 1, 'one δ at most on an atom');
+    values.push(partials[0]?.value ?? null);
   }
   assert.deepEqual(values, ['δ+', 'δ−', null]);
 });
