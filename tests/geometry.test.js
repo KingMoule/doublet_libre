@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   angleOf, fromAngle, snapAngle, angleDiff, angularGaps, nextBondAngle, boxExit, dist, sub,
-  ringAt, ringOnBond, ringOnAtom, zigzag, pinchView, hexVertex, hexCenter, hexEdges,
+  ringAt, ringOnBond, ringOnAtom, zigzag, pinchView, zoomView, hexVertex, hexCenter, hexEdges,
 } from '../src/geometry.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} should be close to ${b}`);
@@ -86,6 +86,24 @@ test('pinching: fingers twice as far apart halve the view, the point between the
   // the midpoint (400, 300) on screen showed doc (200, 150) before, and still does
   close(v.x + (400 / 800) * v.w, 200);
   close(v.y + (300 / 600) * v.h, 150);
+});
+
+test('zooming keeps the aimed point where it is on the screen', () => {
+  const view = { x: 0, y: 0, w: 400, h: 300 };
+  const p = { x: 100, y: 75 }; // a quarter of the way across and down
+  const v = zoomView(view, p, 0.5);
+  close(v.w, 200);
+  close(v.h, 150);
+  close((p.x - v.x) / v.w, 0.25);
+  close((p.y - v.y) / v.h, 0.25);
+});
+
+test('zooming stops at 60 and 6000 units across', () => {
+  const view = { x: 0, y: 0, w: 400, h: 300 };
+  const p = { x: 200, y: 150 };
+  close(zoomView(view, p, 0.01).w, 60);
+  close(zoomView(view, p, 100).w, 6000);
+  close(zoomView(view, p, 100).h, 4500);
 });
 
 test('two fingers moving together pan the view', () => {

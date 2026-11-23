@@ -187,11 +187,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .panel details summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; }
 .panel details ul, .panel details p { margin-top: 0.4rem; }
 
-/* Status line */
-.status { grid-area: status; display: flex; gap: 1rem; justify-content: space-between; padding: 0.45rem 0.9rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.82rem; }
-/* Two lines always kept for the help text, so that the canvas never moves when it changes length. */
-#status { line-height: 1.35; height: calc(2 * 1.35em); overflow: hidden; }
-.status .zoom { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Status line: one line, for what the pointer is over and for messages, so that the canvas never moves. */
+.status { grid-area: status; display: flex; padding: 0.4rem 0.9rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.82rem; }
+#status { flex: 1; min-width: 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#status.kept::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 0.45rem; border-radius: 50%; background: var(--ok); vertical-align: 0.05em; }
+
+/* Zoom, at the bottom right of the drawing: −, the zoom, +, and back to the whole drawing. */
+.zoom-bar { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 2px; padding: 3px; background: var(--surface); border: 1px solid var(--rule); border-radius: 9px; box-shadow: 0 2px 8px rgb(0 0 0 / 0.08); }
+.zoom-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; min-width: 2rem; height: 2rem; padding: 0 0.5rem; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: 0.85rem; }
+.zoom-bar button:hover { background: var(--accent-soft); }
+.zoom-bar .zoom { min-width: 3.2rem; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Fingers: wider click areas and handles, taller buttons, no double-tap zoom. */
 @media (pointer: coarse) {
@@ -199,6 +204,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   #canvas [data-kind="bond"] > .hit, #canvas [data-kind="curved"] > .hit { stroke-width: 22px; }
   #canvas .handle rect { transform-box: fill-box; transform-origin: center; transform: scale(1.8); }
   .top button, .menu summary, .panel button { min-height: 40px; }
+  .zoom-bar button { height: 40px; min-width: 40px; }
   button, summary, .tool { touch-action: manipulation; }
 }
 
@@ -211,7 +217,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   /* Tools in a row on a phone: no groups, so that they wrap in as few rows as before. */
   .tool-group { display: contents; }
   .panel { border-left: 0; border-top: 1px solid var(--rule); }
-  #status { height: auto; }
+  #status { white-space: normal; }
 }
 </style>
 </head>

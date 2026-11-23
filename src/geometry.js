@@ -195,6 +195,17 @@ export function pinchView(view, rect, a0, b0, a1, b1) {
 }
 
 /**
+ * View zoomed by k around p, which stays at the same place on the screen (k < 1 zooms in).
+ * Its width stays between 60 and 6000 units: from a few atoms to a whole page of mechanisms.
+ * @param {{x: number, y: number, w: number, h: number}} view @param {Vec} p @param {number} k
+ */
+export function zoomView(view, p, k) {
+  const w = Math.min(6000, Math.max(60, view.w * k));
+  const f = w / view.w;
+  return { x: p.x - (p.x - view.x) * f, y: p.y - (p.y - view.y) * f, w, h: view.h * f };
+}
+
+/**
  * Distance from the centre of a box to its edge along a unit direction.
  * @param {Vec} u @param {number} halfW @param {number} halfH
  */

@@ -39,7 +39,9 @@ export const fr = {
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau',
     file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', export: 'Exporter', png: 'Image PNG', svg: 'Image SVG', copy: 'Copier l’image',
   },
+  zoom: { label: 'Zoom', in: 'Zoom avant', out: 'Zoom arrière' },
   files: {
+    kept: 'Dessin gardé dans ce navigateur',
     saved: 'Enregistré : mecanisme.doublet.json, dans vos téléchargements.',
     copied: 'Image copiée : collez-la dans Word ou Google Docs.',
     copyFailed: 'Le navigateur a refusé la copie. Utilisez plutôt Fichier → Image PNG.',
@@ -50,7 +52,7 @@ export const fr = {
   /** How to use each tool, shown in the panel when nothing is selected: two or three steps. */
   steps: {
     select: [
-      'Glissez une molécule pour la déplacer, ou le fond pour sélectionner ce qu’il entoure.',
+      'Glissez une molécule pour la déplacer (Alt : l’atome seul), ou le fond pour sélectionner ce qu’il entoure.',
       'Cliquez sur un objet pour le régler dans ce panneau ; Maj + clic l’ajoute à la sélection.',
       'Espace + glisser déplace la vue ; la molette zoome.',
     ],
@@ -142,15 +144,15 @@ export const fr = {
   },
   status: {
     hover: {
-      atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
-      bond: 'Liaison : tapez 1, 2 ou 3 pour l’ordre, W pour un coin plein, H pour un coin haché, Suppr pour l’effacer.',
-      mark: 'Glissez pour faire tourner autour de l’atome. Suppr pour effacer.',
+      atom: 'Atome : tapez son symbole (B pour Br, L pour Cl), + ou − pour la charge, Suppr pour l’effacer.',
+      bond: 'Liaison : 1, 2 ou 3 pour l’ordre, W pour un coin plein, H pour un coin haché, Suppr pour l’effacer.',
+      mark: 'Glissez pour faire tourner autour de l’atome ; Suppr pour effacer.',
       charge: 'Glissez la charge pour la faire tourner autour de l’atome.',
       curved: 'Flèche courbe : cliquez pour la sélectionner, puis courbez-la avec ses poignées carrées.',
       handle: 'Glissez la poignée pour changer la courbure.',
-      rxn: 'Flèche de réaction : cliquez pour modifier son type et ses conditions, glissez pour la déplacer.',
+      rxn: 'Flèche de réaction : cliquez pour régler son type et ses conditions, glissez pour la déplacer.',
       text: 'Texte : glissez pour le déplacer.',
-      piece: 'Pièce : glissez pour déplacer tout le montage. Près d’un rodage libre, elle s’y emboîte.',
+      piece: 'Pièce : glissez pour déplacer tout le montage ; près d’un rodage libre, elle s’y emboîte.',
     },
   },
   panel: {

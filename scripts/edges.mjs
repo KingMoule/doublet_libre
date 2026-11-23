@@ -1,6 +1,6 @@
 // Checks, on tablet and short screens and in both modes, that every tool's option window and every top-bar menu
-// stays inside the screen without hiding its button, that every tool stays reachable,
-// and that every help text fits in the two lines of the status bar.
+// stays inside the screen without hiding its button, that every tool and the zoom buttons stay reachable,
+// and that every help text fits in the one line of the status bar.
 // Usage: node scripts/edges.mjs   (needs Edge or Chrome, see browser.mjs; exits 1 on a problem)
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -35,6 +35,9 @@ const CHECK = `(async () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     }
   }
+  const zoom = document.querySelector('.zoom-bar');
+  zoom.scrollIntoView({ block: 'nearest' });
+  if (!inScreen(zoom.getBoundingClientRect())) problems.push('boutons de zoom hors écran');
   for (const d of document.querySelectorAll('.top details')) {
     d.open = true;
     await wait(20);
@@ -43,15 +46,16 @@ const CHECK = `(async () => {
     if (overlaps(m, d.querySelector('summary').getBoundingClientRect())) problems.push('menu ' + d.id + ' sur son bouton');
     d.open = false;
   }
-  // On a wide screen the help line keeps two lines of room: every help text must fit in them.
+  // On a wide screen the help line is a single line: every help text must fit in it, the green dot included.
   if (innerWidth > 760) {
     const { fr } = await import('/src/i18n/fr.js');
     const el = document.querySelector('#status');
     const texts = { ...fr.status.hover, ...fr.files, opened: fr.files.opened('mecanisme.doublet.json') };
+    el.classList.add('kept');
     for (const [key, text] of Object.entries(texts)) {
       if (typeof text !== 'string') continue;
       el.textContent = text;
-      if (el.scrollHeight > el.clientHeight + 1) problems.push('aide ' + key + ' sur plus de deux lignes');
+      if (el.scrollWidth > el.clientWidth + 1) problems.push('aide ' + key + ' plus longue que sa ligne');
     }
   }
   return problems;
