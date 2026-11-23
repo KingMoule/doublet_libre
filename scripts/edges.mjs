@@ -1,6 +1,6 @@
 // Checks, on tablet and short screens and in both modes, that every tool's option window and every top-bar menu
 // stays inside the screen without hiding its button, that every tool and the zoom buttons stay reachable,
-// and that every help text fits in the one line of the status bar.
+// that every help text fits in the one line of the status bar, and that no selection's panel squashes a field.
 // Usage: node scripts/edges.mjs   (needs Edge or Chrome, see browser.mjs; exits 1 on a problem)
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -56,6 +56,25 @@ const CHECK = `(async () => {
       if (typeof text !== 'string') continue;
       el.textContent = text;
       if (el.scrollWidth > el.clientWidth + 1) problems.push('aide ' + key + ' plus longue que sa ligne');
+    }
+  }
+  // Select one object of each kind, in a mechanism and in a set-up: a long panel scrolls, it never squashes a field.
+  for (const template of ['[data-template]', '[data-setup]']) {
+    document.querySelector(template).click();
+    document.querySelector('.tool[data-tool="select"]').click();
+    await wait(20);
+    // Every click redraws the canvas: find the object again each time.
+    for (const kind of new Set([...document.querySelectorAll('#canvas .obj')].map((o) => o.dataset.kind))) {
+      const o = document.querySelector('#canvas .obj[data-kind="' + kind + '"]');
+      const r = o.getBoundingClientRect();
+      const at = { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, pointerId: 1, isPrimary: true };
+      o.dispatchEvent(new PointerEvent('pointerdown', at));
+      o.dispatchEvent(new PointerEvent('pointerup', at));
+      await wait(20);
+      for (const f of document.querySelectorAll('.panel :is(input, textarea)')) {
+        if (f.clientHeight < f.scrollHeight - 1) problems.push('champ ' + f.id + ' écrasé (' + kind + ')');
+      }
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     }
   }
   return problems;
