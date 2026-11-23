@@ -14,7 +14,8 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 | Appareils | Ordinateur d'abord ; tablette plus tard |
 | Langue | Français ; tous les textes dans `src/i18n/fr.js` |
 | Réglage d'un outil | Petite fenêtre verticale à côté de l'outil (simple, double, triple, coin plein ou haché pour l'outil Liaison, élément de l'outil Atome, taille de l'outil Cycle, groupe de l'outil Groupe) ; l'icône montre le choix |
-| Montages de laboratoire | Mode « Montage » séparé (bouton dans la barre du haut) avec ses outils par famille de verrerie ; même document que le mécanisme. Pièces aimantées aux rodages ; un montage assemblé se déplace d'un bloc. Une famille garde son icône (une pièce haute serait illisible en 22 pixels) |
+| Interface | Ce que l'outil va dessiner se choisit dans la petite fenêtre à côté de l'outil ; ce qui est sélectionné se règle dans le panneau ; sans sélection, le panneau explique l'outil ; la barre du bas ne sert qu'aux messages. Barre du haut : sélecteur Mécanisme \| Montage, annuler, Modèles, Fichier, et Copier l'image en bouton principal. Maquettes : https://claude.ai/artifact/8dfrzyt2TVefRm6GXTwstX |
+| Montages de laboratoire | Mode « Montage » séparé (sélecteur Mécanisme \| Montage dans la barre du haut) avec ses outils par famille de verrerie ; même document que le mécanisme. Pièces aimantées aux rodages ; un montage assemblé se déplace d'un bloc. Une famille garde son icône (une pièce haute serait illisible en 22 pixels) |
 | Technique | Site statique sans build ni dépendance ; JavaScript en modules avec JSDoc `// @ts-check` ; tests `node --test` |
 
 ## Ce que l'app dessine
@@ -55,3 +56,4 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 8 | Tablette et stylet : pincer pour zoomer, deux doigts pour déplacer la vue, outils à toucher qui agissent au relâchement, cibles agrandies au doigt, élément d'un atome changeable dans le panneau | Test du pincement ; scénario tactile : pincement sans effet de bord, dessin et changement d'élément au doigt | faite |
 | 9 | Mode exercice, mode présentation, import SMILES/MOL, interface en anglais (un chantier à la fois) | — | plus tard |
 | 10 | Montages de laboratoire : mode Montage, 33 pièces en cinq familles (synthèse, distillation, séparation, verrerie, chauffage et support), rodages aimantés, modèles reflux, distillation simple et Dean-Stark | Tests d'emboîtement ; reflux monté au doigt, déplacé d'un bloc, détaché, tourné | faite |
+| 11 | Interface revue : barre du haut, outils en groupes, panneau de l'outil et de la sélection, zoom et barre du bas sur une ligne, petites fenêtres de Doublet, Charge, δ, Flèche courbe et Flèche de réaction | `edges.mjs` sur six tailles d'écran ; scénarios au doigt, sans Maj | en cours |

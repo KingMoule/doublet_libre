@@ -8,7 +8,8 @@ const signed = (q) => (q > 0 ? `+${q}` : q < 0 ? `−${-q}` : '0');
 
 export const fr = {
   appName: 'Doublet libre',
-  badge: 'Version 1',
+  modeLabel: 'Mode',
+  modes: { mechanism: 'Mécanisme', setup: 'Montage' },
   canvasLabel: 'Zone de dessin du mécanisme',
   toolsLabel: 'Outils',
   /** @type {{benzene: string, size: (n: number) => string}} */
@@ -34,14 +35,14 @@ export const fr = {
     mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince',
   },
   actions: {
-    setup: 'Montage', setups: 'Montages',
+    setups: 'Montages',
     undo: 'Annuler', redo: 'Rétablir', fit: 'Recentrer', templates: 'Modèles', clear: 'Nouveau',
-    file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', png: 'Exporter en PNG', svg: 'Exporter en SVG', copy: 'Copier l’image',
+    file: 'Fichier', open: 'Ouvrir…', save: 'Enregistrer', export: 'Exporter', png: 'Image PNG', svg: 'Image SVG', copy: 'Copier l’image',
   },
   files: {
     saved: 'Enregistré : mecanisme.doublet.json, dans vos téléchargements.',
     copied: 'Image copiée : collez-la dans Word ou Google Docs.',
-    copyFailed: 'Le navigateur a refusé la copie. Utilisez plutôt Fichier → Exporter en PNG.',
+    copyFailed: 'Le navigateur a refusé la copie. Utilisez plutôt Fichier → Image PNG.',
     badFile: 'Ce fichier n’est pas un dessin de Doublet libre (.doublet.json, ou SVG exporté par l’app).',
     /** @param {string} name */
     opened: (name) => `Ouvert : ${name}`,

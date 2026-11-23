@@ -20,7 +20,7 @@ const CHECK = `(async () => {
   const problems = [];
   // Both modes: drawing a mechanism, then a lab set-up, each with its own tools.
   for (const mode of ['mécanisme', 'montage']) {
-    if (mode === 'montage') document.querySelector('#btn-mode').click();
+    if (mode === 'montage') document.querySelector('[data-mode="setup"]').click();
     for (const b of document.querySelectorAll('.tool:not([hidden])')) {
       b.scrollIntoView({ block: 'nearest' });
       const r = b.getBoundingClientRect(), rail = document.querySelector('.tools').getBoundingClientRect();
