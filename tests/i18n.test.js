@@ -9,3 +9,9 @@ test('every tool explains itself in two or three steps', () => {
     assert.ok(Array.isArray(steps) && steps.length >= 2 && steps.length <= 3, `${key}: ${steps?.length ?? 'aucune'} étapes`);
   }
 });
+
+// In Montage mode the panel counts what that mode draws: pieces and texts, not atoms.
+test('the panel counts pieces and texts in Montage mode', () => {
+  const d = { apparatus: [{}, {}, {}], texts: [{}] };
+  assert.equal(fr.panel.setupCounts?.(d), '3 pièces · 1 texte');
+});

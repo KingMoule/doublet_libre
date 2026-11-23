@@ -5,6 +5,8 @@
  */
 /** @param {number} q */
 const signed = (q) => (q > 0 ? `+${q}` : q < 0 ? `−${-q}` : '0');
+/** French plural: 0 and 1 take the singular. @param {number} n @param {string} one @param {string} [many] */
+const count = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 
 export const fr = {
   appName: 'Doublet libre',
@@ -172,7 +174,9 @@ export const fr = {
     checkTitle: 'Vérification',
     setupTip: 'Un montage tout fait ? Reflux, distillation simple et Dean-Stark sont dans Modèles.',
     /** @param {{atoms: unknown[], bonds: unknown[], curvedArrows: unknown[]}} d */
-    counts: (d) => `${d.atoms.length} atomes · ${d.bonds.length} liaisons · ${d.curvedArrows.length} flèches courbes`,
+    counts: (d) => [count(d.atoms.length, 'atome'), count(d.bonds.length, 'liaison'), count(d.curvedArrows.length, 'flèche courbe', 'flèches courbes')].join(' · '),
+    /** @param {{apparatus: unknown[], texts: unknown[]}} d */
+    setupCounts: (d) => `${count(d.apparatus.length, 'pièce')} · ${count(d.texts.length, 'texte')}`,
     newsTitle: 'Nouveautés',
     phaseItems: [
       'Molécules selon les règles de base de l’IUPAC : liaisons, chaînes, cycles, atomes, groupes.',

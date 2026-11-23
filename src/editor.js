@@ -1156,7 +1156,7 @@ export function startEditor(root) {
         <div class="card"><span class="card-icon">${icon}</span><h2>${fr.tools[S.tool]}</h2><kbd>${fr.toolKeys[S.tool]}</kbd></div>
         <p class="label">${P.howTo}</p><ol class="steps">${steps.map((x) => `<li>${x}</li>`).join('')}</ol>
         ${pasteBtn ? `<div class="row">${pasteBtn}</div>` : ''}${check}
-        <div class="more"><p class="counts">${P.counts(d)}</p>
+        <div class="more"><p class="counts">${S.mode === 'setup' ? P.setupCounts(d) : P.counts(d)}</p>
           <details data-k="shortcuts"><summary>${P.shortcutsTitle}</summary><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul></details>
           <details data-k="news"><summary>${P.newsTitle}</summary><ul class="small">${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul><p class="muted small">${P.nextTitle} : ${P.nextItems.join(' ')}</p></details>
         </div>`;
