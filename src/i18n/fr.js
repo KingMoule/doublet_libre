@@ -47,27 +47,100 @@ export const fr = {
     /** @param {string} name */
     opened: (name) => `Ouvert : ${name}`,
   },
+  /** How to use each tool, shown in the panel when nothing is selected: two or three steps. */
+  steps: {
+    select: [
+      'Glissez une molécule pour la déplacer, ou le fond pour sélectionner ce qu’il entoure.',
+      'Cliquez sur un objet pour le régler dans ce panneau ; Maj + clic l’ajoute à la sélection.',
+      'Espace + glisser déplace la vue ; la molette zoome.',
+    ],
+    selectTouch: [
+      'Glissez une molécule pour la déplacer, ou le fond pour sélectionner ce qu’il entoure.',
+      'Touchez un objet pour le régler dans ce panneau.',
+      'Deux doigts : pincer pour zoomer, glisser pour déplacer la vue.',
+    ],
+    selectSetup: [
+      'Glissez une pièce pour déplacer tout son montage, ou le fond pour sélectionner ce qu’il entoure.',
+      'Touchez une pièce pour la tourner ou la détacher dans ce panneau.',
+    ],
+    bond: [
+      'Choisissez le type dans la petite fenêtre à côté de l’outil.',
+      'Cliquez sur le fond ou sur un atome : la liaison part de là. Sur une liaison déjà dessinée, elle prend ce type (en simple : son ordre change).',
+      'Un coin part étroit de l’atome de départ ; recliquez-le pour le retourner.',
+    ],
+    chain: [
+      'Glissez depuis un atome ou depuis le fond.',
+      'La chaîne suit en zigzag : un atome tous les 35 points environ.',
+    ],
+    ring: [
+      'Choisissez la taille dans la petite fenêtre à côté de l’outil, ou tapez 3 à 8.',
+      'Cliquez sur le fond pour un cycle seul, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher.',
+    ],
+    atom: [
+      'Choisissez l’élément dans la petite fenêtre à côté de l’outil.',
+      'Cliquez sur le fond pour poser un atome seul, sur un atome pour changer son élément.',
+      'Les H implicites s’ajoutent seuls.',
+    ],
+    group: [
+      'Choisissez le groupe dans la petite fenêtre à côté de l’outil.',
+      'Cliquez sur un atome : le groupe s’y accroche, dessiné en entier, dans la direction libre.',
+    ],
+    lonePair: [
+      'Cliquez sur un atome pour lui ajouter un doublet libre ; Maj + clic ajoute un électron seul.',
+      'Ils se placent dans l’espace libre ; glissez-les pour les faire tourner autour de l’atome.',
+    ],
+    charge: [
+      'Cliquez sur un atome pour +1 ; Maj + clic pour −1.',
+      'Les H implicites s’ajustent.',
+    ],
+    partial: [
+      'Cliquez sur un atome : δ+, puis δ−, puis rien.',
+      'Glissez le δ pour le faire tourner autour de l’atome.',
+    ],
+    curved: [
+      'Partez d’un doublet (ou de son atome) ou d’une liaison.',
+      'Glissez vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
+      'Sélectionnée, la flèche se courbe avec ses poignées carrées.',
+    ],
+    rxn: [
+      'Glissez sur le fond pour tracer la flèche ; un clic donne une flèche de longueur standard.',
+      'Écrivez ensuite ses conditions dans ce panneau.',
+    ],
+    text: [
+      'Cliquez sur le fond pour poser un « + ».',
+      'Changez le texte et sa taille dans ce panneau.',
+    ],
+    erase: [
+      'Cliquez sur un objet pour l’effacer.',
+      'Annuler (Ctrl+Z) le remet.',
+    ],
+    synthesis: [
+      'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
+      'Touchez le fond pour la poser.',
+      'Touchez le rodage libre d’une pièce pour l’y emboîter.',
+    ],
+    distillation: [
+      'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
+      'Touchez le fond pour la poser.',
+      'Touchez le rodage libre d’une pièce pour l’y emboîter : elle en prend l’angle.',
+    ],
+    separation: [
+      'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
+      'Touchez le fond pour la poser.',
+      'Touchez le goulot d’une fiole pour y mettre une tige, un entonnoir pour y mettre le papier.',
+    ],
+    glassware: [
+      'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
+      'Touchez le fond pour la poser.',
+      'Touchez le dessus d’une plaque pour l’y mettre, le goulot d’un récipient pour y plonger une pipette ou une burette.',
+    ],
+    heating: [
+      'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
+      'Touchez le fond pour la poser, ou sous un ballon ou un cristallisoir pour l’y placer.',
+      'Support et pince se placent librement.',
+    ],
+  },
   status: {
-    select: 'Glissez une molécule pour la déplacer, le fond pour sélectionner ; Maj + clic ajoute un élément. Ctrl+C, Ctrl+V : copier, coller. Espace + glisser : déplacer la vue ; molette : zoomer.',
-    bond: 'Type au choix à côté de l’outil. Cliquez sur le fond ou un atome pour poser une liaison, sur une liaison pour lui donner ce type (en simple : changer son ordre). Un coin part étroit de l’atome de départ ; recliquez-le pour le retourner.',
-    chain: 'Glissez depuis un atome ou le fond : la chaîne suit en zigzag, un atome tous les 35 points environ.',
-    ring: 'Cliquez sur le fond pour un cycle isolé, sur une liaison pour un cycle accolé, sur un atome pour l’y accrocher. Touches 3 à 8 pour la taille.',
-    selectSetup: 'Glissez une pièce pour déplacer tout son montage, le fond pour sélectionner. Touchez une pièce pour la tourner ou la détacher dans le panneau.',
-    selectTouch:'Glissez une molécule pour la déplacer, le fond pour sélectionner. Deux doigts : pincer pour zoomer, glisser pour déplacer la vue. Touchez un atome pour changer son élément dans le panneau.',
-    erase: 'Cliquez sur un objet pour l’effacer.',
-    atom: 'Cliquez sur le fond pour poser un atome seul, sur un atome pour changer son élément. Élément au choix à côté de l’outil ; les H implicites s’ajoutent seuls.',
-    lonePair: 'Cliquez sur un atome pour ajouter un doublet libre, Maj + clic pour un électron seul. Ils se placent dans l’espace libre.',
-    charge: 'Cliquez sur un atome pour +1, Maj + clic pour −1. Les H implicites s’ajustent.',
-    partial: 'Cliquez sur un atome : δ+, puis δ−, puis rien.',
-    group: 'Cliquez sur un atome pour y accrocher le groupe choisi à côté de l’outil, dessiné en entier. Il part dans la direction libre de l’atome, en zigzag.',
-    rxn: 'Glissez sur le fond pour tracer une flèche de réaction (clic : flèche de longueur standard), puis écrivez ses conditions dans le panneau.',
-    text: 'Cliquez sur le fond pour poser un « + », puis changez le texte dans le panneau.',
-    synthesis: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou le rodage libre d’une pièce pour l’y emboîter.',
-    distillation: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou le rodage libre d’une pièce pour l’y emboîter : elle en prend l’angle.',
-    separation: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, le goulot d’une fiole pour y mettre une tige, un entonnoir pour y mettre le papier.',
-    glassware: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, le dessus d’une plaque pour l’y mettre, le goulot d’un récipient pour y plonger une pipette ou une burette.',
-    heating: 'Pièce au choix à côté de l’outil. Touchez le fond pour la poser, ou sous un ballon ou un cristallisoir pour l’y placer. Support et pince se placent librement.',
-    curved: 'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
     hover: {
       atom: 'Atome : tapez C, N, O, S, F, P, H, B (Br), L (Cl) ou I pour changer l’élément, + ou − pour la charge, Suppr pour l’effacer. Alt + glisser déplace l’atome seul.',
       bond: 'Liaison : tapez 1, 2 ou 3 pour l’ordre, W pour un coin plein, H pour un coin haché, Suppr pour l’effacer.',
@@ -81,11 +154,13 @@ export const fr = {
     },
   },
   panel: {
-    nothing: 'Rien de sélectionné',
-    intro: 'Cliquez sur un objet du dessin pour voir et changer ses propriétés.',
+    toolTitle: 'Outil',
+    howTo: 'Comment faire',
+    checkTitle: 'Vérification',
+    setupTip: 'Un montage tout fait ? Reflux, distillation simple et Dean-Stark sont dans Modèles.',
     /** @param {{atoms: unknown[], bonds: unknown[], curvedArrows: unknown[]}} d */
     counts: (d) => `${d.atoms.length} atomes · ${d.bonds.length} liaisons · ${d.curvedArrows.length} flèches courbes`,
-    phaseTitle: 'Dans cette version',
+    newsTitle: 'Nouveautés',
     phaseItems: [
       'Molécules selon les règles de base de l’IUPAC : liaisons, chaînes, cycles, atomes, groupes.',
       'Modèles : SN2, SN1, E2, E1, addition électrophile, addition nucléophile sur un carbonyle.',
@@ -94,7 +169,7 @@ export const fr = {
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
       'Mode Montage : 33 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
     ],
-    shortcutsTitle: 'Raccourcis',
+    shortcutsTitle: 'Raccourcis clavier',
     shortcuts: [
       'Ctrl+Z, Ctrl+Y : annuler, rétablir',
       'Ctrl+S, Ctrl+O : enregistrer, ouvrir',
@@ -158,6 +233,7 @@ export const fr = {
   warnings: {
     /** @param {number} n */
     title: (n) => (n === 1 ? '1 avertissement' : `${n} avertissements`),
+    none: 'Aucun problème repéré : octets, sens des flèches et charges sont cohérents.',
     /** @param {{element: string, electrons: number}} p */
     octet: (p) => `${p.element} porte ${p.electrons} électrons : c’est plus que l’octet (8 au plus, sauf pour S, P et I).`,
     arrowDirection: () => 'Flèche probablement inversée : elle part d’un atome chargé + ou arrive sur un atome chargé −. Les électrons vont du site riche vers le site pauvre.',
