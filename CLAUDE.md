@@ -37,6 +37,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Chaque modification passe par `commit()` dans `editor.js`, qui enregistre l'état pour annuler.
 - Une opération sur une sélection (cadre, déplacer, effacer) vaut pour tous les objets à coordonnées : atomes, textes, flèches de réaction (`idsInRect` et `moveObjects` dans `model.js`).
 - Une action au clavier a aussi un bouton (panneau, petite fenêtre ou menu) : un étudiant sur tablette n'a ni Ctrl, ni Suppr, ni chiffres.
+- Chaque chose à sa place : ce que l'outil va dessiner se choisit dans la petite fenêtre à côté de l'outil ; ce qui est sélectionné se règle dans le panneau ; sans sélection, le panneau explique l'outil ; la barre du bas ne sert qu'aux messages.
 
 ## Pièges
 

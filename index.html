@@ -65,18 +65,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Top bar */
 .top { grid-area: top; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--rule); }
 .top .name { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.01em; }
-.top .badge { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 0.05rem 0.55rem; }
-.top .actions { margin-left: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.top .actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.top .sep { width: 1px; height: 1.4rem; margin: 0 0.25rem; background: var(--rule); }
 .top button.icon { display: grid; place-items: center; padding: 0.25rem 0.45rem; }
 .top button, .panel button { border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 0.25rem 0.65rem; cursor: pointer; }
 .top button:hover:not(:disabled), .panel button:hover { border-color: var(--accent); }
 .top button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .top button:disabled { opacity: 0.45; cursor: default; }
+.top button.primary { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+.top button.primary:hover { filter: brightness(1.12); }
+/* The mode: two buttons in one frame, the pressed one raised. */
+.top .seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg); border: 1px solid var(--rule); border-radius: 9px; }
+.top .seg button { display: inline-flex; align-items: center; gap: 0.35rem; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-weight: 500; }
+.top .seg button[aria-pressed="true"] { background: var(--surface); color: var(--accent); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 0.18); }
 .menu { position: relative; }
 .menu summary { list-style: none; cursor: pointer; border: 1px solid var(--rule); border-radius: 6px; padding: 0.25rem 0.65rem; }
 .menu summary::-webkit-details-marker { display: none; }
 .menu summary::after { content: " ▾"; }
-.menu > div { position: absolute; left: 0; top: calc(100% + 4px); z-index: 10; min-width: 15rem; display: grid; overflow-y: auto; padding: 4px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+.menu > div { position: absolute; right: 0; top: calc(100% + 4px); z-index: 10; min-width: 15rem; display: grid; overflow-y: auto; padding: 4px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
 .top .menu button { border: 0; text-align: left; display: flex; justify-content: space-between; gap: 1rem; }
 .top .menu button:hover { background: var(--accent-soft); }
 .menu .menu-head { margin: 0.4rem 0.65rem 0.15rem; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -180,6 +186,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .app { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 60vh auto auto; grid-template-areas: "top" "tools" "stage" "panel" "status"; }
   .tools { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--rule); }
   .tool { width: 52px; }
+  .top .sep { display: none; }
   .panel { border-left: 0; border-top: 1px solid var(--rule); }
   #status { height: auto; }
 }

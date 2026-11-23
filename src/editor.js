@@ -102,12 +102,16 @@ function shell() {
   const tools = TOOLS.map((t) => `<button type="button" class="tool" data-tool="${t}" aria-pressed="false" title="${fr.tools[t]} (${fr.toolKeys[t]})"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${ICONS[t]}</svg><span class="tool-name">${fr.tools[t]}</span><kbd>${fr.toolKeys[t]}</kbd></button>`).join('');
   return `
   <header class="top">
-    <b class="name">${fr.appName}</b><span class="badge">${fr.badge}</span>
+    <b class="name">${fr.appName}</b>
+    <div class="seg" role="group" aria-label="${fr.modeLabel}">
+      <button type="button" data-mode="mechanism" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true">${ICONS.curved}</svg>${fr.modes.mechanism}</button>
+      <button type="button" data-mode="setup" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true">${ICONS.synthesis}</svg>${fr.modes.setup}</button>
+    </div>
     <div class="actions">
       <button type="button" id="btn-undo" class="icon" title="${fr.actions.undo} (Ctrl+Z)" aria-label="${fr.actions.undo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3.5 L2.5 7 L6 10.5 M2.5 7 H11 A4.5 4.5 0 0 1 11 16 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" id="btn-redo" class="icon" title="${fr.actions.redo} (Ctrl+Y)" aria-label="${fr.actions.redo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M12 3.5 L15.5 7 L12 10.5 M15.5 7 H7 A4.5 4.5 0 0 0 7 16 H11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" id="btn-fit">${fr.actions.fit}</button>
-      <button type="button" id="btn-mode" aria-pressed="false">${fr.actions.setup}</button>
+      <span class="sep" aria-hidden="true"></span>
       <details class="menu" id="templates-menu"><summary>${fr.actions.templates}</summary><div>
         ${Object.keys(TEMPLATES).map((k) => `<button type="button" data-template="${k}">${fr.templateNames[/** @type {keyof typeof fr.templateNames} */ (k)]}</button>`).join('')}
         <p class="menu-head">${fr.actions.setups}</p>
@@ -117,10 +121,11 @@ function shell() {
         <button type="button" id="btn-clear">${fr.actions.clear}</button>
         <button type="button" id="btn-open">${fr.actions.open}<kbd>Ctrl+O</kbd></button>
         <button type="button" id="btn-save">${fr.actions.save}<kbd>Ctrl+S</kbd></button>
+        <p class="menu-head">${fr.actions.export}</p>
         <button type="button" id="btn-png">${fr.actions.png}</button>
         <button type="button" id="btn-svg">${fr.actions.svg}</button>
-        <button type="button" id="btn-copy">${fr.actions.copy}<kbd>Ctrl+C</kbd></button>
       </div></details>
+      <button type="button" id="btn-copy" class="primary" title="${fr.actions.copy} (Ctrl+C)"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5 V3 Q10.5 1.5 9 1.5 H4 Q2.5 1.5 2.5 3 V9.5 Q2.5 11 4 11 H5.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>${fr.actions.copy}</button>
       <input type="file" id="file-input" accept=".json,.svg,application/json,image/svg+xml" hidden>
     </div>
   </header>
@@ -826,7 +831,7 @@ export function startEditor(root) {
   /** Shows the tools of a mode: drawing a mechanism, or a lab set-up. @param {'mechanism' | 'setup'} mode */
   function setMode(mode) {
     S.mode = mode;
-    $('#btn-mode').setAttribute('aria-pressed', String(mode === 'setup'));
+    for (const b of root.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b instanceof HTMLElement && b.dataset.mode === mode));
     for (const b of root.querySelectorAll('.tool')) {
       if (b instanceof HTMLElement) b.hidden = !MODE_TOOLS[mode].includes(b.dataset.tool ?? '');
     }
@@ -901,7 +906,10 @@ export function startEditor(root) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-tool]'));
     if (b) setTool(/** @type {typeof TOOLS[number]} */ (b.dataset.tool));
   });
-  $('#btn-mode').addEventListener('click', () => setMode(S.mode === 'setup' ? 'mechanism' : 'setup'));
+  $('.seg').addEventListener('click', (e) => {
+    const mode = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.mode;
+    if (mode === 'mechanism' || mode === 'setup') setMode(mode);
+  });
   $('#btn-undo').addEventListener('click', doUndo);
   $('#btn-redo').addEventListener('click', doRedo);
   const refit = () => { userMovedView = false; fit(); };
@@ -1006,8 +1014,8 @@ export function startEditor(root) {
     'btn-save': saveDoc,
     'btn-png': async () => download(await pngBlob(), `${FILE_NAME}.png`),
     'btn-svg': () => download(new Blob([exportSVG(S.doc)], { type: 'image/svg+xml' }), `${FILE_NAME}.svg`),
-    'btn-copy': copyImage,
   };
+  $('#btn-copy').addEventListener('click', copyImage);
   fileMenu.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement} */ (e.target).closest('button');
     if (!b) return;
