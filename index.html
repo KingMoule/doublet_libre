@@ -26,6 +26,8 @@
   --warn-bg: #FBEFD9;
   --ok: #1E6A3F;
   --ok-bg: #E4F3EA;
+  --danger: #B42318;
+  --danger-rule: #E8B4AE;
   --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -35,14 +37,14 @@
   :root:not([data-theme="light"]) {
     --bg: #0B1015; --surface: #151D25; --paper: #111820; --ink: #E5EBEF; --muted: #9AA7B3; --rule: #2A3642; --hex: #19222B;
     --e-arrow: #FF7088; --accent: #7EB3F4; --accent-soft: #172A40; --hl: rgba(126, 179, 244, 0.18); --hl-strong: rgba(126, 179, 244, 0.34); --warn: #F2B65C; --warn-bg: #36270F;
-    --ok: #86D3A4; --ok-bg: #13291D;
+    --ok: #86D3A4; --ok-bg: #13291D; --danger: #FF8A80; --danger-rule: #6B2B26;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0B1015; --surface: #151D25; --paper: #111820; --ink: #E5EBEF; --muted: #9AA7B3; --rule: #2A3642; --hex: #19222B;
   --e-arrow: #FF7088; --accent: #7EB3F4; --accent-soft: #172A40; --hl: rgba(126, 179, 244, 0.18); --hl-strong: rgba(126, 179, 244, 0.34); --warn: #F2B65C; --warn-bg: #36270F;
-  --ok: #86D3A4; --ok-bg: #13291D;
+  --ok: #86D3A4; --ok-bg: #13291D; --danger: #FF8A80; --danger-rule: #6B2B26;
   color-scheme: dark;
 }
 
@@ -163,7 +165,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .panel textarea { resize: vertical; font-family: var(--font-chem); }
 .panel input, .panel select, .panel textarea { width: 100%; border: 1px solid var(--rule); border-radius: 6px; padding: 0.35rem 0.5rem; background: var(--paper); }
 .panel .row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.panel .row.end { margin-top: 0.4rem; }
 .panel .col { display: grid; gap: 0.35rem; }
 .panel .seg { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
 .panel .seg button { flex: 1; border: 0; border-radius: 0; border-right: 1px solid var(--rule); }
@@ -172,12 +173,30 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .panel .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.8rem; margin: 0; }
 .panel .kv dt { color: var(--muted); }
 .panel .kv dd { margin: 0; font-family: var(--font-chem); }
-/* The chosen tool, nothing selected: its card, numbered steps, the check, and what folds away at the bottom. */
+/* The panel's header, for the chosen tool or the selection: an icon in a tinted square, the name, a key or a hint. */
 .panel > h3:first-child { margin-top: 0; }
-.panel .tool-card { display: flex; align-items: center; gap: 0.65rem; }
-.panel .tool-card h2 { flex: 1; }
-.panel .tool-icon { flex: none; width: 2.4rem; height: 2.4rem; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
-.panel .tool-card kbd { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.35rem; }
+.panel .card { display: flex; align-items: center; gap: 0.65rem; }
+.panel .card > :nth-child(2) { flex: 1; }
+.panel .card-icon { flex: none; width: 2.4rem; height: 2.4rem; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.panel .card-icon .sym { font-family: var(--font-chem); font-weight: 700; }
+.panel .card kbd { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.35rem; }
+/* A selection's settings: elements in a grid, a list for one choice among several, − value + for a number. */
+.panel .elements { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.panel .elements button { padding: 0.35rem 0; font-family: var(--font-chem); }
+.panel .options { display: grid; gap: 4px; }
+.panel .opt { display: flex; align-items: center; gap: 0.6rem; min-height: 2.4rem; text-align: left; }
+.panel .opt small { margin-left: auto; font-size: 0.78rem; font-weight: 400; color: var(--muted); }
+.panel .elements button[aria-pressed="true"], .panel .opt[aria-pressed="true"] { border-color: var(--accent); }
+.panel .setting { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; font-size: 0.88rem; }
+.panel .setting > output { padding-right: 0.9rem; font-family: var(--font-chem); color: var(--muted); }
+.panel .stepper { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.panel .stepper button { width: 2.4rem; padding: 0.3rem 0; border: 0; border-radius: 0; font-size: 1rem; }
+.panel .stepper output { min-width: 2.6rem; display: grid; place-items: center; border-inline: 1px solid var(--rule); background: var(--paper); font-family: var(--font-chem); }
+/* Its footer: copy, paste, delete; then back to the chosen tool's help. */
+.panel .btns { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.35rem; }
+.panel button.danger { color: var(--danger); border-color: var(--danger-rule); }
+.panel button.active-tool { margin-top: auto; padding: 0.6rem 0 0; border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: none; text-align: left; color: var(--muted); font-size: 0.82rem; }
+.panel button.active-tool b { color: var(--ink); font-weight: 600; }
 .panel ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 0.5rem; font-size: 0.88rem; }
 .panel ol.steps li { counter-increment: step; display: grid; grid-template-columns: 1.3rem 1fr; gap: 0.55rem; }
 .panel ol.steps li::before { content: counter(step); width: 1.3rem; height: 1.3rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; font-weight: 600; }
