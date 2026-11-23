@@ -16,6 +16,13 @@ export const fr = {
   ringNames: { benzene: 'Benzène', size: (n) => `Cycle à ${n}` },
   bondNames: { 1: 'Simple', 2: 'Double', 3: 'Triple', wedge: 'Coin plein', hash: 'Coin haché' },
   bondHints: { wedge: 'sort du plan', hash: 'entre dans le plan' },
+  /** The two choices of the Doublet, Charge, δ and curved-arrow tools, in their option window. */
+  variants: {
+    lonePair: { lonePair: 'Doublet', radical: 'Électron seul' },
+    charge: { '+1': '+1', '-1': '−1' },
+    partial: { 'δ+': 'Positive', 'δ−': 'Négative' },
+    curved: { 2: '2 électrons', 1: '1 électron' },
+  },
   tools: {
     select: 'Sélection', bond: 'Liaison', chain: 'Chaîne', ring: 'Cycle', atom: 'Atome',
     lonePair: 'Doublet', charge: 'Charge', partial: 'Charge partielle', group: 'Groupe', curved: 'Flèche courbe',
@@ -89,20 +96,22 @@ export const fr = {
       'Cliquez sur un atome : le groupe s’y accroche, dessiné en entier, dans la direction libre.',
     ],
     lonePair: [
-      'Cliquez sur un atome pour lui ajouter un doublet libre ; Maj + clic ajoute un électron seul.',
+      'Choisissez Doublet ou Électron seul dans la petite fenêtre à côté de l’outil.',
+      'Cliquez sur un atome ; Maj + clic donne l’autre choix.',
       'Ils se placent dans l’espace libre ; glissez-les pour les faire tourner autour de l’atome.',
     ],
     charge: [
-      'Cliquez sur un atome pour +1 ; Maj + clic pour −1.',
-      'Les H implicites s’ajustent.',
+      'Choisissez +1 ou −1 dans la petite fenêtre à côté de l’outil.',
+      'Cliquez sur un atome ; Maj + clic donne l’autre signe. Les H implicites s’ajustent.',
     ],
     partial: [
-      'Cliquez sur un atome : δ+, puis δ−, puis rien.',
+      'Choisissez δ+ ou δ− dans la petite fenêtre à côté de l’outil.',
+      'Cliquez sur un atome pour le poser, recliquez pour l’enlever ; Maj + clic donne l’autre signe.',
       'Glissez le δ pour le faire tourner autour de l’atome.',
     ],
     curved: [
-      'Partez d’un doublet (ou de son atome) ou d’une liaison.',
-      'Glissez vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : demi-flèche (1 électron).',
+      'Choisissez 2 électrons ou 1 électron (demi-flèche) dans la petite fenêtre à côté de l’outil.',
+      'Glissez d’un doublet (ou de son atome) ou d’une liaison vers un atome, une liaison, ou le milieu de deux atomes pour une liaison qui se forme. Maj : l’autre choix.',
       'Sélectionnée, la flèche se courbe avec ses poignées carrées.',
     ],
     rxn: [

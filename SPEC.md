@@ -13,7 +13,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 | Licence | MIT, dépôt public |
 | Appareils | Ordinateur d'abord ; tablette plus tard |
 | Langue | Français ; tous les textes dans `src/i18n/fr.js` |
-| Réglage d'un outil | Petite fenêtre verticale à côté de l'outil (simple, double, triple, coin plein ou haché pour l'outil Liaison, élément de l'outil Atome, taille de l'outil Cycle, groupe de l'outil Groupe) ; l'icône montre le choix |
+| Réglage d'un outil | Petite fenêtre verticale à côté de l'outil (simple, double, triple, coin plein ou haché pour l'outil Liaison, élément de l'outil Atome, taille de l'outil Cycle, groupe de l'outil Groupe, doublet ou électron seul, charge +1 ou −1, δ+ ou δ−, flèche courbe à 2 ou 1 électron) ; l'icône montre le choix. Maj + clic donne l'autre choix des outils à deux choix |
 | Interface | Ce que l'outil va dessiner se choisit dans la petite fenêtre à côté de l'outil ; ce qui est sélectionné se règle dans le panneau ; sans sélection, le panneau explique l'outil ; la barre du bas ne sert qu'aux messages. Barre du haut : sélecteur Mécanisme \| Montage, annuler, Modèles, Fichier, et Copier l'image en bouton principal. Maquettes : https://claude.ai/artifact/8dfrzyt2TVefRm6GXTwstX |
 | Montages de laboratoire | Mode « Montage » séparé (sélecteur Mécanisme \| Montage dans la barre du haut) avec ses outils par famille de verrerie ; même document que le mécanisme. Pièces aimantées aux rodages ; un montage assemblé se déplace d'un bloc. Une famille garde son icône (une pièce haute serait illisible en 22 pixels) |
 | Technique | Site statique sans build ni dépendance ; JavaScript en modules avec JSDoc `// @ts-check` ; tests `node --test` |
@@ -22,7 +22,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 
 - **Formule topologique** : carbones implicites, angles de 120°, longueur constante, hétéroatomes avec leurs H (OH, NH₂, HO– inversé).
 - **Doublets libres** accrochés à l'atome, en deux points au-dessus, en dessous, à gauche ou à droite du symbole.
-- **Charges formelles** « + », « − », « 2+ » en exposant en haut à droite, sans cercle ; **δ+ / δ−** accrochés à l'atome.
+- **Charges formelles** « + », « − », « 2+ » en exposant en haut à droite, sans cercle ; **δ+ / δ−** accrochés à l'atome : l'outil δ pose le signe choisi, et un clic sur le même signe l'enlève.
 - **Grille hexagonale** au fond, de côté égal à la liaison : un atome, une liaison, une chaîne ou un cycle posés sur le fond s'y accrochent, et le zigzag suit ses arêtes. Glisser reste libre (pas de 15°).
 - **Flèches courbes** : source = doublet, liaison ou électron seul ; cible = atome, liaison ou liaison en formation ; pleine (2 e⁻) ou demi-flèche (1 e⁻) ; elles suivent les molécules.
 - **Copier-coller** : Ctrl+C copie la sélection (toute la molécule pour un atome ou une liaison, avec ses doublets, charges et flèches courbes internes) ; Ctrl+V colle une copie décalée d'une liaison, sur la grille, déjà sélectionnée. Sans sélection, Ctrl+C copie l'image.
