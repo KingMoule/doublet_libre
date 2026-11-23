@@ -115,8 +115,9 @@ export const fr = {
       'Sélectionnée, la flèche se courbe avec ses poignées carrées.',
     ],
     rxn: [
+      'Choisissez le type dans la petite fenêtre à côté de l’outil : réaction, équilibre, résonance…',
       'Glissez sur le fond pour tracer la flèche ; un clic donne une flèche de longueur standard.',
-      'Écrivez ensuite ses conditions dans ce panneau.',
+      'Écrivez ensuite ses conditions dans ce panneau, où le type se change aussi.',
     ],
     text: [
       'Cliquez sur le fond pour poser un « + ».',
@@ -180,6 +181,7 @@ export const fr = {
       'Avertissements : octet dépassé, flèche inversée, charge non conservée, résonance mal employée.',
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
       'Mode Montage : 33 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
+      'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
     shortcutsTitle: 'Raccourcis clavier',
     shortcuts: [
@@ -262,7 +264,7 @@ export const fr = {
     resonance: () => '↔ relie des formes de résonance, qui gardent les mêmes atomes et les mêmes liaisons σ. Pour une réaction, utilisez → ou ⇌.',
   },
   kinds: {
-    forward: 'Réaction →', equilibrium: 'Équilibre ⇌', resonance: 'Résonance ↔', retro: 'Rétrosynthèse ⇒', noReaction: 'Pas de réaction',
+    forward: 'Réaction', equilibrium: 'Équilibre', resonance: 'Résonance', retro: 'Rétrosynthèse', noReaction: 'Pas de réaction',
   },
   anchor: {
     /** @param {string} el */ lonePair: (el) => `doublet de ${el}`,
