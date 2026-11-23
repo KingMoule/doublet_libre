@@ -1162,95 +1162,15 @@ export function startEditor(root) {
         </div>`;
     } else {
       // A selection: the same header and footer for every kind of object, its own settings between them.
-      let icon = '', title = '', body = '', keys = '';
-      if (sel.kind === 'group') {
-        icon = svgIcon('<rect x="3.5" y="4.5" width="15" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2"/>');
-        title = P.group(sel.ids?.length ?? 0);
-        body = `<p class="muted">${P.groupHint}</p>`;
-      } else if (sel.kind === 'atom') {
-        const a = M.findAtom(d, sel.id);
-        if (a) {
-          const pairs = d.marks.filter((m) => m.atom === a.id && m.kind === 'lonePair').length;
-          icon = `<span class="sym">${esc(a.element)}</span>`;
-          title = P.titles.atom;
-          body = `<div><p class="label">${P.element}</p><div class="elements">${ELEMENTS.map((el) => btn(`el-${el}`, el, a.element === el)).join('')}</div></div>
-            <div class="setting"><span>${P.charge}</span>${stepper('charge-1', P.chargeMinus, fr.chargeText(a.charge), 'charge+1', P.chargePlus)}</div>
-            <div class="setting"><span>${P.lonePairs}</span>${stepper('lp-remove', P.removeLonePair, String(pairs), 'lp-add', P.addLonePair)}</div>
-            <div class="setting"><span>${P.hydrogens}</span><output>${M.hydrogenCount(d, a)}</output></div>`;
-          keys = P.keysAtom;
-        }
-      } else if (sel.kind === 'bond') {
-        const b = M.findBond(d, sel.id);
-        if (b) {
-          const kind = b.stereo ?? String(b.order);
-          icon = svgIcon(BOND_ICON(kind));
-          title = P.titles.bond;
-          body = `<div><p class="label">${P.bondKind}</p><div class="options">${OPTIONS.bond.choices.map((v) => {
-            const hint = fr.bondHints[/** @type {keyof typeof fr.bondHints} */ (v)];
-            return `<button type="button" class="opt" data-action="kind-${v}" aria-pressed="${v === kind}">${svgIcon(BOND_ICON(v))}${fr.bondNames[/** @type {keyof typeof fr.bondNames} */ (v)]}${hint ? `<small>${hint}</small>` : ''}</button>`;
-          }).join('')}</div></div>`;
-          keys = P.keysBond;
-        }
-      } else if (sel.kind === 'curved' || sel.kind === 'handle') {
-        const c = d.curvedArrows.find((x) => x.id === sel.id);
-        if (c) {
-          icon = svgIcon(ICONS.curved);
-          title = P.titles.curved;
-          body = `<p class="label">${P.electrons}</p><div class="seg">${btn('electrons-2', P.electronsTwo, c.electrons === 2)}${btn('electrons-1', P.electronsOne, c.electrons === 1)}</div>
-            <dl class="kv"><dt>${P.source}</dt><dd>${esc(describeAnchor(c.from))}</dd><dt>${P.target}</dt><dd>${esc(describeAnchor(c.to))}</dd></dl>
-            <div class="col">${btn('bend-reset', P.resetBend)}</div>`;
-        }
-      } else if (sel.kind === 'rxn') {
-        const r = d.reactionArrows.find((x) => x.id === sel.id);
-        if (r) {
-          const opts = Object.entries(fr.kinds).map(([k, label]) => `<option value="${k}"${r.kind === k ? ' selected' : ''}>${label}</option>`).join('');
-          icon = svgIcon(ICONS.rxn);
-          title = P.titles.rxn;
-          body = `<label for="rx-kind">${P.kind}</label><select id="rx-kind">${opts}</select>
-            <label for="rx-above">${P.above}</label><textarea id="rx-above" rows="2">${esc(r.above)}</textarea>
-            <label for="rx-below">${P.below}</label><textarea id="rx-below" rows="2">${esc(r.below)}</textarea>
-            <p class="muted small">${P.formatHint}</p>
-            <p class="label">${P.insert}</p><div class="row">${['Δ', 'hν', '°C', '⁻', '→'].map((s) => `<button type="button" data-insert="${s}">${s}</button>`).join('')}</div>`;
-        }
-      } else if (sel.kind === 'mark') {
-        const m = d.marks.find((x) => x.id === sel.id);
-        if (m) {
-          icon = svgIcon(m.kind === 'partial' ? TEXT_ICON(m.value ?? 'δ+') : m.kind === 'radical' ? '<circle cx="11" cy="11" r="2.2" fill="currentColor"/>' : ICONS.lonePair);
-          title = `${P.markNames[m.kind]}${m.kind === 'partial' ? ` ${esc(m.value ?? 'δ+')}` : ''}`;
-          body = `<p class="muted">${P.rotateHint}</p>`;
-        }
-      } else if (sel.kind === 'charge') {
-        const a = M.findAtom(d, sel.id);
-        if (a) {
-          icon = svgIcon(ICONS.charge);
-          title = P.titles.charge;
-          body = `<dl class="kv"><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd></dl><div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div><p class="muted">${P.rotateHint}</p>`;
-        }
-      } else if (sel.kind === 'piece') {
-        const g = d.apparatus.find((x) => x.id === sel.id);
-        if (g) {
-          icon = PIECE_ICON(g.kind);
-          title = pieceName(g.kind);
-          body = `<p class="label">${P.rotate}</p><div class="row">${btn('turn-15', '↺ 15°')}${btn('turn+15', '↻ 15°')}</div>
-            <div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>`;
-        }
-      } else if (sel.kind === 'text') {
-        const t = d.texts.find((x) => x.id === sel.id);
-        if (t) {
-          icon = svgIcon(ICONS.text);
-          title = P.titles.text;
-          body = `<label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">
-            <dl class="kv"><dt>${P.textSize}</dt><dd>${Math.round(t.size ?? STYLE.text)}</dd></dl><div class="row">${btn('size-2', '−')}${btn('size+2', '+')}</div>`;
-        }
-      }
+      const part = selectionParts(sel);
       // The warnings about this selection; the others are in the panel of the tool.
       const shown = S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id)));
-      if (title) {
+      if (part) {
         html = `<h3>${P.selectionTitle}</h3>
-          <div class="card"><span class="card-icon">${icon}</span><div><h2>${title}</h2><p class="muted small">${P.escHint}</p></div></div>
-          ${body}${warningsBox(shown)}
+          <div class="card"><span class="card-icon">${part.icon}</span><div><h2>${part.title}</h2><p class="muted small">${P.escHint}</p></div></div>
+          ${part.body}${warningsBox(shown)}
           <div class="btns">${selectedIds() ? btn('copy', P.copy) : ''}${pasteBtn}<button type="button" class="danger" data-action="delete">${P.remove}</button></div>
-          ${keys ? `<p class="muted small">${keys}</p>` : ''}
+          ${part.keys ? `<p class="muted small">${part.keys}</p>` : ''}
           <button type="button" class="active-tool" data-action="deselect">${P.activeTool} <b>${fr.tools[S.tool]}</b> — ${P.seeHelp} <span aria-hidden="true">›</span></button>`;
       }
     }
@@ -1260,13 +1180,127 @@ export function startEditor(root) {
     for (const k of open) panel.querySelector(`details[data-k="${k}"]`)?.setAttribute('open', '');
   }
 
+  /**
+   * What the panel shows of a selection between the common header and footer, in the same few widgets:
+   * a list for one choice among several, − value + for a number, a field for text.
+   * @param {Hit} sel @returns {{icon: string, title: string, body: string, keys?: string} | null}
+   */
+  function selectionParts(sel) {
+    const P = fr.panel;
+    const d = S.doc;
+    switch (sel.kind) {
+      case 'group':
+        return {
+          icon: svgIcon('<rect x="3.5" y="4.5" width="15" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2"/>'),
+          title: P.group(sel.ids?.length ?? 0), body: `<p class="muted">${P.groupHint}</p>`,
+        };
+      case 'atom': {
+        const a = M.findAtom(d, sel.id);
+        if (!a) return null;
+        const pairs = d.marks.filter((m) => m.atom === a.id && m.kind === 'lonePair').length;
+        return {
+          icon: `<span class="sym">${esc(a.element)}</span>`, title: P.titles.atom, keys: P.keysAtom,
+          body: `<div><p class="label">${P.element}</p><div class="elements">${ELEMENTS.map((el) => btn(`el-${el}`, el, a.element === el)).join('')}</div></div>
+            <div class="setting"><span>${P.charge}</span>${stepper('charge-1', P.chargeMinus, fr.chargeText(a.charge), 'charge+1', P.chargePlus)}</div>
+            <div class="setting"><span>${P.lonePairs}</span>${stepper('lp-remove', P.removeLonePair, String(pairs), 'lp-add', P.addLonePair)}</div>
+            <div class="setting"><span>${P.hydrogens}</span><output>${M.hydrogenCount(d, a)}</output></div>`,
+        };
+      }
+      case 'bond': {
+        const b = M.findBond(d, sel.id);
+        if (!b) return null;
+        const kind = b.stereo ?? String(b.order);
+        return {
+          icon: svgIcon(BOND_ICON(kind)), title: P.titles.bond, keys: P.keysBond,
+          body: options(P.bondKind, OPTIONS.bond.choices.map((v) => opt(`kind-${v}`, BOND_ICON(v), fr.bondNames[/** @type {keyof typeof fr.bondNames} */ (v)], v === kind, fr.bondHints[/** @type {keyof typeof fr.bondHints} */ (v)]))),
+        };
+      }
+      case 'curved': case 'handle': {
+        const c = d.curvedArrows.find((x) => x.id === sel.id);
+        if (!c) return null;
+        const [[, full], [, half]] = VARIANTS.curved;
+        return {
+          icon: svgIcon(ICONS.curved), title: P.titles.curved,
+          body: `${options(P.electrons, [opt('electrons-2', full, P.electronsTwo, c.electrons === 2, fr.variants.curved[2]), opt('electrons-1', half, P.electronsOne, c.electrons === 1, fr.variants.curved[1])])}
+            <dl class="kv"><dt>${P.source}</dt><dd>${esc(describeAnchor(c.from))}</dd><dt>${P.target}</dt><dd>${esc(describeAnchor(c.to))}</dd></dl>
+            <div class="col">${btn('bend-reset', P.resetBend)}</div><p class="muted small">${P.bendHint}</p>`,
+        };
+      }
+      case 'rxn': {
+        const r = d.reactionArrows.find((x) => x.id === sel.id);
+        if (!r) return null;
+        return {
+          icon: svgIcon(RXN_ICONS[r.kind]), title: P.titles.rxn,
+          body: `${options(P.kind, Object.entries(RXN_ICONS).map(([k, icon]) => opt(`rxkind-${k}`, icon, fr.kinds[/** @type {keyof typeof fr.kinds} */ (k)], r.kind === k)))}
+            <label for="rx-above">${P.above}</label><textarea id="rx-above" rows="2">${esc(r.above)}</textarea>
+            <label for="rx-below">${P.below}</label><textarea id="rx-below" rows="2">${esc(r.below)}</textarea>
+            <p class="muted small">${P.formatHint}</p>
+            <p class="label">${P.insert}</p><div class="row">${['Δ', 'hν', '°C', '⁻', '→'].map((s) => `<button type="button" data-insert="${s}">${s}</button>`).join('')}</div>`,
+        };
+      }
+      case 'mark': {
+        const m = d.marks.find((x) => x.id === sel.id);
+        if (!m) return null;
+        const rotate = `<p class="muted">${P.rotateHint}</p>`;
+        if (m.kind === 'partial') {
+          const value = m.value ?? 'δ+';
+          return {
+            icon: svgIcon(TEXT_ICON(value)), title: P.markNames.partial,
+            body: options(P.sign, VARIANTS.partial.map(([v, icon]) => opt(`partial-${v}`, icon, fr.variants.partial[/** @type {'δ+'} */ (v)], v === value))) + rotate,
+          };
+        }
+        return { icon: svgIcon(VARIANTS.lonePair[m.kind === 'radical' ? 1 : 0][1]), title: P.markNames[m.kind], body: rotate };
+      }
+      case 'charge': {
+        const a = M.findAtom(d, sel.id);
+        if (!a) return null;
+        return {
+          icon: svgIcon(ICONS.charge), title: P.titles.charge,
+          body: `<div class="setting"><span>${P.charge}</span>${stepper('charge-1', P.chargeMinus, fr.chargeText(a.charge), 'charge+1', P.chargePlus)}</div><p class="muted">${P.rotateHint}</p>`,
+        };
+      }
+      case 'piece': {
+        const g = d.apparatus.find((x) => x.id === sel.id);
+        if (!g) return null;
+        const angle = ((Math.round(g.angle) % 360) + 360) % 360;
+        return {
+          icon: PIECE_ICON(g.kind), title: pieceName(g.kind),
+          body: `<div class="setting"><span>${P.rotate}</span>${stepper('turn-15', P.turnLeft, `${angle}°`, 'turn+15', P.turnRight, ['↺', '↻'])}</div>
+            <div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>`,
+        };
+      }
+      case 'text': {
+        const t = d.texts.find((x) => x.id === sel.id);
+        if (!t) return null;
+        return {
+          icon: svgIcon(ICONS.text), title: P.titles.text,
+          body: `<label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">
+            <div class="setting"><span>${P.textSize}</span>${stepper('size-2', P.smaller, String(Math.round(t.size ?? STYLE.text)), 'size+2', P.bigger)}</div>
+            <p class="muted small">${P.textHint}</p>`,
+        };
+      }
+      default: return null;
+    }
+  }
+
   /** A 22-pixel icon for the panel's header. @param {string} inner */
   function svgIcon(inner) {
     return `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${inner}</svg>`;
   }
-  /** − value + buttons for a number. @param {string} less @param {string} lessLabel @param {string} value @param {string} more @param {string} moreLabel */
-  function stepper(less, lessLabel, value, more, moreLabel) {
-    return `<span class="stepper"><button type="button" data-action="${less}" aria-label="${lessLabel}">−</button><output>${value}</output><button type="button" data-action="${more}" aria-label="${moreLabel}">+</button></span>`;
+  /** A labelled list of choices, one of them pressed. @param {string} label @param {string[]} items */
+  function options(label, items) {
+    return `<div><p class="label">${label}</p><div class="options">${items.join('')}</div></div>`;
+  }
+  /** One choice of such a list: icon, name, and a hint on the right. @param {string} action @param {string} icon @param {string} name @param {boolean} on @param {string} [hint] */
+  function opt(action, icon, name, on, hint = '') {
+    return `<button type="button" class="opt" data-action="${action}" aria-pressed="${on}">${svgIcon(icon)}${name}${hint ? `<small>${hint}</small>` : ''}</button>`;
+  }
+  /**
+   * − value + buttons for a number.
+   * @param {string} less @param {string} lessLabel @param {string} value @param {string} more @param {string} moreLabel @param {string[]} [signs]
+   */
+  function stepper(less, lessLabel, value, more, moreLabel, signs = ['−', '+']) {
+    return `<span class="stepper"><button type="button" data-action="${less}" aria-label="${lessLabel}">${signs[0]}</button><output>${value}</output><button type="button" data-action="${more}" aria-label="${moreLabel}">${signs[1]}</button></span>`;
   }
 
   /** @param {typeof S.warnings} list */
@@ -1303,6 +1337,12 @@ export function startEditor(root) {
         return;
       }
       if (act.startsWith('kind-')) { M.setBondKind(d, sel.id, bondKind(act.slice(5))); return; }
+      if (act.startsWith('rxkind-')) {
+        const r = d.reactionArrows.find((x) => x.id === sel.id);
+        if (r) r.kind = /** @type {M.ReactionArrow['kind']} */ (act.slice(7));
+        return;
+      }
+      if (act.startsWith('partial-')) { const m = d.marks.find((x) => x.id === sel.id); if (m) m.value = act.slice(8); return; }
       const c = d.curvedArrows.find((x) => x.id === sel.id);
       if (c && act.startsWith('electrons-')) c.electrons = /** @type {1|2} */ (Number(act.slice(10)));
       if (c && act === 'bend-reset') c.bend = defaultBend(d, c.from, c.to);
@@ -1317,13 +1357,12 @@ export function startEditor(root) {
     if (id === 'tx-text') { const t = d.texts.find((x) => x.id === sel.id); if (t) t.text = value; return; }
     const r = d.reactionArrows.find((x) => x.id === sel.id);
     if (!r) return;
-    if (id === 'rx-kind') r.kind = /** @type {M.ReactionArrow['kind']} */ (value);
     if (id === 'rx-above') r.above = value;
     if (id === 'rx-below') r.below = value;
   }
 
   panel.addEventListener('input', (e) => {
-    const el = /** @type {HTMLInputElement | HTMLSelectElement} */ (e.target);
+    const el = /** @type {HTMLInputElement | HTMLTextAreaElement} */ (e.target);
     if (!S.fieldSession) { M.record(S.history, S.doc); S.fieldSession = true; }
     applyField(el.id, el.value);
     save();
