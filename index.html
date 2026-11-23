@@ -155,6 +155,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Panel */
 .panel { grid-area: panel; border-left: 1px solid var(--rule); padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+/* A long panel scrolls; nothing in it shrinks to fit (a squashed text field would hide what it holds). */
+.panel > * { flex-shrink: 0; }
 .panel h2 { font-family: var(--font-display); font-size: 1.05rem; margin: 0; }
 .panel h3 { font-size: 0.8rem; margin: 0.6rem 0 0; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
 .panel p { margin: 0; }
@@ -164,12 +166,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .panel .counts { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .panel .label, .panel label { font-size: 0.78rem; color: var(--muted); }
 .panel textarea { resize: vertical; font-family: var(--font-chem); }
-.panel input, .panel select, .panel textarea { width: 100%; border: 1px solid var(--rule); border-radius: 6px; padding: 0.35rem 0.5rem; background: var(--paper); }
+.panel input, .panel textarea { width: 100%; border: 1px solid var(--rule); border-radius: 6px; padding: 0.35rem 0.5rem; background: var(--paper); }
 .panel .row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .panel .col { display: grid; gap: 0.35rem; }
-.panel .seg { display: flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
-.panel .seg button { flex: 1; border: 0; border-radius: 0; border-right: 1px solid var(--rule); }
-.panel .seg button:last-child { border-right: 0; }
 .panel button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .panel .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.8rem; margin: 0; }
 .panel .kv dt { color: var(--muted); }
