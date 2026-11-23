@@ -94,6 +94,14 @@ const ICONS = {
   glassware: PIECE_ICON('erlenmeyer'),
   heating: PIECE_ICON('mantle'),
 };
+/** The kinds of reaction arrow, drawn as render.js draws them: one line, two half arrows, two heads, an open double line, a crossed arrow. */
+const RXN_ICONS = {
+  forward: ICONS.rxn,
+  equilibrium: '<path d="M3 9 H18 L14.5 6 M19 13 H4 L7.5 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  resonance: '<path d="M7 11 H15" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 11 L7 7.5 L7 14.5 Z M19.5 11 L15 7.5 L15 14.5 Z" fill="currentColor"/>',
+  retro: '<path d="M3 8.5 H16 M3 13.5 H16 M13.5 5.5 L19 11 L13.5 16.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  noReaction: `${ICONS.rxn}<path d="M8 7.5 L12 14.5 M12 7.5 L8 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+};
 /** Tools with two variants, chosen in their option window; Shift + click gives the other one. Each: [value, icon]. */
 const VARIANTS = {
   lonePair: [['lonePair', ICONS.lonePair], ['radical', '<circle cx="11" cy="11" r="2.2" fill="currentColor"/>']],
@@ -202,6 +210,8 @@ export function startEditor(root) {
     piece: Object.fromEntries(Object.entries(FAMILIES).map(([f, kinds]) => [f, kinds[0]])),
     element: 'C',
     group: 'Ph',
+    /** The kind of the next reaction arrow. @type {import('./model.js').ReactionArrow['kind']} */
+    rxnKind: 'forward',
     /** The variant each two-variant tool puts down. @type {Record<string, string>} */
     variant: Object.fromEntries(Object.entries(VARIANTS).map(([tool, choices]) => [tool, choices[0][0]])),
     /** @type {{a: {x:number,y:number}, b: {x:number,y:number}, view: {x:number,y:number,w:number,h:number}} | null} */ pinch: null,
@@ -691,7 +701,7 @@ export function startEditor(root) {
     if (D.type === 'rxnNew') {
       const end = rxnEnd(D, p);
       commit((d) => {
-        const ra = M.addReactionArrow(d, { x1: D.start.x, y1: D.start.y, x2: end.x, y2: end.y, kind: 'forward', above: '', below: '' });
+        const ra = M.addReactionArrow(d, { x1: D.start.x, y1: D.start.y, x2: end.x, y2: end.y, kind: S.rxnKind, above: '', below: '' });
         S.selection = { kind: 'rxn', id: ra.id };
       });
       return;
@@ -917,6 +927,11 @@ export function startEditor(root) {
     group: {
       choices: Object.keys(GROUPS), label: (v) => groupName(v), title: (v) => groupName(v), current: () => S.group,
       choose: (v) => { S.group = v; }, icon: () => TEXT_ICON(groupName(S.group)),
+    },
+    rxn: {
+      choices: Object.keys(RXN_ICONS), named: true, title: (v) => fr.kinds[/** @type {keyof typeof fr.kinds} */ (v)],
+      label: (v) => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${RXN_ICONS[/** @type {keyof typeof RXN_ICONS} */ (v)]}</svg><span>${fr.kinds[/** @type {keyof typeof fr.kinds} */ (v)]}</span>`,
+      current: () => S.rxnKind, choose: (v) => { S.rxnKind = /** @type {typeof S.rxnKind} */ (v); }, icon: () => RXN_ICONS[S.rxnKind],
     },
     // A glassware tool keeps its family's icon: a tall piece such as a condenser is a mere bar at 22 pixels.
     ...Object.fromEntries(Object.entries(FAMILIES).map(([tool, kinds]) => [tool, {
