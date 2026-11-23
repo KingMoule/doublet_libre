@@ -28,6 +28,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
 - Partir de `main` seulement après avoir vu la PR précédente fusionnée (`gh pr view N --json state` doit dire `MERGED`). Ne pas l'enchaîner avec `&&` : `gh pr view` réussit aussi quand la PR est encore ouverte.
 - Après avoir ouvert la PR, activer sa fusion automatique (squash) : GitHub la fusionne seulement quand le test `test` est vert. Si un test échoue, corriger plutôt que fusionner.
+- Un plan accepté s'enchaîne : dès que la PR d'une étape est fusionnée, passer à l'étape suivante sans attendre un nouveau feu vert.
 
 ## Choix qui ne se voient pas dans le code
 
