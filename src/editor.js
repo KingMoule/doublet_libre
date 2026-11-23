@@ -874,7 +874,8 @@ export function startEditor(root) {
     bond: {
       choices: ['1', '2', '3', 'wedge', 'hash'],
       label: (v) => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${BOND_ICON(v)}</svg>`,
-      title: (v) => fr.bondNames[/** @type {keyof typeof fr.bondNames} */ (v)], current: () => S.bond,
+      title: (v) => [fr.bondNames[/** @type {keyof typeof fr.bondNames} */ (v)], fr.bondHints[/** @type {keyof typeof fr.bondHints} */ (v)]].filter(Boolean).join(' : '),
+      current: () => S.bond,
       choose: (v) => { S.bond = v; }, icon: () => BOND_ICON(S.bond),
     },
     atom: {
@@ -1101,7 +1102,6 @@ export function startEditor(root) {
     let html = '';
     // Buttons for what the keyboard does, for tablets: copy, paste, delete.
     const pasteBtn = clipboard ? btn('paste', P.paste) : '';
-    const removeBtn = `<div class="row end">${selectedIds() ? btn('copy', P.copy) : ''}${pasteBtn}${btn('delete', P.remove)}</div>`;
     if (!sel) {
       // Nothing selected: how to use the chosen tool, then whether the mechanism holds together.
       const touch = matchMedia('(pointer: coarse)').matches;
@@ -1112,73 +1112,120 @@ export function startEditor(root) {
         : S.warnings.length ? `<h3>${P.checkTitle}</h3>${warningsBox(S.warnings)}`
         : d.atoms.length ? `<h3>${P.checkTitle}</h3><p class="ok">${fr.warnings.none}</p>` : '';
       html = `<h3>${P.toolTitle}</h3>
-        <div class="tool-card"><span class="tool-icon">${icon}</span><h2>${fr.tools[S.tool]}</h2><kbd>${fr.toolKeys[S.tool]}</kbd></div>
+        <div class="card"><span class="card-icon">${icon}</span><h2>${fr.tools[S.tool]}</h2><kbd>${fr.toolKeys[S.tool]}</kbd></div>
         <p class="label">${P.howTo}</p><ol class="steps">${steps.map((x) => `<li>${x}</li>`).join('')}</ol>
         ${pasteBtn ? `<div class="row">${pasteBtn}</div>` : ''}${check}
         <div class="more"><p class="counts">${P.counts(d)}</p>
           <details data-k="shortcuts"><summary>${P.shortcutsTitle}</summary><ul class="small">${P.shortcuts.map((x) => `<li>${x}</li>`).join('')}</ul></details>
           <details data-k="news"><summary>${P.newsTitle}</summary><ul class="small">${P.phaseItems.map((x) => `<li>${x}</li>`).join('')}</ul><p class="muted small">${P.nextTitle} : ${P.nextItems.join(' ')}</p></details>
         </div>`;
-    } else if (sel.kind === 'group') {
-      html = `<h2>${P.group(sel.ids?.length ?? 0)}</h2><p class="muted">${P.groupHint}</p>${removeBtn}`;
-    } else if (sel.kind === 'atom') {
-      const a = M.findAtom(d, sel.id);
-      if (a) {
-        html = `<h2>${P.titles.atom}</h2><dl class="kv"><dt>${P.element}</dt><dd>${esc(a.element)}</dd><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd><dt>${P.hydrogens}</dt><dd>${M.hydrogenCount(d, a)}</dd></dl>
-          <div class="row">${ELEMENTS.map((el) => btn(`el-${el}`, el, a.element === el)).join('')}</div>
-          <div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div>
-          <div class="col">${btn('lp-add', P.addLonePair)}${btn('lp-remove', P.removeLonePair)}</div>${removeBtn}`;
+    } else {
+      // A selection: the same header and footer for every kind of object, its own settings between them.
+      let icon = '', title = '', body = '', keys = '';
+      if (sel.kind === 'group') {
+        icon = svgIcon('<rect x="3.5" y="4.5" width="15" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2"/>');
+        title = P.group(sel.ids?.length ?? 0);
+        body = `<p class="muted">${P.groupHint}</p>`;
+      } else if (sel.kind === 'atom') {
+        const a = M.findAtom(d, sel.id);
+        if (a) {
+          const pairs = d.marks.filter((m) => m.atom === a.id && m.kind === 'lonePair').length;
+          icon = `<span class="sym">${esc(a.element)}</span>`;
+          title = P.titles.atom;
+          body = `<div><p class="label">${P.element}</p><div class="elements">${ELEMENTS.map((el) => btn(`el-${el}`, el, a.element === el)).join('')}</div></div>
+            <div class="setting"><span>${P.charge}</span>${stepper('charge-1', P.chargeMinus, fr.chargeText(a.charge), 'charge+1', P.chargePlus)}</div>
+            <div class="setting"><span>${P.lonePairs}</span>${stepper('lp-remove', P.removeLonePair, String(pairs), 'lp-add', P.addLonePair)}</div>
+            <div class="setting"><span>${P.hydrogens}</span><output>${M.hydrogenCount(d, a)}</output></div>`;
+          keys = P.keysAtom;
+        }
+      } else if (sel.kind === 'bond') {
+        const b = M.findBond(d, sel.id);
+        if (b) {
+          const kind = b.stereo ?? String(b.order);
+          icon = svgIcon(BOND_ICON(kind));
+          title = P.titles.bond;
+          body = `<div><p class="label">${P.bondKind}</p><div class="options">${OPTIONS.bond.choices.map((v) => {
+            const hint = fr.bondHints[/** @type {keyof typeof fr.bondHints} */ (v)];
+            return `<button type="button" class="opt" data-action="kind-${v}" aria-pressed="${v === kind}">${svgIcon(BOND_ICON(v))}${fr.bondNames[/** @type {keyof typeof fr.bondNames} */ (v)]}${hint ? `<small>${hint}</small>` : ''}</button>`;
+          }).join('')}</div></div>`;
+          keys = P.keysBond;
+        }
+      } else if (sel.kind === 'curved' || sel.kind === 'handle') {
+        const c = d.curvedArrows.find((x) => x.id === sel.id);
+        if (c) {
+          icon = svgIcon(ICONS.curved);
+          title = P.titles.curved;
+          body = `<p class="label">${P.electrons}</p><div class="seg">${btn('electrons-2', P.electronsTwo, c.electrons === 2)}${btn('electrons-1', P.electronsOne, c.electrons === 1)}</div>
+            <dl class="kv"><dt>${P.source}</dt><dd>${esc(describeAnchor(c.from))}</dd><dt>${P.target}</dt><dd>${esc(describeAnchor(c.to))}</dd></dl>
+            <div class="col">${btn('bend-reset', P.resetBend)}</div>`;
+        }
+      } else if (sel.kind === 'rxn') {
+        const r = d.reactionArrows.find((x) => x.id === sel.id);
+        if (r) {
+          const opts = Object.entries(fr.kinds).map(([k, label]) => `<option value="${k}"${r.kind === k ? ' selected' : ''}>${label}</option>`).join('');
+          icon = svgIcon(ICONS.rxn);
+          title = P.titles.rxn;
+          body = `<label for="rx-kind">${P.kind}</label><select id="rx-kind">${opts}</select>
+            <label for="rx-above">${P.above}</label><textarea id="rx-above" rows="2">${esc(r.above)}</textarea>
+            <label for="rx-below">${P.below}</label><textarea id="rx-below" rows="2">${esc(r.below)}</textarea>
+            <p class="muted small">${P.formatHint}</p>
+            <p class="label">${P.insert}</p><div class="row">${['Δ', 'hν', '°C', '⁻', '→'].map((s) => `<button type="button" data-insert="${s}">${s}</button>`).join('')}</div>`;
+        }
+      } else if (sel.kind === 'mark') {
+        const m = d.marks.find((x) => x.id === sel.id);
+        if (m) {
+          icon = svgIcon(m.kind === 'partial' ? TEXT_ICON(m.value ?? 'δ+') : m.kind === 'radical' ? '<circle cx="11" cy="11" r="2.2" fill="currentColor"/>' : ICONS.lonePair);
+          title = `${P.markNames[m.kind]}${m.kind === 'partial' ? ` ${esc(m.value ?? 'δ+')}` : ''}`;
+          body = `<p class="muted">${P.rotateHint}</p>`;
+        }
+      } else if (sel.kind === 'charge') {
+        const a = M.findAtom(d, sel.id);
+        if (a) {
+          icon = svgIcon(ICONS.charge);
+          title = P.titles.charge;
+          body = `<dl class="kv"><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd></dl><div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div><p class="muted">${P.rotateHint}</p>`;
+        }
+      } else if (sel.kind === 'piece') {
+        const g = d.apparatus.find((x) => x.id === sel.id);
+        if (g) {
+          icon = PIECE_ICON(g.kind);
+          title = pieceName(g.kind);
+          body = `<p class="label">${P.rotate}</p><div class="row">${btn('turn-15', '↺ 15°')}${btn('turn+15', '↻ 15°')}</div>
+            <div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>`;
+        }
+      } else if (sel.kind === 'text') {
+        const t = d.texts.find((x) => x.id === sel.id);
+        if (t) {
+          icon = svgIcon(ICONS.text);
+          title = P.titles.text;
+          body = `<label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">
+            <dl class="kv"><dt>${P.textSize}</dt><dd>${Math.round(t.size ?? STYLE.text)}</dd></dl><div class="row">${btn('size-2', '−')}${btn('size+2', '+')}</div>`;
+        }
       }
-    } else if (sel.kind === 'bond') {
-      const b = M.findBond(d, sel.id);
-      if (b) {
-        const stereo = b.stereo ?? 'none';
-        html = `<h2>${P.titles.bond}</h2><p class="label">${P.order}</p><div class="seg">${[1, 2, 3].map((o) => btn(`order-${o}`, String(o), b.order === o)).join('')}</div>
-          <p class="label">${P.stereo}</p><div class="seg">${['none', 'wedge', 'hash'].map((s) => btn(`stereo-${s}`, P.stereoNames[/** @type {'none'} */ (s)], stereo === s)).join('')}</div>${removeBtn}`;
-      }
-    } else if (sel.kind === 'curved' || sel.kind === 'handle') {
-      const c = d.curvedArrows.find((x) => x.id === sel.id);
-      if (c) {
-        html = `<h2>${P.titles.curved}</h2><p class="label">${P.electrons}</p><div class="seg">${btn('electrons-2', P.electronsTwo, c.electrons === 2)}${btn('electrons-1', P.electronsOne, c.electrons === 1)}</div>
-          <dl class="kv"><dt>${P.source}</dt><dd>${esc(describeAnchor(c.from))}</dd><dt>${P.target}</dt><dd>${esc(describeAnchor(c.to))}</dd></dl>
-          <div class="col">${btn('bend-reset', P.resetBend)}</div>${removeBtn}`;
-      }
-    } else if (sel.kind === 'rxn') {
-      const r = d.reactionArrows.find((x) => x.id === sel.id);
-      if (r) {
-        const opts = Object.entries(fr.kinds).map(([k, label]) => `<option value="${k}"${r.kind === k ? ' selected' : ''}>${label}</option>`).join('');
-        html = `<h2>${P.titles.rxn}</h2>
-          <label for="rx-kind">${P.kind}</label><select id="rx-kind">${opts}</select>
-          <label for="rx-above">${P.above}</label><textarea id="rx-above" rows="2">${esc(r.above)}</textarea>
-          <label for="rx-below">${P.below}</label><textarea id="rx-below" rows="2">${esc(r.below)}</textarea>
-          <p class="muted small">${P.formatHint}</p>
-          <p class="label">${P.insert}</p><div class="row">${['Δ', 'hν', '°C', '⁻', '→'].map((s) => `<button type="button" data-insert="${s}">${s}</button>`).join('')}</div>${removeBtn}`;
-      }
-    } else if (sel.kind === 'mark') {
-      const m = d.marks.find((x) => x.id === sel.id);
-      if (m) html = `<h2>${P.markNames[m.kind]}${m.kind === 'partial' ? ` ${esc(m.value ?? 'δ+')}` : ''}</h2><p class="muted">${P.rotateHint}</p>${removeBtn}`;
-    } else if (sel.kind === 'charge') {
-      const a = M.findAtom(d, sel.id);
-      if (a) html = `<h2>${P.titles.charge}</h2><dl class="kv"><dt>${P.charge}</dt><dd>${fr.chargeText(a.charge)}</dd></dl><div class="row">${btn('charge-1', '− 1')}${btn('charge+1', '+ 1')}</div><p class="muted">${P.rotateHint}</p>${removeBtn}`;
-    } else if (sel.kind === 'piece') {
-      const g = d.apparatus.find((x) => x.id === sel.id);
-      if (g) {
-        html = `<h2>${pieceName(g.kind)}</h2><p class="label">${P.rotate}</p><div class="row">${btn('turn-15', '↺ 15°')}${btn('turn+15', '↻ 15°')}</div>
-          <div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>${removeBtn}`;
-      }
-    } else if (sel.kind === 'text') {
-      const t = d.texts.find((x) => x.id === sel.id);
-      if (t) {
-        html = `<h2>${P.titles.text}</h2><label for="tx-text">${P.textLabel}</label><input id="tx-text" type="text" autocomplete="off" value="${esc(t.text)}">
-          <dl class="kv"><dt>${P.textSize}</dt><dd>${Math.round(t.size ?? STYLE.text)}</dd></dl><div class="row">${btn('size-2', '−')}${btn('size+2', '+')}</div>${removeBtn}`;
+      // The warnings about this selection; the others are in the panel of the tool.
+      const shown = S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id)));
+      if (title) {
+        html = `<h3>${P.selectionTitle}</h3>
+          <div class="card"><span class="card-icon">${icon}</span><div><h2>${title}</h2><p class="muted small">${P.escHint}</p></div></div>
+          ${body}${warningsBox(shown)}
+          <div class="btns">${selectedIds() ? btn('copy', P.copy) : ''}${pasteBtn}<button type="button" class="danger" data-action="delete">${P.remove}</button></div>
+          ${keys ? `<p class="muted small">${keys}</p>` : ''}
+          <button type="button" class="active-tool" data-action="deselect">${P.activeTool} <b>${fr.tools[S.tool]}</b> — ${P.seeHelp} <span aria-hidden="true">›</span></button>`;
       }
     }
-    // With a selection, the warnings about it; the others are in the panel of the tool.
-    const shown = sel ? S.warnings.filter((w) => w.ids.includes(sel.id) || w.ids.some((id) => sel.ids?.includes(id))) : [];
     // Redrawing the panel after each change must not close what the student opened.
     const open = [...panel.querySelectorAll('details[open]')].map((x) => x.getAttribute('data-k'));
-    panel.innerHTML = html + warningsBox(shown);
+    panel.innerHTML = html;
     for (const k of open) panel.querySelector(`details[data-k="${k}"]`)?.setAttribute('open', '');
+  }
+
+  /** A 22-pixel icon for the panel's header. @param {string} inner */
+  function svgIcon(inner) {
+    return `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${inner}</svg>`;
+  }
+  /** − value + buttons for a number. @param {string} less @param {string} lessLabel @param {string} value @param {string} more @param {string} moreLabel */
+  function stepper(less, lessLabel, value, more, moreLabel) {
+    return `<span class="stepper"><button type="button" data-action="${less}" aria-label="${lessLabel}">−</button><output>${value}</output><button type="button" data-action="${more}" aria-label="${moreLabel}">+</button></span>`;
   }
 
   /** @param {typeof S.warnings} list */
@@ -1194,6 +1241,7 @@ export function startEditor(root) {
     const act = b.dataset.action;
     if (act === 'copy') { copySelection(); renderPanel(); return; }
     if (act === 'paste') { pasteClipboard(); return; }
+    if (act === 'deselect') { S.selection = null; render(); renderPanel(); return; }
     const sel = S.selection;
     if (!act || !sel) return;
     commit((d) => {
@@ -1213,8 +1261,7 @@ export function startEditor(root) {
         if (m) M.removeMark(d, m.id);
         return;
       }
-      if (act.startsWith('order-')) { M.setBondOrder(d, sel.id, /** @type {1|2|3} */ (Number(act.slice(6)))); return; }
-      if (act.startsWith('stereo-')) { M.setStereo(d, sel.id, /** @type {'none'} */ (act.slice(7))); return; }
+      if (act.startsWith('kind-')) { M.setBondKind(d, sel.id, bondKind(act.slice(5))); return; }
       const c = d.curvedArrows.find((x) => x.id === sel.id);
       if (c && act.startsWith('electrons-')) c.electrons = /** @type {1|2} */ (Number(act.slice(10)));
       if (c && act === 'bend-reset') c.bend = defaultBend(d, c.from, c.to);
