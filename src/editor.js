@@ -1103,7 +1103,9 @@ export function startEditor(root) {
 
   function updateStatus() {
     // The help line is for what the pointer is over; how to use the tool is in the panel.
-    const hovered = S.hover && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[S.hover.kind] : '';
+    const h = S.hover;
+    const loose = h?.kind === 'piece' && A.loose(S.doc.apparatus.find((g) => g.id === h.id)?.kind ?? '');
+    const hovered = h && ['select', 'bond', 'chain'].includes(S.tool) ? /** @type {Record<string, string>} */ (fr.status.hover)[loose ? 'loosePiece' : h.kind] : '';
     statusEl.classList.toggle('kept', !hovered && stored);
     statusEl.textContent = hovered || (stored ? fr.files.kept : '');
   }
@@ -1266,7 +1268,7 @@ export function startEditor(root) {
         return {
           icon: PIECE_ICON(g.kind), title: pieceName(g.kind),
           body: `<div class="setting"><span>${P.rotate}</span>${stepper('turn-15', P.turnLeft, `${angle}°`, 'turn+15', P.turnRight, ['↺', '↻'])}</div>
-            <div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>`,
+            ${A.loose(g.kind) ? `<p class="muted">${P.looseHint}</p>` : `<div class="col">${btn('detach', P.detach)}</div><p class="muted">${P.pieceHint}</p>`}`,
         };
       }
       case 'text': {
