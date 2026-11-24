@@ -345,6 +345,9 @@ export const FAMILIES = {
   heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
 };
 
+/** A loose piece (stand, clamp, heat gun) has no joint: it is placed freely and never part of a set-up. @param {string} kind */
+export const loose = (kind) => PIECES[kind]?.joints.length === 0;
+
 const SNAP = 15;
 const PLACE = 40;
 const SAME = 0.5;

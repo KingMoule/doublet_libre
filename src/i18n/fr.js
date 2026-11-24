@@ -167,6 +167,7 @@ export const fr = {
       rxn: 'Flèche de réaction : cliquez pour régler son type et ses conditions, glissez pour la déplacer.',
       text: 'Texte : glissez pour le déplacer.',
       piece: 'Pièce : glissez pour déplacer tout le montage ; près d’un rodage libre, elle s’y emboîte.',
+      loosePiece: 'Pièce libre : glissez pour la placer ; elle ne s’emboîte à aucune pièce.',
     },
   },
   panel: {
@@ -243,6 +244,7 @@ export const fr = {
     turnRight: 'Tourner de +15°',
     detach: 'Détacher du montage',
     pieceHint: 'Glissez-la pour déplacer tout le montage ; elle s’emboîte au rodage libre le plus proche.',
+    looseHint: 'Glissez-la pour la placer : elle ne s’emboîte à aucune pièce.',
     remove: 'Supprimer',
     copy: 'Copier',
     paste: 'Coller',

@@ -165,6 +165,11 @@ test('a heat gun sits with the filtration pieces and is placed freely', () => {
   assert.deepEqual(A.PIECES.heatgun?.joints, []);
 });
 
+// A loose piece fits nothing: its panel offers no Detach, and its help says so.
+test('stand, clamp and heat gun are loose; a flask is not', () => {
+  assert.deepEqual(['stand', 'clamp', 'heatgun', 'flask'].map((k) => A.loose?.(k)), [true, true, true, false]);
+});
+
 test('a distillation train fits together: column, head, condenser along the side arm, adapter, receiver', () => {
   const { d, ids: [flask], piece } = withPieces('flask');
   const put = (/** @type {string} */ kind, /** @type {A.WorldJoint} */ j) => {
