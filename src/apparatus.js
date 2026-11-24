@@ -333,6 +333,16 @@ export const PIECES = {
     box: { l: -26, t: -128, r: 32, b: 0 },
     joints: [],
   },
+  // Tripod with its wire gauze: a beaker or an Erlenmeyer stands on the gauze, a burner goes under it.
+  // Origin at the middle of the top of the gauze (0 to 6), the mesh a zigzag on each side of the plain
+  // ceramic centre; the ring under it (6 to 12), straight legs down to the bench at 134,
+  // so a burner beside the feet (flame tip 128 above the bench) just touches the gauze.
+  tripod: {
+    d: 'M-52 0 L52 0 L52 6 L-52 6 Z M-52 6 L-46 0 L-40 6 L-34 0 L-28 6 L-22 0 L-22 6 M22 6 L22 0 L28 6 L34 0 L40 6 L46 0 L52 6'
+      + ' M-42 6 L-42 12 L42 12 L42 6 M-42 12 L-42 134 L-37 134 L-37 12 M42 12 L42 134 L37 134 L37 12',
+    box: { l: -52, t: 0, r: 52, b: 134 },
+    joints: [{ x: 0, y: 0, dir: -90, kind: 'base', male: false }],
+  },
   // Retort stand and clamp: placed freely, the clamp's jaws around a neck, its boss on the rod.
   stand: {
     d: 'M-45 0 L45 0 L45 8 L-45 8 Z M-35 0 L-35 -278 Q-33 -282 -31 -278 L-31 0',
@@ -353,7 +363,7 @@ export const FAMILIES = {
   distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
   separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask', 'heatgun'],
   glassware: ['beaker', 'erlenmeyer', 'cylinder', 'testtube', 'pipette', 'burette', 'thiele'],
-  heating: ['mantle', 'stirrer', 'burner', 'bath', 'stand', 'clamp'],
+  heating: ['mantle', 'stirrer', 'burner', 'tripod', 'bath', 'stand', 'clamp'],
 };
 
 /** A loose piece (stand, clamp, heat gun, burner) has no joint: it is placed freely and never part of a set-up. @param {string} kind */

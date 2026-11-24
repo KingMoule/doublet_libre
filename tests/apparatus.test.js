@@ -171,6 +171,15 @@ test('a Bunsen burner sits with the heating pieces and is placed freely', () => 
   assert.deepEqual(A.PIECES.burner?.joints, []);
 });
 
+// Heating over a flame: a beaker stands on the gauze of a tripod; the burner goes freely under it.
+test('a beaker stands on the gauze of a tripod', () => {
+  assert.ok(A.FAMILIES.heating.includes('tripod'));
+  const { d, ids: [tripod], piece } = withPieces('tripod');
+  const beaker = M.addPiece(d, { kind: 'beaker', x: 0, y: 0, angle: 0 });
+  assert.ok(A.place(d, beaker.id, A.worldJoints(piece(tripod))[0]));
+  assert.ok(joined(d, tripod, beaker.id));
+});
+
 // A loose piece fits nothing: its panel offers no Detach, and its help says so.
 test('stand, clamp, heat gun and burner are loose; a flask is not', () => {
   assert.deepEqual(['stand', 'clamp', 'heatgun', 'burner', 'flask'].map((k) => A.loose?.(k)), [true, true, true, true, false]);
