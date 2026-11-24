@@ -159,6 +159,12 @@ test('a stand and a clamp are placed freely: they have no joint', () => {
   assert.deepEqual([A.PIECES.stand.joints, A.PIECES.clamp.joints], [[], []]);
 });
 
+// Hot gravity filtration: a heat gun keeps the funnel hot. Like the stand, it is placed freely.
+test('a heat gun sits with the filtration pieces and is placed freely', () => {
+  assert.ok(A.FAMILIES.separation.includes('heatgun'));
+  assert.deepEqual(A.PIECES.heatgun?.joints, []);
+});
+
 test('a distillation train fits together: column, head, condenser along the side arm, adapter, receiver', () => {
   const { d, ids: [flask], piece } = withPieces('flask');
   const put = (/** @type {string} */ kind, /** @type {A.WorldJoint} */ j) => {
