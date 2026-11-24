@@ -322,6 +322,17 @@ export const PIECES = {
       { x: 0, y: -1, dir: -90, kind: 'seat', male: false },
     ],
   },
+  // Bunsen burner, placed freely: its origin is the middle of its base, on the bench, like a beaker.
+  // Domed base, valve body, gas inlet on the right, tube open at y = -84 with its air collar and hole,
+  // then the flame (tip at -128) and its inner cone.
+  burner: {
+    d: 'M-26 0 L26 0 L26 -4 Q26 -9 20 -10 L-20 -10 Q-26 -9 -26 -4 Z M-8 -10 L-8 -24 L8 -24 L8 -10'
+      + ' M8 -21 L32 -20 L32 -14 L8 -13 M-5 -24 L-5 -84 M5 -24 L5 -84 M-7 -26 L7 -26 L7 -38 L-7 -38 Z'
+      + ' M-2.5 -32 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0'
+      + ' M-5 -86 C-13 -98 -7 -112 0 -128 C7 -112 13 -98 5 -86 M-3.5 -86 L0 -102 L3.5 -86',
+    box: { l: -26, t: -128, r: 32, b: 0 },
+    joints: [],
+  },
   // Retort stand and clamp: placed freely, the clamp's jaws around a neck, its boss on the rod.
   stand: {
     d: 'M-45 0 L45 0 L45 8 L-45 8 Z M-35 0 L-35 -278 Q-33 -282 -31 -278 L-31 0',
@@ -342,10 +353,10 @@ export const FAMILIES = {
   distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
   separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask', 'heatgun'],
   glassware: ['beaker', 'erlenmeyer', 'cylinder', 'testtube', 'pipette', 'burette', 'thiele'],
-  heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
+  heating: ['mantle', 'stirrer', 'burner', 'bath', 'stand', 'clamp'],
 };
 
-/** A loose piece (stand, clamp, heat gun) has no joint: it is placed freely and never part of a set-up. @param {string} kind */
+/** A loose piece (stand, clamp, heat gun, burner) has no joint: it is placed freely and never part of a set-up. @param {string} kind */
 export const loose = (kind) => PIECES[kind]?.joints.length === 0;
 
 const SNAP = 15;

@@ -165,9 +165,15 @@ test('a heat gun sits with the filtration pieces and is placed freely', () => {
   assert.deepEqual(A.PIECES.heatgun?.joints, []);
 });
 
+// Melting point or a test tube over a flame: the burner stands on the bench, under whatever it heats.
+test('a Bunsen burner sits with the heating pieces and is placed freely', () => {
+  assert.ok(A.FAMILIES.heating.includes('burner'));
+  assert.deepEqual(A.PIECES.burner?.joints, []);
+});
+
 // A loose piece fits nothing: its panel offers no Detach, and its help says so.
-test('stand, clamp and heat gun are loose; a flask is not', () => {
-  assert.deepEqual(['stand', 'clamp', 'heatgun', 'flask'].map((k) => A.loose?.(k)), [true, true, true, false]);
+test('stand, clamp, heat gun and burner are loose; a flask is not', () => {
+  assert.deepEqual(['stand', 'clamp', 'heatgun', 'burner', 'flask'].map((k) => A.loose?.(k)), [true, true, true, true, false]);
 });
 
 test('a distillation train fits together: column, head, condenser along the side arm, adapter, receiver', () => {
