@@ -40,6 +40,7 @@ export const fr = {
     vigreux: 'Colonne de Vigreux', head: 'Tête de distillation', thermometer: 'Thermomètre', liebig: 'Réfrigérant droit',
     adapter: 'Allonge coudée', vacadapter: 'Allonge à vide', soxhlet: 'Extracteur de Soxhlet', rotavap: 'Évaporateur rotatif',
     sepfunnel: 'Ampoule à décanter', funnel: 'Entonnoir', filterpaper: 'Papier filtre plissé', buchner: 'Büchner', filterflask: 'Fiole à vide',
+    heatgun: 'Pistolet à air chaud',
     beaker: 'Bécher', erlenmeyer: 'Erlenmeyer', cylinder: 'Éprouvette graduée', testtube: 'Tube à essai', pipette: 'Pipette jaugée',
     burette: 'Burette', thiele: 'Tube de Thiele',
     mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince',
@@ -142,7 +143,7 @@ export const fr = {
     separation: [
       'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
       'Touchez le fond pour la poser.',
-      'Touchez le goulot d’une fiole pour y mettre une tige, un entonnoir pour y mettre le papier.',
+      'Touchez le goulot d’une fiole pour y mettre une tige, un entonnoir pour y mettre le papier ; le pistolet à air chaud se pose librement.',
     ],
     glassware: [
       'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
@@ -184,7 +185,7 @@ export const fr = {
       'Doublets, charges, δ, flèches courbes accrochées aux électrons, flèches de réaction.',
       'Avertissements : octet dépassé, flèche inversée, charge non conservée, résonance mal employée.',
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
-      'Mode Montage : 33 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
+      'Mode Montage : 34 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
       'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
     shortcutsTitle: 'Raccourcis clavier',

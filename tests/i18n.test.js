@@ -15,3 +15,9 @@ test('the panel counts pieces and texts in Montage mode', () => {
   const d = { apparatus: [{}, {}, {}], texts: [{}] };
   assert.equal(fr.panel.setupCounts?.(d), '3 pièces · 1 texte');
 });
+
+// The option window and the panel show a piece by its name, never by its internal kind.
+test('every piece of glassware has a name', async () => {
+  const { PIECES } = await import('../src/apparatus.js');
+  for (const kind of Object.keys(PIECES)) assert.ok(/** @type {Record<string, string>} */ (fr.pieceNames)[kind], kind);
+});

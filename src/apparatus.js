@@ -233,6 +233,17 @@ export const PIECES = {
       { x: 0, y: -82, dir: -90, kind: 'stem', male: false },
     ],
   },
+  // Heat gun, to keep a hot filtration hot: placed freely. Its origin is the nozzle tip, pointing right,
+  // so turning it aims it without moving where it blows. One outline (nozzle top, barrel, vented back, slanted grip,
+  // barrel underside, nozzle bottom), then the vents, trigger, cord, and three waves of hot air ahead of the tip.
+  heatgun: {
+    d: 'M0 -6 L-26 -7 Q-30 -16 -40 -16 L-92 -16 Q-100 -16 -100 -8 L-100 8 Q-100 16 -92 16 L-78 16'
+      + ' L-88 58 Q-89 66 -81 66 L-70 66 Q-63 66 -63 59 L-56 16 L-40 16 Q-30 16 -26 7 L0 6 Z M-26 -7 L-26 7'
+      + ' M-92 -8 L-92 8 M-86 -8 L-86 8 M-80 -8 L-80 8 M-57.5 22 L-50 22 L-50 30 L-59 30 M-76 66 Q-76 78 -90 80'
+      + ' M6 -9 q3 -3 6 0 t6 0 t6 0 M6 0 q3 -3 6 0 t6 0 t6 0 t6 0 M6 9 q3 -3 6 0 t6 0 t6 0',
+    box: { l: -100, t: -16, r: 30, b: 80 },
+    joints: [],
+  },
   // Basic glassware. Vessels stand on a flat base and take a stem (funnel, pipette, burette) in their mouth.
   beaker: {
     d: 'M-31 -72 L-28 -68 L-28 -3 Q-28 0 -25 0 L25 0 Q28 0 28 -3 L28 -70 M28 -20 L21 -20 M28 -35 L21 -35 M28 -50 L21 -50',
@@ -329,7 +340,7 @@ export const PIECES = {
 export const FAMILIES = {
   synthesis: ['flask', 'flask3', 'allihn', 'addfunnel', 'claisen', 'dryingtube', 'deanstark', 'stopper'],
   distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
-  separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask'],
+  separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask', 'heatgun'],
   glassware: ['beaker', 'erlenmeyer', 'cylinder', 'testtube', 'pipette', 'burette', 'thiele'],
   heating: ['mantle', 'stirrer', 'bath', 'stand', 'clamp'],
 };
