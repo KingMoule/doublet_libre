@@ -110,6 +110,28 @@ test('2.5.5: -én before -yne, an a only when -ène is multiplied, -ène kept be
   assert.equal(name('C#CCC=CCCC#CC'), 'déc-4-ène-1,8-diyne');
 });
 
+test('2.5.6 (P-22.1.3): one substituent on a benzene ring takes no locant; a methyl makes it toluène', () => {
+  assert.deepEqual(['c1ccccc1', 'CCc1ccccc1', 'Brc1ccccc1', 'O=N(=O)c1ccccc1', 'Cc1ccccc1'].map(name), ['benzène', 'éthylbenzène', 'bromobenzène', 'nitrobenzène', 'toluène']);
+});
+
+test('2.5.6: toluène is numbered from its methyl; with several methyls, the parent is benzène again', () => {
+  assert.equal(name('Cc1cccc(Br)c1'), '3-bromotoluène');
+  assert.equal(name('Cc1c(CC)cc(CC)cc1'), '2,4-diéthyltoluène');
+  assert.equal(name('Cc1ccc(cc1)N(=O)=O'), '4-nitrotoluène');
+  assert.equal(name('Brc1ccc(C)cc1C'), '1-bromo-2,4-diméthylbenzène');
+});
+
+test('2.5.6 (P-31.1.4): benzène takes the lowest locants, the first cited taking 1 on a tie', () => {
+  assert.equal(name('Clc1ccc(cc1)N(=O)=O'), '1-chloro-4-nitrobenzène');
+  assert.equal(name('Brc1ccccc1I'), '1-bromo-2-iodobenzène');
+});
+
+test('2.5.6, tableau 2.6: a benzene ring shorter than the chain is a phényl; benzyl is CH₂ and a phényl', () => {
+  assert.equal(name('CCCCCCCc1ccccc1'), '1-phénylheptane');
+  assert.equal(name('CCCCc1ccccc1'), 'butylbenzène');
+  assert.equal(name('CCCC(Cc1ccccc1)CCCC'), '4-benzyloctane');
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
   assert.equal(reason('CC=O'), 'scope'); // aldehydes: 2.5.9
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)

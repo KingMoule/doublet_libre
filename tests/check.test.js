@@ -57,6 +57,18 @@ test('the right name is never among the wrong ones, and every rule has its messa
   }
 });
 
+test('2.5.6: o-, m- and p- count; the systematic name of a toluène counts with a remark', () => {
+  const accepted = (/** @type {string} */ s) => { const n = nameOf(fromSmiles(s)); return [n.name, ...n.also]; };
+  const bromotoluene = accepted('Cc1cccc(Br)c1');
+  assert.equal(checkName('m-bromotoluène', bromotoluene).verdict, 'right');
+  assert.equal(checkName('méta-bromotoluène', bromotoluene).verdict, 'right');
+  assert.deepEqual(checkName('1-bromo-3-méthylbenzène', bromotoluene), { verdict: 'right', remarks: ['retained'] });
+  assert.equal(checkName('o-dibromobenzène', accepted('Brc1ccccc1Br')).verdict, 'right');
+  assert.equal(checkName('p-chloronitrobenzène', accepted('Clc1ccc(cc1)N(=O)=O')).verdict, 'right');
+  assert.equal(rule('Cc1cccc(Br)c1', '5-bromotoluène'), 'numbering');
+  assert.equal(rule('Brc1ccccc1', '1-bromobenzène'), 'locant');
+});
+
 const wrong = wrongNames(fromSmiles('CC(C)C(C)CC'));
 const check = (/** @type {string} */ typed) => checkName(typed, ['2,3-diméthylpentane'], wrong);
 

@@ -18,7 +18,7 @@ const N = fr.naming;
 
 /** A typed name: right, right with remarks on its writing, or wrong with the rule it breaks. @param {Item} item @param {string} typed @returns {Answer} */
 export function answerName(item, typed) {
-  const c = checkName(typed, [item.name], item.wrong);
+  const c = checkName(typed, [item.name, ...item.naming.also], item.wrong);
   if (c.verdict === 'empty') return { verdict: 'empty', title: X.emptyName, lines: [] };
   if (c.verdict === 'right') {
     const remarks = c.remarks.map((r) => N.remarks[r]);
@@ -56,10 +56,10 @@ export function solution(item) {
     const angles = doc.bonds.filter((b) => b.a === id || b.b === id).map((b) => angleOf(sub(/** @type {M.Atom} */ (M.findAtom(doc, b.a === id ? b.b : b.a)), a)));
     M.addText(doc, { ...add(a, fromAngle(nextBondAngle(angles), 17)), text: String(k + 1), size: 11 });
   });
-  const { ring, prefixes, parent, doubles, triples } = item.naming;
+  const { ring, prefixes, parent, doubles, triples, word } = item.naming;
   const n = parent.length;
   const steps = [
-    X.steps.parent(ring, n, spell([], n, ring, doubles, triples), doubles.length + triples.length > 0),
+    word === N.toluene ? X.steps.toluene : X.steps.parent(ring, n, spell([], n, ring, doubles, triples, word), doubles.length + triples.length > 0),
     prefixes.length ? X.steps.prefixes(prefixes.map((p) => X.steps.at(p.name, p.locants)).join(', ')) : X.steps.none,
     X.steps.name(item.name),
   ];
