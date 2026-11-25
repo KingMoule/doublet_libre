@@ -305,6 +305,13 @@ export const fr = {
     // Benzene rings (2.5.6, tableaux 2.6 and 2.7): the parents, the prefixes, o-, m-, p- by the second locant.
     benzene: 'benzène', toluene: 'toluène', nitro: 'nitro', phenyl: 'phényl', benzyl: 'benzyl',
     omp: { 2: ['o', 'ortho'], 3: ['m', 'méta'], 4: ['p', 'para'] },
+    // A group alone on a benzene ring that gives it a familiar name, at locant 1 (tableau 2.7).
+    retained: [
+      { prefix: 'méthyl', word: 'toluène', group: 'Le méthyle' },
+      { prefix: 'méthoxy', word: 'anisole', group: 'Le groupe méthoxy' },
+    ],
+    // Ethers (2.5.7, tableau 2.8): alkoxy up to butoxy, then alkyloxy; « oxyde de … et de … » for a simple ether.
+    oxy: 'oxy', oxide: 'oxyde', of: 'de ', ofElided: 'd’', and: 'et',
     // Before a multiplied -ène: buta-1,3-diène (2.5.4).
     euphonic: 'a',
     // What a wrong name breaks, by rule (namer.wrongNames), with the textbook section.
@@ -323,6 +330,7 @@ export const fr = {
       euphony: 'Devant diène, diyne, triène…, le nom de la chaîne prend un a : buta-1,3-diène, octa-3,5-diyne (2.5.4).',
       eneFirst: 'À égalité d’indices, le plus petit va à la liaison double, citée avant la triple : hex-1-én-5-yne (2.5.5).',
       enElision: 'Devant un seul -yne, -ène perd son e final et son accent devient aigu : hept-1-én-5-yne (2.5.5).',
+      alkoxy: 'Jusqu’à 4 carbones, on écrit alkoxy (méthoxy à butoxy) ; à partir de 5, alkyloxy (pentyloxy) (2.5.7).',
       ringDoubleBond: 'Dans un cycle, les deux carbones de la liaison double portent des numéros qui se suivent : 1 et 2 (2.5.4).',
     },
     // How a right name is written, when it counts with a remark (naming/check.js).
@@ -339,7 +347,7 @@ export const fr = {
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
-    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)' },
+    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)' },
     /** @param {number} k @param {number} n */ question: (k, n) => `Question ${k} sur ${n}`,
     nameIt: 'Nommez cette molécule selon les règles de l’UICPA.',
     drawIt: 'Dessinez :',
@@ -371,7 +379,8 @@ export const fr = {
       /** @param {boolean} ring @param {number} n @param {string} name @param {boolean} unsaturated */
       parent: (ring, n, name, unsaturated) => (ring ? `Chaîne principale : le cycle de ${n} carbones, ${name}.`
         : `Chaîne principale : ${unsaturated ? 'celle qui porte les liaisons multiples' : 'la plus longue'}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
-      toluene: 'Le méthyle donne au benzène son nom familier, toluène : il prend l’indice 1.',
+      /** @param {string} group @param {string} word */
+      retained: (group, word) => `${group} donne au benzène son nom familier, ${word} : il prend l’indice 1.`,
       /** @param {string} list */ prefixes: (list) => `Substituants et indices : ${list}.`,
       none: 'Aucun substituant.',
       /** @param {string} name @param {number[]} locants */ at: (name, locants) => `${name} en ${locants.join(' et ')}`,
