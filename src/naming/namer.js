@@ -58,7 +58,7 @@ const ascending = (/** @type {number[]} */ xs) => [...xs].sort((a, b) => a - b);
 export function spell(prefixes, size, ring, doubles = [], triples = [], word = '') {
   const count = prefixes.reduce((s, p) => s + p.locants.length, 0);
   const saturated = !doubles.length && !triples.length;
-  const omit = size === 1 || (count === 1 && (size === 2 || (ring && saturated && word !== N.toluene)));
+  const omit = size === 1 || (count === 1 && (size === 2 || (ring && saturated && (!word || word === N.benzene))));
   const words = prefixes.map(({ name, locants }) => {
     const mult = N.multipliers[locants.length];
     const word = mult + (mult && N.italic.some((p) => name.startsWith(p)) ? '-' : '') + name; // di-tert-butyl
@@ -96,7 +96,8 @@ function skeleton(g) {
     if (a.charge !== 0) throw scope();
     if (HALOGENS.includes(a.el) && (adj[i].size !== 1 || el(first) !== 'C')) throw scope();
     if (a.el === 'N' && !nitro(i)) throw scope();
-    if (a.el === 'O' && (adj[i].size !== 1 || !nitro(first))) throw scope();
+    // An oxygen is a nitro's, or an ether's between two carbons (2.5.7).
+    if (a.el === 'O' && !(adj[i].size === 1 && nitro(first)) && !(adj[i].size === 2 && [...adj[i]].every(([j, o]) => el(j) === 'C' && o === 1))) throw scope();
     if (!['C', 'N', 'O', ...HALOGENS].includes(a.el)) throw scope();
   }
   const reached = new Set([0]);
@@ -122,6 +123,8 @@ function skeleton(g) {
     if (ring.length !== core.size) throw scope(); // two rings
     if (g.bonds.some((b) => b.order === 3 && core.has(b.a) && core.has(b.b))) throw scope(); // no triple bond in a ring
   }
+  // No ring through an oxygen: cyclic ethers are left out (2.5.7). A connected molecule has bonds − atoms + 1 rings.
+  if (g.bonds.length - g.atoms.length + 1 > (ring.length ? 1 : 0)) throw scope();
   // Aromatic bonds only around a benzene ring, all six of them.
   const aromatic = g.bonds.filter((b) => b.order === 1.5);
   if (aromatic.length && (aromatic.length !== 6 || ring.length !== 6 || aromatic.some((b) => !core.has(b.a) || !core.has(b.b)))) throw scope();
@@ -153,6 +156,15 @@ export function nameOf(g) {
   top = most(top, (c) => (c.ring ? 0 : branches(c.atoms)));
   const named = top.map((c) => numbered(g, adj, c.atoms, c.ring, core));
   if (new Set(named.map((n) => n.name)).size > 1) throw new NamingError('undecided');
+  // A simple ether R–O–R′ is also « oxyde de R et de R′ », in alphabetical order (2.5.7, radicofunctional).
+  const oxygens = g.atoms.flatMap((a, i) => (a.el === 'O' ? [i] : []));
+  if (oxygens.length === 1 && adj[oxygens[0]].size === 2 && g.atoms.every((a) => a.el === 'C' || a.el === 'O')) {
+    try {
+      const groups = [...adj[oxygens[0]].keys()].map((c) => prefix(g, adj, c, new Set(oxygens), core) + 'e').sort(alphabetical);
+      const of = (/** @type {string} */ x) => (/^[aeiouyéèh]/i.test(x) ? N.ofElided : N.of) + x;
+      named[0].also.push({ name: groups[0] === groups[1] ? `${N.oxide} ${N.of}${N.multipliers[2]}${groups[0]}` : `${N.oxide} ${of(groups[0])} ${N.and} ${of(groups[1])}` });
+    } catch (e) { if (!(e instanceof NamingError)) throw e; }
+  }
   return named[0];
 }
 
@@ -195,20 +207,25 @@ export function wrongNames(g) {
   for (const order of [[...p].sort((a, b) => a.locants[0] - b.locants[0]), [...p].sort((a, b) => (key(a) < key(b) ? -1 : 1))]) add(spell(order, n, right.ring, d, t, right.word), 'alphabetical');
   add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring, d, t, right.word), 'multiplier');
   add(p.reduce((name, x) => name.replace(N.multipliers[x.locants.length] + x.name, x.name), right.name), 'multiplier');
-  if (p.length === 1 && p[0].locants.length === 1 && (n === 2 || (right.ring && !d.length && !t.length && right.word !== N.toluene))) add(`1-${right.name}`, 'locant');
+  if (p.length === 1 && p[0].locants.length === 1 && (n === 2 || (right.ring && !d.length && !t.length && (!right.word || right.word === N.benzene)))) add(`1-${right.name}`, 'locant');
   // A multiple bond written with both its carbons, the a left out, -ène kept whole before a single -yne (2.5.4, 2.5.5).
   const one = d.length + t.length === 1 ? (d.length ? { at: d[0], end: N.ene } : { at: t[0], end: N.yne }) : null;
   if (one) add(right.name.replace(`-${one.at}-${one.end}`, `-${one.at},${one.at + 1}-${one.end}`), 'bothLocants');
   const stem = (right.ring ? N.cyclo : '') + N.stems[n - 1];
   add(right.name.replace(`${stem}${N.euphonic}-`, `${stem}-`), 'euphony');
   if (d.length && t.length === 1) add(right.name.replace(`${N.en}-`, `${N.ene}-`), 'enElision');
+  // Méthyloxy for méthoxy, pentoxy for pentyloxy (2.5.7).
+  for (const x of p) {
+    const k = N.stems.findIndex((s, i) => x.name === (i < 4 ? s : s + N.yl) + N.oxy);
+    if (k >= 0) add(right.name.replace(x.name, (k < 4 ? N.stems[k] + N.yl : N.stems[k]) + N.oxy), 'alkoxy');
+  }
 
   // Another parent: a shorter or less branched chain, or the ring and the chain the other way round.
   const attempt = (/** @type {number[]} */ parent, /** @type {boolean} */ isRing, /** @type {string} */ rule) => {
     try { add(numbered(g, adj, parent, isRing, core).name, rule); } catch (e) { if (!(e instanceof NamingError)) throw e; }
   };
   if (ring.length && !right.ring) attempt(ring, true, 'ringChain');
-  for (const c of chains) if (c.length > 1 && c[0] < c[c.length - 1]) {
+  for (const c of chains) if (c[0] <= c[c.length - 1]) {
     attempt(c, false, right.ring ? 'ringChain' : c.length < n ? 'chain' : branches(c) < branches(right.parent) ? 'branches' : 'chain');
   }
   return [...wrong].map(([name, rule]) => ({ name, rule }));
@@ -231,7 +248,7 @@ function numbered(g, adj, parent, ring, core, plain = false) {
   const also = [];
   const locs = prefixes.flatMap((p) => p.locants);
   const relative = /** @type {Record<number, string[]>} */ (N.omp);
-  if (word === N.toluene) {
+  if (word && word !== N.benzene) {
     also.push({ name: numbered(g, adj, parent, ring, core, true).name, remark: 'retained' });
     if (locs.length === 1) for (const a of relative[locs[0]] ?? []) also.push({ name: `${a}-${prefixes[0].name}${word}` });
   }
@@ -255,9 +272,14 @@ function numberings(g, adj, parent, ring, core, plain = false) {
   const inParent = new Set(parent);
   let subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
   const aromatic = ring && g.bonds.some((b) => b.order === 1.5 && inParent.has(b.a) && inParent.has(b.b));
-  const methyls = aromatic && !plain ? subs.filter((s) => s.name === N.stems[0] + N.yl) : [];
-  if (methyls.length === 1) subs = subs.filter((s) => s !== methyls[0]);
-  const word = !aromatic ? '' : methyls.length === 1 ? N.toluene : N.benzene;
+  // A group alone on the ring that gives it a familiar name takes it; one repeated keeps benzène; two such
+  // groups of the same rank leave it undecided (2.5.6).
+  const found = aromatic && !plain ? N.retained.map((r) => ({ ...r, subs: subs.filter((s) => s.name === r.prefix) })).filter((r) => r.subs.length) : [];
+  const kept = found.length === 1 && found[0].subs.length === 1 ? found[0] : null;
+  if (!kept && found.length > 1 && found.every((r) => r.subs.length === 1)) throw new NamingError('undecided');
+  const methyls = kept ? kept.subs : [];
+  if (kept) subs = subs.filter((s) => s !== methyls[0]);
+  const word = !aromatic ? '' : kept ? kept.word : N.benzene;
   const cited = [...new Set(subs.map((s) => s.name))].sort(alphabetical);
   const bonds = (/** @type {number} */ o) => g.bonds.filter((b) => b.order === o && inParent.has(b.a) && inParent.has(b.b));
   const [double, triple] = [bonds(2), bonds(3)];
@@ -292,6 +314,16 @@ function numberings(g, adj, parent, ring, core, plain = false) {
 function prefix(g, adj, root, parent, core) {
   const el = g.atoms[root].el;
   if (el === 'N') return N.nitro;
+  if (el === 'O') {
+    // An ether: the oxygen and the group beyond it, méthoxy to butoxy, then pentyloxy…, phényloxy, benzyloxy (tableau 2.8).
+    const c = [...adj[root].keys()].find((j) => !parent.has(j));
+    if (c === undefined) throw scope();
+    const r = prefix(g, adj, c, new Set([...parent, root]), core);
+    const short = N.stems.slice(0, 4).findIndex((s) => r === s + N.yl);
+    if (short >= 0) return N.stems[short] + N.oxy;
+    if (r === N.phenyl || r === N.benzyl || N.stems.slice(4).some((s) => r === s + N.yl)) return r + N.oxy;
+    throw scope(); // isopropoxy and the like: not in the textbook's table
+  }
   if (el !== 'C') return /** @type {Record<string, string>} */ (N.halo)[el];
   const branch = new Set([root]);
   for (const q = [root]; q.length;) for (const j of adj[/** @type {number} */ (q.pop())].keys()) if (!parent.has(j) && !branch.has(j)) { branch.add(j); q.push(j); }

@@ -59,7 +59,8 @@ export function solution(item) {
   const { ring, prefixes, parent, doubles, triples, word } = item.naming;
   const n = parent.length;
   const steps = [
-    word === N.toluene ? X.steps.toluene : X.steps.parent(ring, n, spell([], n, ring, doubles, triples, word), doubles.length + triples.length > 0),
+    word && word !== N.benzene ? X.steps.retained(N.retained.find((r) => r.word === word)?.group ?? '', word)
+      : X.steps.parent(ring, n, spell([], n, ring, doubles, triples, word), doubles.length + triples.length > 0),
     prefixes.length ? X.steps.prefixes(prefixes.map((p) => X.steps.at(p.name, p.locants)).join(', ')) : X.steps.none,
     X.steps.name(item.name),
   ];

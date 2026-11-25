@@ -69,6 +69,12 @@ test('2.5.6: o-, m- and p- count; the systematic name of a toluène counts with 
   assert.equal(rule('Brc1ccccc1', '1-bromobenzène'), 'locant');
 });
 
+test('2.5.7: the short side as the parent chain, méthyloxy for méthoxy, pentoxy for pentyloxy', () => {
+  assert.equal(rule('COCCCC', 'butoxyméthane'), 'chain');
+  assert.equal(rule('COCCCC', '1-méthyloxybutane'), 'alkoxy');
+  assert.equal(rule('CCCCCCCOCCCCC', '1-pentoxyheptane'), 'alkoxy');
+});
+
 const wrong = wrongNames(fromSmiles('CC(C)C(C)CC'));
 const check = (/** @type {string} */ typed) => checkName(typed, ['2,3-diméthylpentane'], wrong);
 

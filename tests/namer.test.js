@@ -132,6 +132,24 @@ test('2.5.6, tableau 2.6: a benzene ring shorter than the chain is a phényl; be
   assert.equal(name('CCCC(Cc1ccccc1)CCCC'), '4-benzyloctane');
 });
 
+test('2.5.7, tableau 2.8 (P-63.2.2.1): an ether is an alkoxy on the longest chain: méthoxy to butoxy, then pentyloxy', () => {
+  assert.deepEqual(['COCCCC', 'CC(OC)CC', 'CCOCC', 'CCCCCCCOCCCCC'].map(name), ['1-méthoxybutane', '2-méthoxybutane', 'éthoxyéthane', '1-pentyloxyheptane']);
+  assert.equal(name('CCCCCCCOc1ccccc1'), '1-phényloxyheptane');
+});
+
+test('2.5.7, 2.5.6 (tableau 2.7): a methoxy alone on a benzene ring makes it anisole', () => {
+  assert.deepEqual(['COc1ccccc1', 'COc1ccc(Br)cc1'].map(name), ['anisole', '4-bromoanisole']);
+  assert.equal(reason('Cc1ccc(OC)cc1'), 'undecided'); // toluène or anisole: same rank, the textbook does not say
+});
+
+test('2.5.7: a simple ether also takes its radicofunctional name, groups in alphabetical order', () => {
+  const also = (/** @type {string} */ s) => nameOf(fromSmiles(s)).also.map((a) => a.name);
+  assert.ok(also('CCOCC').includes('oxyde de diéthyle'));
+  assert.ok(also('CCOC').includes('oxyde d’éthyle et de méthyle'));
+  assert.ok(also('CCOC(C)C').includes('oxyde d’éthyle et d’isopropyle'));
+  assert.equal(reason('C1CCOC1'), 'scope'); // cyclic ethers are left out
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
   assert.equal(reason('CC=O'), 'scope'); // aldehydes: 2.5.9
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)

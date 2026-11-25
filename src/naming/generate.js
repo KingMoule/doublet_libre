@@ -16,7 +16,7 @@ import { fr } from '../i18n/fr.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -147,6 +147,15 @@ const BUILD = {
       if (group === 'NO2') attachGroup(d, at, 'NO2', nextBondAngle(bondAngles(d, at)));
       else attach(d, at, group);
     }
+    return d;
+  },
+  // 2.5.7: 1 or 2 alkoxy groups (méthoxy to hexyloxy) on a chain of 1 to 7 carbons or a benzene ring
+  // (anisole), sometimes with a methyl or a halogen.
+  ethers: (r) => {
+    const d = M.emptyDoc();
+    const ids = r() < 0.3 ? M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true) : chain(d, int(r, 1, 7));
+    for (let k = int(r, 1, 2); k > 0; k--) attach(d, pick(r, free(d, ids)), pick(r, ['OC', 'OC', 'OCC', 'OCC', 'OCCC', 'OCCCC', 'OCCCCC', 'OCCCCCC']));
+    if (r() < 0.4) attach(d, pick(r, free(d, ids)), pick(r, ['C', 'CC', 'Cl', 'Br']));
     return d;
   },
   // 2.5.3: 1 to 3 halogens on a chain or a ring, with up to 2 branches.
