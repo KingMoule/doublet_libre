@@ -56,7 +56,7 @@ Ces critères sont des listes ordonnées : une famille y ajoute des entrées et 
 **Correction**
 - Un dessin se compare sur le graphe (atomes liés, ordre des liaisons), jamais sur les coordonnées. Les H, les doublets et les coins sont ignorés ; les deux formes de Kekulé du benzène et les deux écritures du nitro se valent. Un dessin faux est nommé par l'app : « Votre dessin : 2-méthylhexane ».
 - Un nom se compare au nom attendu et aux autres noms acceptés : o-, m-, p- ; « oxyde de … et de … » ; noms familiers retenus par le manuel (toluène, phénol…, éthylène, allène, acétylène). Majuscules, apostrophes, tirets et espaces sont normalisés.
-- Comptent, avec une remarque : un nom sans accents ; le nom systématique d'un benzène là où le manuel attend le nom familier (« 1-bromo-3-méthylbenzène » pour « 3-bromotoluène »).
+- Comptent, avec une remarque : un nom sans accents ; un nom juste mal ponctué (« 2-3-diméthylpentane » : la remarque rappelle les virgules entre les chiffres et les traits d'union entre chiffres et lettres, manuel 2.5.1) ; le nom systématique d'un benzène là où le manuel attend le nom familier (« 1-bromo-3-méthylbenzène » pour « 3-bromotoluène »).
 - Ne compte pas : un nom familier que l'IUPAC ne retient pas (acétone, alcool isopropylique, éther diéthylique). La remarque donne le nom systématique.
 - Un nom faux se compare aux noms qu'on obtient en brisant une règle à la fois (autre chaîne, numérotation inverse, somme des indices, ordre alphabétique, élision…) : la remarque nomme la règle.
 - La solution montre le dessin avec la chaîne principale numérotée, et les étapes du nom.
