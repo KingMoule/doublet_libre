@@ -56,8 +56,11 @@ export function spell(prefixes, size, ring) {
   return words.join(omit ? '' : '-') + (ring ? N.cyclo : '') + N.stems[size - 1] + N.ane;
 }
 
-/** @param {Graph} g @returns {Naming} */
-export function nameOf(g) {
+/**
+ * What the naming works on: the ring (one at most) and every chain of carbons outside it.
+ * @param {Graph} g
+ */
+function skeleton(g) {
   const adj = adjacency(g);
   const el = (/** @type {number} */ i) => g.atoms[i].el;
   const carbons = g.atoms.map((_, i) => i).filter((i) => el(i) === 'C');
@@ -98,17 +101,64 @@ export function nameOf(g) {
   };
   for (const s of carbons) if (!core.has(s)) walk([s]);
   const longest = Math.max(0, ...chains.map((c) => c.length));
+  const branches = (/** @type {number[]} */ c) => c.reduce((s, i) => s + [...adj[i].keys()].filter((j) => !c.includes(j)).length, 0);
+  return { adj, core, ring, chains, longest, branches };
+}
 
+/** @param {Graph} g @returns {Naming} */
+export function nameOf(g) {
+  const { adj, core, ring, chains, longest, branches } = skeleton(g);
   // A ring is the parent when it is longer than any chain; the textbook does not decide a tie (2.5.2).
   if (ring.length && ring.length === longest) throw new NamingError('undecided');
   if (ring.length > longest) return numbered(g, adj, ring, true, core);
   // Otherwise the longest chain, and among those the most branched (2.5.1, règle 1).
-  const branches = (/** @type {number[]} */ c) => c.reduce((s, i) => s + [...adj[i].keys()].filter((j) => !c.includes(j)).length, 0);
   const long = chains.filter((c) => c.length === longest);
   const most = Math.max(...long.map(branches));
   const named = long.filter((c) => branches(c) === most).map((c) => numbered(g, adj, c, false, core));
   if (new Set(named.map((n) => n.name)).size > 1) throw new NamingError('undecided');
   return named[0];
+}
+
+/**
+ * Names a student could write by breaking one rule of the textbook at a time, each with that rule
+ * (a key of fr.naming.rules). The exercise compares a wrong answer with these to say which rule it breaks.
+ * @param {Graph} g @returns {{name: string, rule: string}[]}
+ */
+export function wrongNames(g) {
+  const right = nameOf(g);
+  const { adj, core, ring, chains, longest, branches } = skeleton(g);
+  /** @type {Map<string, string>} */
+  const wrong = new Map();
+  const add = (/** @type {string} */ name, /** @type {string} */ rule) => { if (name !== right.name && !wrong.has(name)) wrong.set(name, rule); };
+  const n = right.parent.length;
+
+  // On the right parent: another numbering, by the sum of locants, or against the alphabet on a tie.
+  const { cited, scored } = numberings(g, adj, right.parent, right.ring, core);
+  const sum = (/** @type {{all: number[]}} */ s) => s.all.reduce((t, x) => t + x, 0);
+  const leastSum = [...scored].sort((a, b) => sum(a) - sum(b))[0];
+  const other = scored.slice(1).map((s) => ({
+    name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring),
+    rule: firstDifference(s.all, scored[0].all) === 0 ? 'alphabeticalNumbering' : s === leastSum && sum(s) < sum(scored[0]) ? 'sum' : 'numbering',
+  }));
+  for (const r of ['sum', 'alphabeticalNumbering', 'numbering']) for (const o of other) if (o.rule === r) add(o.name, r);
+
+  // Prefixes cited by locant, with di- or sec-/tert- counted; identical ones not grouped, or grouped without di-.
+  const p = right.prefixes;
+  const key = (/** @type {Prefix} */ x) => (N.multipliers[x.locants.length] + x.name).normalize('NFD').replace(/[̀-ͯ]/g, '');
+  for (const order of [[...p].sort((a, b) => a.locants[0] - b.locants[0]), [...p].sort((a, b) => (key(a) < key(b) ? -1 : 1))]) add(spell(order, n, right.ring), 'alphabetical');
+  add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring), 'multiplier');
+  add(p.reduce((name, x) => name.replace(N.multipliers[x.locants.length] + x.name, x.name), right.name), 'multiplier');
+  if (p.length === 1 && p[0].locants.length === 1 && (right.ring || n === 2)) add(`1-${right.name}`, 'locant');
+
+  // Another parent: a shorter or less branched chain, or the ring and the chain the other way round.
+  const attempt = (/** @type {number[]} */ parent, /** @type {boolean} */ isRing, /** @type {string} */ rule) => {
+    try { add(numbered(g, adj, parent, isRing, core).name, rule); } catch (e) { if (!(e instanceof NamingError)) throw e; }
+  };
+  if (ring.length && !right.ring) attempt(ring, true, 'ringChain');
+  for (const c of chains) if (c.length > 1 && c[0] < c[c.length - 1]) {
+    attempt(c, false, right.ring ? 'ringChain' : c.length < longest ? 'chain' : branches(c) < branches(right.parent) ? 'branches' : 'chain');
+  }
+  return [...wrong].map(([name, rule]) => ({ name, rule }));
 }
 
 /**
@@ -118,6 +168,18 @@ export function nameOf(g) {
  * @returns {Naming}
  */
 function numbered(g, adj, parent, ring, core) {
+  const { cited, scored } = numberings(g, adj, parent, ring, core);
+  const best = scored[0];
+  const prefixes = cited.map((name) => ({ name, locants: best.of(name) }));
+  return { name: spell(prefixes, parent.length, ring), parent: best.order, ring, prefixes };
+}
+
+/**
+ * Every numbering of a parent, the best first: the prefixes in citation order, and for each
+ * numbering the locants of all prefixes and of each one.
+ * @param {Graph} g @param {Map<number, number>[]} adj @param {number[]} parent @param {boolean} ring @param {Set<number>} core
+ */
+function numberings(g, adj, parent, ring, core) {
   const inParent = new Set(parent);
   const subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
   const cited = [...new Set(subs.map((s) => s.name))].sort(alphabetical);
@@ -130,9 +192,8 @@ function numbered(g, adj, parent, ring, core) {
     const of = (/** @type {string} */ name) => ascending(subs.filter((s) => s.name === name).map((s) => locant(s.at)));
     return { order, all: ascending(subs.map((s) => locant(s.at))), cited: cited.flatMap(of), of };
   });
-  const best = scored.sort((a, b) => firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited))[0];
-  const prefixes = cited.map((name) => ({ name, locants: best.of(name) }));
-  return { name: spell(prefixes, n, ring), parent: best.order, ring, prefixes };
+  scored.sort((a, b) => firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited));
+  return { cited, scored };
 }
 
 /**
