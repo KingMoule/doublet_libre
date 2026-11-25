@@ -16,7 +16,8 @@ import { fr } from '../i18n/fr.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols', 'aldehydes', 'ketones'];
+const FAMILIES = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols', 'aldehydes', 'ketones'];
+export const LEVELS = [...FAMILIES, 'mix'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -255,6 +256,8 @@ const BUILD = {
     return d;
   },
 };
+// Mélange: each molecule from one of the families, the principal group then chosen by figure 2.21.
+BUILD.mix = (r) => BUILD[pick(r, FAMILIES)](r);
 
 /** No two atoms on top of each other, no crossing bonds. @param {M.Doc} doc */
 function tidy(doc) {

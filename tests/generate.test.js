@@ -50,6 +50,11 @@ test('each level draws what its section of the textbook names (2.5.1 to 2.5.3)',
   }
 });
 
+test('the mix draws each molecule from one of the families, so a series meets several of them', () => {
+  const family = (/** @type {import('../src/naming/namer.js').Naming} */ n) => n.suffix.end || n.word || (n.doubles.length + n.triples.length ? 'multiple' : 'alkane');
+  for (const seed of SEEDS) assert.ok(new Set(series('mix', seed).items.map((i) => family(i.naming))).size >= 3, String(seed));
+});
+
 test('parent chains stay within the exercises of the textbook: ten carbons at most (décane)', () => {
   for (const level of LEVELS) for (const seed of SEEDS) for (const { naming } of series(level, seed).items) assert.ok(naming.parent.length <= 10, naming.name);
 });

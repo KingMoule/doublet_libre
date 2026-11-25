@@ -5,8 +5,8 @@ import { adjacency } from './graph.js';
 /**
  * Names a molecule by the rules of the course's textbook (Girouard, Marrano and Lapierre,
  * Chimie organique, 3e éd., ch. 2, section 2.5), even where IUPAC 2013 has changed them.
- * For now: alkanes, cycloalkanes, halogen compounds, alkenes, alkynes, and benzene rings with alkyl,
- * halogen and nitro groups (2.5.1 to 2.5.6).
+ * Alkanes, cycloalkanes, halogen compounds, alkenes, alkynes, benzene rings, ethers, alcohols, aldehydes
+ * and ketones (2.5.1 to 2.5.10); the groups of annexe C are left out.
  * Outside that, or where the textbook does not decide, it throws a NamingError, and the
  * exercise generator draws another molecule.
  * @typedef {import('./graph.js').Graph} Graph

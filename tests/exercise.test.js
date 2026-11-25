@@ -22,6 +22,9 @@ test('a drawing: the same molecule wherever it is drawn, or the name of what was
   const moved = structuredClone(item.doc);
   M.moveObjects(moved, new Set(moved.atoms.map((a) => a.id)), 120, -80);
   assert.equal(answerDrawing(item, moved).verdict, 'right');
+  // The name after a colon, never after an article that would need its gender and elision (la butanone, l’éthanol).
+  const butanone = series('ketones', 12).items[1];
+  assert.ok(answerDrawing(butanone, butanone.doc).lines[0].endsWith(': butanone.'));
   const other = series('alkanes', 1).items[7].doc; // 2-méthyloctane
   const wrong = answerDrawing(item, other);
   assert.equal(wrong.verdict, 'wrong');
