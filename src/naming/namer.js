@@ -244,9 +244,9 @@ export function wrongNames(g) {
   const other = scored.slice(1).map((s) => {
     const same = firstDifference(s.multiples, best.multiples) === 0;
     return {
-      name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring, s.doubles, s.triples, right.word, sfx(s.ols)),
+      name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring, s.doubles, s.triples, right.word, sfx(s.principals)),
       rule: !s.valid ? 'ringDoubleBond'
-        : firstDifference(s.ols, best.ols) > 0 ? 'principalFirst'
+        : firstDifference(s.principals, best.principals) > 0 ? 'principalFirst'
         : same && firstDifference(s.doubles, best.doubles) > 0 ? 'eneFirst'
           : firstDifference(s.multiples, best.multiples) > 0 && firstDifference(s.all, best.all) < 0 ? 'unsaturationFirst'
             : same && firstDifference(s.doubles, best.doubles) === 0 && firstDifference(s.all, best.all) === 0 ? 'alphabeticalNumbering'
@@ -322,9 +322,9 @@ function numbered(g, adj, parent, ring, core, plain = false) {
   const prefixes = cited.map((name) => ({ name, locants: best.of(name) }));
   // -al is always at 1 (2.5.9); a lone -one at 2 on three or four carbons has that place only: its locant « peut
   // être omis » (2.5.10, propanone). Both forms count; the name shown keeps it beside an -ène or -yne (but-3-yn-2-one).
-  const only = end === N.one && !ring && best.ols.length === 1 && best.ols[0] === 2 && parent.length <= 4;
+  const only = end === N.one && !ring && best.principals.length === 1 && best.principals[0] === 2 && parent.length <= 4;
   const saturated = !best.doubles.length && !best.triples.length;
-  const suffix = { end, at: best.ols, omit: end === N.al || (only && saturated) };
+  const suffix = { end, at: best.principals, omit: end === N.al || (only && saturated) };
   const name = spell(prefixes, parent.length, ring, best.doubles, best.triples, word, suffix);
   /** @type {{name: string, remark?: 'retained'}[]} */
   const also = only ? [{ name: spell(prefixes, parent.length, ring, best.doubles, best.triples, word, { ...suffix, omit: !suffix.omit }) }] : [];
@@ -361,20 +361,21 @@ function numberings(g, adj, parent, ring, core, plain = false) {
   const { isOH, isCO, aldehydes, ketones, acetyls, kind } = groups(g, adj);
   const own = kind === 'al' ? aldehydes : kind === 'one' ? ketones : [];
   const hanging = !ring ? [] : kind === 'al' ? aldehydes : kind === 'one' ? acetyls : [];
-  const ols = parent.filter((p) => (kind === 'ol' ? [...adj[p].keys()].some(isOH) : own.includes(p) || [...adj[p].keys()].some((q) => hanging.includes(q))));
+  // The parent's atoms that carry the principal group; their locants are the suffix's (-ol, -al, -one).
+  const principals = parent.filter((p) => (kind === 'ol' ? [...adj[p].keys()].some(isOH) : own.includes(p) || [...adj[p].keys()].some((q) => hanging.includes(q))));
   const suffix = (/** @type {number} */ p, /** @type {number} */ q) => (kind === 'ol' ? isOH(q) : hanging.includes(q) || (isCO(q) && own.includes(p)));
   let subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q) && !suffix(p, q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
   const aromatic = ring && g.bonds.some((b) => b.order === 1.5 && inParent.has(b.a) && inParent.has(b.b));
-  if (aromatic && ols.length > 1) throw scope(); // catéchol, phtalaldéhyde…: not in these levels
+  if (aromatic && principals.length > 1) throw scope(); // catéchol, phtalaldéhyde…: not in these levels
   // On a benzene ring, the principal group gives its familiar name: benzaldéhyde, acétophénone, phénol (figure 2.21). Otherwise a
   // group alone that gives one takes it; one repeated keeps benzène; two of the same rank leave it undecided (2.5.6).
-  const found = aromatic && !plain && !ols.length ? N.retained.map((r) => ({ ...r, subs: subs.filter((s) => s.name === r.prefix) })).filter((r) => r.subs.length) : [];
+  const found = aromatic && !plain && !principals.length ? N.retained.map((r) => ({ ...r, subs: subs.filter((s) => s.name === r.prefix) })).filter((r) => r.subs.length) : [];
   const kept = found.length === 1 && found[0].subs.length === 1 ? found[0] : null;
   if (!kept && found.length > 1 && found.every((r) => r.subs.length === 1)) throw new NamingError('undecided');
-  const methyls = aromatic && ols.length ? [{ at: ols[0], name: '' }] : kept ? kept.subs : [];
+  const methyls = aromatic && principals.length ? [{ at: principals[0], name: '' }] : kept ? kept.subs : [];
   if (kept) subs = subs.filter((s) => s !== methyls[0]);
-  const word = !aromatic ? '' : ols.length ? (kind === 'al' ? N.benzaldehyde : kind === 'one' ? N.acetophenone : N.phenol) : kept ? kept.word : N.benzene;
-  const suffixed = aromatic ? [] : ols;
+  const word = !aromatic ? '' : principals.length ? (kind === 'al' ? N.benzaldehyde : kind === 'one' ? N.acetophenone : N.phenol) : kept ? kept.word : N.benzene;
+  const suffixed = aromatic ? [] : principals;
   const end = !suffixed.length ? '' : kind === 'ol' ? N.ol : kind === 'one' ? N.one : ring ? N.carbaldehyde : N.al;
   const cited = [...new Set(subs.map((s) => s.name))].sort(alphabetical);
   const bonds = (/** @type {number} */ o) => g.bonds.filter((b) => b.order === o && inParent.has(b.a) && inParent.has(b.b));
@@ -392,11 +393,11 @@ function numberings(g, adj, parent, ring, core, plain = false) {
     return {
       order, of, all: ascending(subs.map((s) => locant(s.at))), cited: cited.flatMap(of),
       valid: ends.every(([x, y]) => Math.abs(x - y) === 1),
-      doubles, triples, multiples: ascending([...doubles, ...triples]), ols: ascending(suffixed.map(locant)),
+      doubles, triples, multiples: ascending([...doubles, ...triples]), principals: ascending(suffixed.map(locant)),
     };
   });
   // The principal group first (2.5.8), then double and triple bonds together, the double bonds on a tie (2.5.5), then the prefixes.
-  scored.sort((a, b) => Number(b.valid) - Number(a.valid) || firstDifference(a.ols, b.ols) || firstDifference(a.multiples, b.multiples)
+  scored.sort((a, b) => Number(b.valid) - Number(a.valid) || firstDifference(a.principals, b.principals) || firstDifference(a.multiples, b.multiples)
     || firstDifference(a.doubles, b.doubles) || firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited));
   return { cited, scored, word, end };
 }
