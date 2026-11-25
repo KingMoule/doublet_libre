@@ -288,6 +288,18 @@ export const fr = {
     /** @param {string} x @param {string} y */ between: (x, y) => `nouvelle liaison ${x}–${y}`,
     unknown: 'introuvable',
   },
+  // Vocabulary of the names the exercises check (textbook, ch. 2, section 2.5).
+  naming: {
+    // Chain stems by number of carbons, from one (tableau 2.3).
+    stems: ['méth', 'éth', 'prop', 'but', 'pent', 'hex', 'hept', 'oct', 'non', 'déc', 'undéc', 'dodéc', 'tridéc', 'tétradéc', 'pentadéc', 'hexadéc'],
+    // Multiplying prefixes by count (tableau 2.5).
+    multipliers: ['', '', 'di', 'tri', 'tétra', 'penta', 'hexa', 'hepta', 'octa', 'nona', 'déca'],
+    halo: { F: 'fluoro', Cl: 'chloro', Br: 'bromo', I: 'iodo' },
+    isopropyl: 'isopropyl', isobutyl: 'isobutyl', secButyl: 'sec-butyl', tertButyl: 'tert-butyl',
+    // Written in italics and left out of the alphabetical order (2.5.1, règle 3d).
+    italic: ['sec-', 'tert-'],
+    cyclo: 'cyclo', ane: 'ane', yl: 'yl',
+  },
   /** @param {number} q */
   chargeText: (q) => (q === 0 ? '0' : `${Math.abs(q) > 1 ? Math.abs(q) : ''}${q > 0 ? '+' : '−'}`),
 };
