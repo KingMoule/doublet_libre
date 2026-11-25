@@ -299,7 +299,9 @@ export const fr = {
     isopropyl: 'isopropyl', isobutyl: 'isobutyl', secButyl: 'sec-butyl', tertButyl: 'tert-butyl',
     // Written in italics and left out of the alphabetical order (2.5.1, règle 3d).
     italic: ['sec-', 'tert-'],
-    cyclo: 'cyclo', ane: 'ane', yl: 'yl', ene: 'ène',
+    cyclo: 'cyclo', ane: 'ane', yl: 'yl', ene: 'ène', yne: 'yne',
+    // -ène before a single -yne: hex-1-én-5-yne (2.5.5).
+    en: 'én',
     // Before a multiplied -ène: buta-1,3-diène (2.5.4).
     euphonic: 'a',
     // What a wrong name breaks, by rule (namer.wrongNames), with the textbook section.
@@ -314,8 +316,10 @@ export const fr = {
       multiplier: 'Des substituants identiques se regroupent : leurs indices, puis di-, tri-, tétra- devant leur nom (2.5.1).',
       locant: 'Un seul substituant sur un cycle ou sur l’éthane ne prend pas d’indice (2.5.2).',
       unsaturationFirst: 'La numérotation donne d’abord les plus petits indices aux liaisons doubles, avant les substituants (2.5.4).',
-      bothLocants: 'On écrit seulement l’indice du premier carbone de la liaison double : pent-2-ène (2.5.4).',
-      euphony: 'Devant diène, triène…, le nom de la chaîne prend un a : buta-1,3-diène (2.5.4).',
+      bothLocants: 'On écrit seulement l’indice du premier carbone d’une liaison double ou triple : pent-2-ène, hex-1-yne (2.5.4).',
+      euphony: 'Devant diène, diyne, triène…, le nom de la chaîne prend un a : buta-1,3-diène, octa-3,5-diyne (2.5.4).',
+      eneFirst: 'À égalité d’indices, le plus petit va à la liaison double, citée avant la triple : hex-1-én-5-yne (2.5.5).',
+      enElision: 'Devant un seul -yne, -ène perd son e final et son accent devient aigu : hept-1-én-5-yne (2.5.5).',
       ringDoubleBond: 'Dans un cycle, les deux carbones de la liaison double portent des numéros qui se suivent : 1 et 2 (2.5.4).',
     },
     // How a right name is written, when it counts with a remark (naming/check.js).
@@ -331,7 +335,7 @@ export const fr = {
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
-    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)' },
+    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)' },
     /** @param {number} k @param {number} n */ question: (k, n) => `Question ${k} sur ${n}`,
     nameIt: 'Nommez cette molécule selon les règles de l’UICPA.',
     drawIt: 'Dessinez :',
@@ -358,11 +362,11 @@ export const fr = {
     /** @param {number} a @param {number} b */ carbons: (a, b) => `Votre dessin compte ${a} carbone${a > 1 ? 's' : ''} ; il en faut ${b}.`,
     others: 'Vérifiez les atomes autres que le carbone : l’outil Atome change l’élément d’un atome.',
     place: 'Les atomes sont les bons, mais pas à leur place : vérifiez la numérotation de la chaîne principale.',
-    doubles: 'Vérifiez les liaisons doubles : leur nombre et leur place.',
+    doubles: 'Vérifiez les liaisons doubles et triples : leur nombre et leur place.',
     steps: {
       /** @param {boolean} ring @param {number} n @param {string} name @param {boolean} unsaturated */
       parent: (ring, n, name, unsaturated) => (ring ? `Chaîne principale : le cycle de ${n} carbones, ${name}.`
-        : `Chaîne principale : ${unsaturated ? 'celle qui porte les liaisons doubles' : 'la plus longue'}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
+        : `Chaîne principale : ${unsaturated ? 'celle qui porte les liaisons multiples' : 'la plus longue'}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
       /** @param {string} list */ prefixes: (list) => `Substituants et indices : ${list}.`,
       none: 'Aucun substituant.',
       /** @param {string} name @param {number[]} locants */ at: (name, locants) => `${name} en ${locants.join(' et ')}`,
