@@ -622,8 +622,9 @@ export function startEditor(root) {
       case 'movePiece':
         for (const g of d.apparatus) {
           const o = D.orig.get(g.id);
-          if (o) Object.assign(g, { x: o.x + p.x - D.start.x, y: o.y + p.y - D.start.y, angle: o.angle });
+          if (o) Object.assign(g, o); // from where it started, as a snap may have turned it
         }
+        M.moveObjects(d, D.ids, p.x - D.start.x, p.y - D.start.y);
         A.snap(d, D.ids);
         break;
       case 'handle': {

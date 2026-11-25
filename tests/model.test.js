@@ -171,6 +171,16 @@ test('moving a selection carries its texts and reaction arrows along', () => {
   assert.equal(d.atoms[1].x, 180);
 });
 
+test('a move keeps hundredths, so the saved file stays readable', () => {
+  const d = sampleSN2();
+  M.addPiece(d, { kind: 'flask', x: 50, y: 50, angle: 0 });
+  const ids = new Set(['a1', 't1', 'ra1', 'g1']);
+  M.moveObjects(d, ids, 0.1, 1 / 3); // pointer deltas are arbitrary floats
+  M.moveObjects(d, ids, 0.2, 0);
+  assert.deepEqual([d.atoms[0].x, d.atoms[0].y], [100.3, 100.33]);
+  assert.deepEqual([d.texts[0].x, d.reactionArrows[0].y1, d.apparatus[0].x], [150.3, 100.33, 50.3]);
+});
+
 test('copying a molecule takes its bonds, marks and the curved arrows lying within it', () => {
   const d = sampleSN2();
   const part = M.extract(d, M.component(d, 'a3'));

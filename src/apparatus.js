@@ -1,4 +1,6 @@
 // @ts-check
+import { r2 } from './model.js';
+
 /**
  * Lab glassware: the library of pieces and how they fit together.
  * A piece is drawn in its own frame, in drawing units (a bond is 40), then turned by its angle
@@ -373,8 +375,6 @@ const SNAP = 15;
 const PLACE = 40;
 const SAME = 0.5;
 
-/** Hundredths are enough, and keep the saved file readable. @param {number} v */
-const r2 = (v) => Math.round(v * 100) / 100;
 /** @param {number} a */
 const norm = (a) => ((((a + 180) % 360) + 360) % 360) - 180;
 /** @param {{x: number, y: number}} v @param {number} deg */

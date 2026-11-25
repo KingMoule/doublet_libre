@@ -316,12 +316,15 @@ export function idsInRect(doc, r) {
   ].map((o) => o.id);
 }
 
-/** Moves the atoms, texts, reaction arrows and pieces whose ids are given. @param {Doc} doc @param {Set<string>} ids @param {number} dx @param {number} dy */
+/** Hundredths are enough, and keep the saved file readable. @param {number} v */
+export const r2 = (v) => Math.round(v * 100) / 100;
+
+/** Moves the atoms, texts, reaction arrows and pieces whose ids are given, to the hundredth. @param {Doc} doc @param {Set<string>} ids @param {number} dx @param {number} dy */
 export function moveObjects(doc, ids, dx, dy) {
-  for (const a of doc.atoms) if (ids.has(a.id)) { a.x += dx; a.y += dy; }
-  for (const t of doc.texts) if (ids.has(t.id)) { t.x += dx; t.y += dy; }
-  for (const ra of doc.reactionArrows) if (ids.has(ra.id)) { ra.x1 += dx; ra.x2 += dx; ra.y1 += dy; ra.y2 += dy; }
-  for (const g of doc.apparatus) if (ids.has(g.id)) { g.x += dx; g.y += dy; }
+  for (const a of doc.atoms) if (ids.has(a.id)) { a.x = r2(a.x + dx); a.y = r2(a.y + dy); }
+  for (const t of doc.texts) if (ids.has(t.id)) { t.x = r2(t.x + dx); t.y = r2(t.y + dy); }
+  for (const ra of doc.reactionArrows) if (ids.has(ra.id)) { ra.x1 = r2(ra.x1 + dx); ra.x2 = r2(ra.x2 + dx); ra.y1 = r2(ra.y1 + dy); ra.y2 = r2(ra.y2 + dy); }
+  for (const g of doc.apparatus) if (ids.has(g.id)) { g.x = r2(g.x + dx); g.y = r2(g.y + dy); }
 }
 
 /**
