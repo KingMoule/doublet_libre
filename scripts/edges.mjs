@@ -1,6 +1,7 @@
-// Checks, on tablet and short screens and in both modes, that every tool's option window and every top-bar menu
+// Checks, on tablet and short screens and in each mode, that every tool's option window and every top-bar menu
 // stays inside the screen without hiding its button, that every tool and the zoom buttons stay reachable,
-// that every help text fits in the one line of the status bar, and that no selection's panel squashes a field.
+// that every help text fits in the one line of the status bar, that no selection's panel squashes a field,
+// and that the exercise's answer field has room for a name.
 // Usage: node scripts/edges.mjs   (needs Edge or Chrome, see browser.mjs; exits 1 on a problem)
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -18,9 +19,10 @@ const CHECK = `(async () => {
   const inScreen = (r) => r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const problems = [];
-  // Both modes: drawing a mechanism, then a lab set-up, each with its own tools.
-  for (const mode of ['mécanisme', 'montage']) {
+  // Each mode: drawing a mechanism, a lab set-up, then an exercise, each with its own tools.
+  for (const mode of ['mécanisme', 'montage', 'exercice']) {
     if (mode === 'montage') document.querySelector('[data-mode="setup"]').click();
+    if (mode === 'exercice') document.querySelector('[data-mode="exercise"]').click();
     for (const b of document.querySelectorAll('.tool:not([hidden])')) {
       b.scrollIntoView({ block: 'nearest' });
       const r = b.getBoundingClientRect(), rail = document.querySelector('.tools').getBoundingClientRect();
@@ -35,6 +37,9 @@ const CHECK = `(async () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     }
   }
+  // The exercise opens on a molecule to name: its answer field has room for a whole name.
+  const answer = document.querySelector('#ex-answer');
+  if (!answer || answer.getBoundingClientRect().width < 140) problems.push('champ de réponse trop étroit');
   const zoom = document.querySelector('.zoom-bar');
   zoom.scrollIntoView({ block: 'nearest' });
   if (!inScreen(zoom.getBoundingClientRect())) problems.push('boutons de zoom hors écran');

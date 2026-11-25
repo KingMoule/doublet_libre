@@ -10,7 +10,7 @@ import { NamingError, nameOf, wrongNames } from './namer.js';
  * of its atom, rings as regular polygons. One whose drawing overlaps, or that the namer cannot name
  * (out of scope, or not decided by the textbook), is drawn again. A seed gives everyone the same series.
  * @typedef {{dir: 'name' | 'draw', doc: M.Doc, name: string, naming: import('./namer.js').Naming,
- *   wrong: {name: string, rule: string}[]}} Item
+ *   wrong: {name: string, rule: string}[], parentIds: string[]}} Item parentIds: the parent's atoms, in numbering order
  */
 
 const L = 40;
@@ -126,7 +126,8 @@ export function series(level, seed, count = 10) {
     try { naming = nameOf(g); } catch (e) { if (e instanceof NamingError) continue; throw e; }
     // Ten carbons at most in the parent, as in the textbook's exercises; and no molecule twice.
     if (naming.parent.length > 10 || items.some((i) => i.name === naming.name)) continue;
-    items.push({ dir: items.length % 2 ? 'draw' : 'name', doc, name: naming.name, naming, wrong: wrongNames(g) });
+    const parentIds = naming.parent.map((i) => /** @type {string[]} */ (g.ids)[i]);
+    items.push({ dir: items.length % 2 ? 'draw' : 'name', doc, name: naming.name, naming, wrong: wrongNames(g), parentIds });
   }
   return { level, seed, items };
 }
