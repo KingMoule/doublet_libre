@@ -16,7 +16,7 @@ import { fr } from '../i18n/fr.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -156,6 +156,31 @@ const BUILD = {
     const ids = r() < 0.3 ? M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true) : chain(d, int(r, 1, 7));
     for (let k = int(r, 1, 2); k > 0; k--) attach(d, pick(r, free(d, ids)), pick(r, ['OC', 'OC', 'OCC', 'OCC', 'OCCC', 'OCCCC', 'OCCCCC', 'OCCCCCC']));
     if (r() < 0.4) attach(d, pick(r, free(d, ids)), pick(r, ['C', 'CC', 'Cl', 'Br']));
+    return d;
+  },
+  // 2.5.8: 1 or 2 OH on different carbons with single bonds only, on a chain of 1 to 8 carbons that sometimes
+  // has a double or triple bond, or on a saturated ring; up to 2 branches. Or one OH on a benzene ring (phénol)
+  // with 1 or 2 other groups.
+  alcohols: (r) => {
+    const d = M.emptyDoc();
+    const kind = r();
+    const sp3 = (/** @type {string[]} */ ids) => free(d, ids).filter((id) => d.bonds.every((b) => (b.a !== id && b.b !== id) || b.order === 1));
+    if (kind < 0.2) {
+      const ids = M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true);
+      attach(d, pick(r, ids), 'O');
+      for (let k = int(r, 1, 2); k > 0; k--) attach(d, pick(r, free(d, ids)), pick(r, ['C', 'CC', 'CCC', 'C(C)C', 'Cl', 'Br', 'OC']));
+      return d;
+    }
+    const n = int(r, 1, 8);
+    const multiple = kind < 0.35 || n < 3 ? 0 : r() < 0.4 ? int(r, 2, 3) : 0;
+    const k = int(r, 0, Math.max(0, n - 2));
+    const ids = kind < 0.35 ? ring(d, int(r, 5, 6)) : chainWithTriples(d, n, new Set(multiple === 3 ? [k] : []));
+    if (multiple === 2) M.setBondOrder(d, /** @type {M.Bond} */ (M.bondBetween(d, ids[k], ids[k + 1])).id, 2);
+    for (let oh = int(r, 1, 2); oh > 0; oh--) {
+      const f = sp3(ids).filter((id) => !d.bonds.some((b) => (b.a === id || b.b === id) && M.findAtom(d, b.a === id ? b.b : b.a)?.element === 'O'));
+      if (f.length) attach(d, pick(r, f), 'O');
+    }
+    if (r() < 0.5) { const f = free(d, ids); if (f.length) attach(d, pick(r, f), pick(r, ALKYLS)); }
     return d;
   },
   // 2.5.3: 1 to 3 halogens on a chain or a ring, with up to 2 branches.

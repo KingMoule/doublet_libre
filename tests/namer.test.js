@@ -150,6 +150,29 @@ test('2.5.7: a simple ether also takes its radicofunctional name, groups in alph
   assert.equal(reason('C1CCOC1'), 'scope'); // cyclic ethers are left out
 });
 
+test('2.5.8 (P-63.1.2): -ol replaces the e of -ane, the OH takes the lowest locant; méthanol, éthanol and a lone ring OH need none', () => {
+  assert.deepEqual(['CO', 'CCO', 'CCCO', 'CC(O)C', 'CCC(O)CCCC', 'OC1CCCCC1'].map(name), ['méthanol', 'éthanol', 'propan-1-ol', 'propan-2-ol', 'heptan-3-ol', 'cyclohexanol']);
+  assert.equal(name('CC(C)(C)O'), '2-méthylpropan-2-ol');
+  assert.equal(name('CC1CCCCC1O'), '2-méthylcyclohexanol');
+  assert.equal(name('OCCc1ccccc1'), '2-phényléthanol');
+});
+
+test('2.5.8 (P-31.1.4.2.4): the OH before the multiple bonds; -ène and -yne lose their e before -ol', () => {
+  assert.equal(name('CC=CCC(C)O'), 'hex-4-én-2-ol');
+  assert.equal(name('C#CCC(C)O'), 'pent-4-yn-2-ol');
+  assert.equal(name('C#CCO'), 'prop-2-yn-1-ol'); // with an OH, a short chain's multiple bond needs its locant
+});
+
+test('2.5.8: several OH take -diol, -triol, and the chain keeps its e; tétrol loses its a', () => {
+  assert.equal(name('CC(O)CCC(O)CC'), 'heptane-2,5-diol');
+  assert.equal(name('CC(O)C=CC(O)CC'), 'hept-3-ène-2,5-diol');
+  assert.equal(name('OCC(O)C(O)CO'), 'butane-1,2,3,4-tétrol');
+});
+
+test('2.5.6, 2.5.8: an OH on a benzene ring makes it phénol, before toluène and anisole', () => {
+  assert.deepEqual(['Oc1ccccc1', 'CCCc1cccc(O)c1', 'Cc1ccc(O)cc1'].map(name), ['phénol', '3-propylphénol', '4-méthylphénol']);
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
   assert.equal(reason('CC=O'), 'scope'); // aldehydes: 2.5.9
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)
