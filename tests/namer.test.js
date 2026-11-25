@@ -173,8 +173,21 @@ test('2.5.6, 2.5.8: an OH on a benzene ring makes it phénol, before toluène an
   assert.deepEqual(['Oc1ccccc1', 'CCCc1cccc(O)c1', 'Cc1ccc(O)cc1'].map(name), ['phénol', '3-propylphénol', '4-méthylphénol']);
 });
 
+test('2.5.9 (P-66.6.1.1): -al on carbon 1, never with its locant; -dial keeps the e of the chain', () => {
+  assert.deepEqual(['C=O', 'CC=O', 'CCCC=O', 'CCC(Br)CC=O', 'C=C(C)C=O'].map(name), ['méthanal', 'éthanal', 'butanal', '3-bromopentanal', '2-méthylprop-2-énal']);
+  assert.deepEqual(['O=CCCCC=O', 'O=CC=CC=O'].map(name), ['pentanedial', 'but-2-ènedial']);
+});
+
+test('2.5.9: before an aldehyde, an alcohol is a hydroxy prefix', () => {
+  assert.equal(name('CCCC(O)C(CC)C=O'), '2-éthyl-3-hydroxyhexanal');
+});
+
+test('2.5.9, 2.5.6: an aldehyde on a ring is a -carbaldéhyde; on a benzene ring, benzaldéhyde, before phénol', () => {
+  assert.deepEqual(['O=CC1CCCCC1', 'O=Cc1ccccc1', 'O=Cc1ccc(O)cc1'].map(name), ['cyclohexanecarbaldéhyde', 'benzaldéhyde', '4-hydroxybenzaldéhyde']);
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
-  assert.equal(reason('CC=O'), 'scope'); // aldehydes: 2.5.9
+  assert.equal(reason('CC(=O)C'), 'scope'); // ketones: 2.5.10
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)
 });
 

@@ -11,10 +11,11 @@ import { adjacency } from './graph.js';
  * exercise generator draws another molecule.
  * @typedef {import('./graph.js').Graph} Graph
  * @typedef {{name: string, locants: number[]}} Prefix
+ * @typedef {{end: string, at: number[], omit?: boolean}} Suffix -ol, -al, -carbaldéhyde; omit: never with its locants (-al)
  * @typedef {{name: string, parent: number[], ring: boolean, prefixes: Prefix[], doubles: number[], triples: number[],
- *   ols: number[], word: string, also: {name: string, remark?: 'retained'}[]}} Naming
+ *   suffix: Suffix, word: string, also: {name: string, remark?: 'retained'}[]}} Naming
  *   parent: the parent chain's atoms in numbering order; prefixes: in the order the name cites them;
- *   doubles, triples: the locants of its double and triple bonds; ols: of its OH (2.5.8);
+ *   doubles, triples: the locants of its double and triple bonds; suffix: its principal group's (2.5.8, 2.5.9);
  *   word: benzène, toluène, anisole or phénol for a benzene ring;
  *   also: the other names accepted (o-, m-, p-; the systematic name of a toluène, with a remark)
  */
@@ -58,7 +59,7 @@ const ascending = (/** @type {number[]} */ xs) => [...xs].sort((a, b) => a - b);
  * The principal group's suffix (-ol, 2.5.8) follows: the parent loses its final e before a single one
  * (heptan-3-ol, hex-4-én-2-ol) and keeps it before a multiplied one (heptane-2,5-diol); tétra- loses its
  * a (tétrol); no locant on one or two carbons nor on a ring (méthanol, éthanol, cyclohexanol).
- * @param {{end: string, at: number[]}} [suffix]
+ * @param {Suffix} [suffix] -al is always on carbon 1: its locants are never written (2.5.9)
  */
 export function spell(prefixes, size, ring, doubles = [], triples = [], word = '', suffix = { end: '', at: [] }) {
   const count = prefixes.reduce((s, p) => s + p.locants.length, 0);
@@ -83,7 +84,7 @@ export function spell(prefixes, size, ring, doubles = [], triples = [], word = '
     const vowel = /^[aeiouyéè]/.test(suffix.end);
     if (!many && vowel) parent = parent.endsWith(N.ene) ? parent.slice(0, -N.ene.length) + N.en : parent.replace(/e$/, '');
     const mult = N.multipliers[suffix.at.length].replace(vowel ? /a$/ : /^$/, '');
-    parent += (!many && (size <= 2 || ring) ? '' : `-${suffix.at.join(',')}-`) + mult + suffix.end;
+    parent += (suffix.omit || (!many && (size <= 2 || ring)) ? '' : `-${suffix.at.join(',')}-`) + mult + suffix.end;
   }
   return words.join(omit ? '' : '-') + parent;
 }
@@ -102,20 +103,25 @@ function skeleton(g) {
   if (!carbons.length) throw scope();
   for (const b of g.bonds) {
     const cc = el(b.a) === 'C' && el(b.b) === 'C';
-    if (b.order !== 1 && !(cc && [1.5, 2, 3].includes(b.order)) && !(b.order === 2 && [el(b.a), el(b.b)].sort().join() === 'N,O')) throw scope();
+    const pair = [el(b.a), el(b.b)].sort().join();
+    if (b.order !== 1 && !(cc && [1.5, 2, 3].includes(b.order)) && !(b.order === 2 && (pair === 'N,O' || pair === 'C,O'))) throw scope();
   }
+  const { isOH, isCO, aldehydes, kind } = groups(g, adj);
   for (const [i, a] of g.atoms.entries()) {
     const [first] = [...adj[i].keys()];
     if (a.charge !== 0) throw scope();
     if (HALOGENS.includes(a.el) && (adj[i].size !== 1 || el(first) !== 'C')) throw scope();
     if (a.el === 'N' && !nitro(i)) throw scope();
-    // An oxygen is a nitro's, an ether's between two carbons (2.5.7), or an alcohol's OH on a carbon with
-    // single or aromatic bonds only, one OH per carbon (2.5.8: no enol, no gem-diol).
-    const hydroxyl = adj[i].size === 1 && el(first) === 'C' && [...adj[first]].every(([j, o]) => o === 1 || o === 1.5)
-      && [...adj[first].keys()].filter((j) => el(j) === 'O' && adj[j].size === 1).length === 1;
-    if (a.el === 'O' && !(adj[i].size === 1 && nitro(first)) && !hydroxyl && !(adj[i].size === 2 && [...adj[i]].every(([j, o]) => el(j) === 'C' && o === 1))) throw scope();
+    // An oxygen is a nitro's, an ether's between two carbons (2.5.7), an alcohol's OH on a carbon with
+    // single or aromatic bonds only, one OH per carbon (2.5.8: no enol, no gem-diol), or an aldehyde's (2.5.9).
+    const hydroxyl = isOH(i) && el(first) === 'C' && [...adj[first]].every(([, o]) => o === 1 || o === 1.5)
+      && [...adj[first].keys()].filter(isOH).length === 1;
+    if (a.el === 'O' && !(adj[i].size === 1 && nitro(first)) && !hydroxyl && !(isCO(i) && aldehydes.includes(first))
+      && !(adj[i].size === 2 && [...adj[i]].every(([j, o]) => el(j) === 'C' && o === 1))) throw scope();
     if (!['C', 'N', 'O', ...HALOGENS].includes(a.el)) throw scope();
   }
+  // An aldehyde's carbon bears its =O, an H and at most one carbon; one with two carbons is a ketone (2.5.10).
+  if (aldehydes.length > 2 || aldehydes.some((c) => [...adj[c].keys()].some((j) => el(j) !== 'C' && !isCO(j)) || [...adj[c].keys()].filter((j) => el(j) === 'C').length > 1)) throw scope();
   const reached = new Set([0]);
   for (const q = [0]; q.length;) for (const j of adj[/** @type {number} */ (q.pop())].keys()) if (!reached.has(j)) { reached.add(j); q.push(j); }
   if (reached.size !== g.atoms.length) throw scope(); // two molecules
@@ -157,10 +163,26 @@ function skeleton(g) {
   const branches = (/** @type {number[]} */ c) => c.reduce((s, i) => s + [...adj[i].keys()].filter((j) => !c.includes(j)).length, 0);
   // Double and triple bonds; a benzene ring's aromatic bonds are not alkenes (2.5.6).
   const multiples = (/** @type {number[]} */ c) => g.bonds.filter((b) => (b.order === 2 || b.order === 3) && c.includes(b.a) && c.includes(b.b)).length;
-  // The carbons that bear the principal group, an alcohol's OH (2.5.8).
-  const principal = (/** @type {number[]} */ c) => c.filter((i) => [...adj[i].keys()].some((j) => el(j) === 'O' && adj[j].size === 1)).length;
-  if (ring.length && principal(ring) && multiples(ring)) throw scope(); // cyclohex-2-énol and the like: not in the textbook
+  // How many principal groups a parent holds: an aldehyde's carbon in a chain, or one hanging from a ring
+  // (-carbaldéhyde, 2.5.9); otherwise an OH (2.5.8).
+  const principal = (/** @type {number[]} */ c, isRing = false) => (kind === 'al'
+    ? c.filter((i) => (isRing ? [...adj[i].keys()].some((j) => aldehydes.includes(j)) : aldehydes.includes(i))).length
+    : kind === 'ol' ? c.filter((i) => [...adj[i].keys()].some(isOH)).length : 0);
+  if (kind === 'ol' && ring.length && principal(ring) && multiples(ring)) throw scope(); // cyclohex-2-énol and the like: not in the textbook
   return { adj, core, ring, chains, longest, branches, multiples, principal };
+}
+
+/**
+ * The oxygen groups and the principal one (figure 2.21): an aldehyde before an alcohol.
+ * @param {Graph} g @param {Map<number, number>[]} adj
+ */
+function groups(g, adj) {
+  const one = (/** @type {number} */ j, /** @type {number} */ order) => g.atoms[j].el === 'O' && adj[j].size === 1 && [...adj[j].values()][0] === order;
+  const isOH = (/** @type {number} */ j) => one(j, 1);
+  const isCO = (/** @type {number} */ j) => one(j, 2);
+  const aldehydes = g.atoms.flatMap((a, i) => (a.el === 'C' && [...adj[i].keys()].some(isCO) ? [i] : []));
+  const kind = aldehydes.length ? 'al' : g.atoms.some((_, i) => isOH(i)) ? 'ol' : '';
+  return { isOH, isCO, aldehydes, kind };
 }
 
 /** @param {Graph} g @returns {Naming} */
@@ -172,7 +194,7 @@ export function nameOf(g) {
   /** @typedef {{atoms: number[], ring: boolean}} Candidate */
   const most = (/** @type {Candidate[]} */ cs, /** @type {(c: Candidate) => number} */ f) => cs.filter((c) => f(c) === Math.max(...cs.map(f)));
   const all = [...(ring.length ? [{ atoms: ring, ring: true }] : []), ...chains.map((atoms) => ({ atoms, ring: false }))];
-  let top = most(most(most(all, (c) => principal(c.atoms)), (c) => multiples(c.atoms)), (c) => c.atoms.length);
+  let top = most(most(most(all, (c) => principal(c.atoms, c.ring)), (c) => multiples(c.atoms)), (c) => c.atoms.length);
   if (top.some((c) => c.ring) && top.some((c) => !c.ring)) throw new NamingError('undecided');
   top = most(top, (c) => (c.ring ? 0 : branches(c.atoms)));
   const named = top.map((c) => numbered(g, adj, c.atoms, c.ring, core));
@@ -201,8 +223,9 @@ export function wrongNames(g) {
   const wrong = new Map();
   const add = (/** @type {string} */ name, /** @type {string} */ rule) => { if (name !== right.name && !wrong.has(name)) wrong.set(name, rule); };
   const n = right.parent.length;
-  const [d, t, o] = [right.doubles, right.triples, right.ols];
-  const sfx = (/** @type {number[]} */ at) => ({ end: N.ol, at });
+  const [d, t, o] = [right.doubles, right.triples, right.suffix.at];
+  const sfx = (/** @type {number[]} */ at) => ({ ...right.suffix, at });
+  const end = right.suffix.end;
 
   // On the right parent: a ring numbered across its double bond, the triple bond before the double one on
   // a tie, the branches before the multiple bonds, the sum of locants, the alphabet ignored on a tie, or simply the other way.
@@ -243,16 +266,22 @@ export function wrongNames(g) {
     if (k >= 0) add(right.name.replace(x.name, (k < 4 ? N.stems[k] + N.yl : N.stems[k]) + N.oxy), 'alkoxy');
   }
   // Hept-3-ol for heptan-3-ol, hex-4-ène-2-ol for hex-4-én-2-ol, heptan-2,5-diol for heptane-2,5-diol (2.5.8).
-  if (o.length === 1) {
+  if (end === N.ol && o.length === 1) {
     add(right.name.replace(`${stem}an-`, `${stem}-`), 'olStem');
     add(right.name.replace(`${N.en}-${o[0]}-${N.ol}`, `${N.ene}-${o[0]}-${N.ol}`).replace(`yn-${o[0]}-${N.ol}`, `${N.yne}-${o[0]}-${N.ol}`), 'olElision');
   }
-  if (o.length > 1) add(right.name.replace(`${stem}${N.ane}-`, `${stem}an-`), 'diolStem');
+  if (end === N.ol && o.length > 1) add(right.name.replace(`${stem}${N.ane}-`, `${stem}an-`), 'diolStem');
   // « Alcool isopropylique » for propan-2-ol: a familiar name the textbook does not accept (2.5.8).
-  const oh = g.atoms.flatMap((a, i) => (a.el === 'O' && adj[i].size === 1 ? [i] : []));
-  if (oh.length === 1 && g.atoms.every((a) => a.el === 'C' || a.el === 'O')) {
+  const { isOH } = groups(g, adj);
+  const oh = g.atoms.flatMap((_, i) => (isOH(i) ? [i] : []));
+  if (end === N.ol && oh.length === 1 && g.atoms.every((a) => a.el === 'C' || a.el === 'O')) {
     try { add(`${N.alcohol} ${prefix(g, adj, [...adj[oh[0]].keys()][0], new Set(oh), core)}${N.ique}`, 'familiar'); } catch (e) { if (!(e instanceof NamingError)) throw e; }
   }
+  // Butan-1-al, pentandial, cyclohexanal for cyclohexanecarbaldéhyde, acétaldéhyde (2.5.9).
+  if (end === N.al && o.length === 1) add(right.name.replace(new RegExp(`${N.al}$`), `-1-${N.al}`), 'alLocant');
+  if (end === N.al && o.length === 2) add(right.name.replace(`e${N.multipliers[2]}${N.al}`, `${N.multipliers[2]}${N.al}`), 'dialStem');
+  if (end === N.carbaldehyde && o.length === 1) add(right.name.replace(`${stem}${N.ane}${N.carbaldehyde}`, `${stem}an${N.al}`), 'carbaldehyde');
+  if (end === N.al && o.length === 1 && !p.length && !d.length && !t.length && !right.ring && n <= N.familiarAldehydes.length) add(N.familiarAldehydes[n - 1], 'familiar');
 
   // Another parent: a shorter or less branched chain, or the ring and the chain the other way round.
   const attempt = (/** @type {number[]} */ parent, /** @type {boolean} */ isRing, /** @type {string} */ rule) => {
@@ -272,10 +301,11 @@ export function wrongNames(g) {
  * @returns {Naming}
  */
 function numbered(g, adj, parent, ring, core, plain = false) {
-  const { cited, scored, word } = numberings(g, adj, parent, ring, core, plain);
+  const { cited, scored, word, end } = numberings(g, adj, parent, ring, core, plain);
   const best = scored[0];
   const prefixes = cited.map((name) => ({ name, locants: best.of(name) }));
-  const name = spell(prefixes, parent.length, ring, best.doubles, best.triples, word, { end: N.ol, at: best.ols });
+  const suffix = { end, at: best.ols, omit: end === N.al };
+  const name = spell(prefixes, parent.length, ring, best.doubles, best.triples, word, suffix);
   // Also accepted on a benzene ring (2.5.6): o-, m-, p- for two substituents, and for a toluène its
   // systematic name, with a remark since the textbook asks for the familiar one.
   /** @type {{name: string, remark?: 'retained'}[]} */
@@ -283,14 +313,15 @@ function numbered(g, adj, parent, ring, core, plain = false) {
   const locs = prefixes.flatMap((p) => p.locants);
   const relative = /** @type {Record<number, string[]>} */ (N.omp);
   if (word && word !== N.benzene) {
-    if (word !== N.phenol) also.push({ name: numbered(g, adj, parent, ring, core, true).name, remark: 'retained' });
+    // Only a familiar name given by a prefix (toluène, anisole) has a systematic one beside it; phénol and benzaldéhyde do not.
+    if (N.retained.find((r) => r.word === word)?.prefix) also.push({ name: numbered(g, adj, parent, ring, core, true).name, remark: 'retained' });
     if (locs.length === 1) for (const a of relative[locs[0]] ?? []) also.push({ name: `${a}-${prefixes[0].name}${word}` });
   }
   if (word === N.benzene && locs.length === 2) {
     const two = prefixes.length === 1 ? N.multipliers[2] + (N.italic.some((p) => prefixes[0].name.startsWith(p)) ? '-' : '') + prefixes[0].name : prefixes.map((p) => p.name).join('');
     for (const a of relative[Math.max(...locs)] ?? []) also.push({ name: `${a}-${two}${word}` });
   }
-  return { name, parent: best.order, ring, prefixes, doubles: best.doubles, triples: best.triples, ols: best.ols, word, also };
+  return { name, parent: best.order, ring, prefixes, doubles: best.doubles, triples: best.triples, suffix, word, also };
 }
 
 /**
@@ -304,21 +335,25 @@ function numbered(g, adj, parent, ring, core, plain = false) {
  */
 function numberings(g, adj, parent, ring, core, plain = false) {
   const inParent = new Set(parent);
-  // The OH on the parent are its suffix (2.5.8), not prefixes.
-  const hydroxyl = (/** @type {number} */ q) => g.atoms[q].el === 'O' && adj[q].size === 1;
-  const ols = parent.filter((p) => [...adj[p].keys()].some(hydroxyl));
-  let subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q) && !hydroxyl(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
+  // The principal group is the parent's suffix, not a prefix: its OH (2.5.8), its aldehyde's =O, or on a
+  // ring the CHO hanging from it (-carbaldéhyde, 2.5.9).
+  const { isOH, isCO, aldehydes, kind } = groups(g, adj);
+  const carbaldehyde = kind === 'al' && ring;
+  const ols = parent.filter((p) => (kind === 'ol' ? [...adj[p].keys()].some(isOH) : carbaldehyde ? [...adj[p].keys()].some((q) => aldehydes.includes(q)) : aldehydes.includes(p)));
+  const suffix = (/** @type {number} */ q) => (kind === 'ol' ? isOH(q) : carbaldehyde ? aldehydes.includes(q) : isCO(q));
+  let subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q) && !suffix(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
   const aromatic = ring && g.bonds.some((b) => b.order === 1.5 && inParent.has(b.a) && inParent.has(b.b));
-  if (aromatic && ols.length > 1) throw scope(); // catéchol, résorcinol…: not in this level
-  // On a benzene ring, an OH makes it phénol, before any other group (figure 2.21). Otherwise a group alone
-  // that gives a familiar name takes it; one repeated keeps benzène; two of the same rank leave it undecided (2.5.6).
+  if (aromatic && ols.length > 1) throw scope(); // catéchol, phtalaldéhyde…: not in these levels
+  // On a benzene ring, the principal group gives its familiar name: benzaldéhyde, phénol (figure 2.21). Otherwise a
+  // group alone that gives one takes it; one repeated keeps benzène; two of the same rank leave it undecided (2.5.6).
   const found = aromatic && !plain && !ols.length ? N.retained.map((r) => ({ ...r, subs: subs.filter((s) => s.name === r.prefix) })).filter((r) => r.subs.length) : [];
   const kept = found.length === 1 && found[0].subs.length === 1 ? found[0] : null;
   if (!kept && found.length > 1 && found.every((r) => r.subs.length === 1)) throw new NamingError('undecided');
   const methyls = aromatic && ols.length ? [{ at: ols[0], name: '' }] : kept ? kept.subs : [];
   if (kept) subs = subs.filter((s) => s !== methyls[0]);
-  const word = !aromatic ? '' : ols.length ? N.phenol : kept ? kept.word : N.benzene;
+  const word = !aromatic ? '' : ols.length ? (kind === 'al' ? N.benzaldehyde : N.phenol) : kept ? kept.word : N.benzene;
   const suffixed = aromatic ? [] : ols;
+  const end = !suffixed.length ? '' : kind === 'ol' ? N.ol : carbaldehyde ? N.carbaldehyde : N.al;
   const cited = [...new Set(subs.map((s) => s.name))].sort(alphabetical);
   const bonds = (/** @type {number} */ o) => g.bonds.filter((b) => b.order === o && inParent.has(b.a) && inParent.has(b.b));
   const [double, triple] = [bonds(2), bonds(3)];
@@ -341,7 +376,7 @@ function numberings(g, adj, parent, ring, core, plain = false) {
   // The principal group first (2.5.8), then double and triple bonds together, the double bonds on a tie (2.5.5), then the prefixes.
   scored.sort((a, b) => Number(b.valid) - Number(a.valid) || firstDifference(a.ols, b.ols) || firstDifference(a.multiples, b.multiples)
     || firstDifference(a.doubles, b.doubles) || firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited));
-  return { cited, scored, word };
+  return { cited, scored, word, end };
 }
 
 /**
@@ -353,6 +388,7 @@ function numberings(g, adj, parent, ring, core, plain = false) {
 function prefix(g, adj, root, parent, core) {
   const el = g.atoms[root].el;
   if (el === 'N') return N.nitro;
+  if (el === 'O' && adj[root].size === 1) return N.hydroxy; // an OH when a higher group takes the suffix (2.5.9)
   if (el === 'O') {
     // An ether: the oxygen and the group beyond it, méthoxy to butoxy, then pentyloxy…, phényloxy, benzyloxy (tableau 2.8).
     const c = [...adj[root].keys()].find((j) => !parent.has(j));

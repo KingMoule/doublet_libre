@@ -310,8 +310,12 @@ export const fr = {
       { prefix: 'méthyl', word: 'toluène', group: 'Le méthyle' },
       { prefix: 'méthoxy', word: 'anisole', group: 'Le groupe méthoxy' },
       { prefix: '', word: 'phénol', group: 'Le groupe OH' },
+      { prefix: '', word: 'benzaldéhyde', group: 'Le groupe CHO' },
     ],
-    phenol: 'phénol',
+    phenol: 'phénol', benzaldehyde: 'benzaldéhyde',
+    // Aldehydes (2.5.9): -al, -carbaldéhyde on a ring, hydroxy- below them; familiar names by carbons, from one.
+    al: 'al', carbaldehyde: 'carbaldéhyde', hydroxy: 'hydroxy',
+    familiarAldehydes: ['formaldéhyde', 'acétaldéhyde', 'propionaldéhyde', 'butyraldéhyde', 'valéraldéhyde'],
     // Alcohols (2.5.8): the suffix, and the familiar names the textbook does not accept (alcool isopropylique).
     ol: 'ol', alcohol: 'alcool', ique: 'ique',
     // Ethers (2.5.7, tableau 2.8): alkoxy up to butoxy, then alkyloxy; « oxyde de … et de … » for a simple ether.
@@ -339,7 +343,10 @@ export const fr = {
       olStem: 'Devant -ol, la chaîne garde son « an » : heptan-3-ol, pas hept-3-ol (2.5.8).',
       olElision: 'Devant -ol, -ène et -yne perdent leur e : hex-4-én-2-ol, pent-4-yn-2-ol (2.5.8).',
       diolStem: 'Devant -diol, la chaîne garde son e : heptane-2,5-diol (2.5.8).',
-      familiar: 'Nom familier : selon les règles de l’UICPA, on donne le nom systématique (2.5.8).',
+      familiar: 'Nom familier : selon les règles de l’UICPA, on donne le nom systématique (2.5.8, 2.5.9).',
+      alLocant: 'L’aldéhyde est toujours en bout de chaîne, en 1 : son indice ne s’écrit pas (butanal) (2.5.9).',
+      dialStem: 'Devant -dial, la chaîne garde son e : pentanedial (2.5.9).',
+      carbaldehyde: 'Le carbone du CHO ne fait pas partie du cycle : on ajoute -carbaldéhyde au nom du cycle (cyclohexanecarbaldéhyde) (2.5.9).',
       ringDoubleBond: 'Dans un cycle, les deux carbones de la liaison double portent des numéros qui se suivent : 1 et 2 (2.5.4).',
     },
     // How a right name is written, when it counts with a remark (naming/check.js).
@@ -356,7 +363,7 @@ export const fr = {
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
-    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)', alcohols: 'Alcools (2.5.8)' },
+    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)', alcohols: 'Alcools (2.5.8)', aldehydes: 'Aldéhydes (2.5.9)' },
     /** @param {number} k @param {number} n */ question: (k, n) => `Question ${k} sur ${n}`,
     nameIt: 'Nommez cette molécule selon les règles de l’UICPA.',
     drawIt: 'Dessinez :',
@@ -385,10 +392,15 @@ export const fr = {
     place: 'Les atomes sont les bons, mais pas à leur place : vérifiez la numérotation de la chaîne principale.',
     doubles: 'Vérifiez les liaisons doubles et triples : leur nombre et leur place.',
     steps: {
-      /** @param {boolean} ring @param {number} n @param {string} name @param {'principal' | 'multiples' | 'longest'} why */
+      /** @param {boolean} ring @param {number} n @param {string} name @param {'ol' | 'al' | 'multiples' | 'longest'} why */
       parent: (ring, n, name, why) => (ring ? `Chaîne principale : le cycle de ${n} carbones, ${name}.`
-        : `Chaîne principale : ${{ principal: 'celle qui porte l’OH', multiples: 'celle qui porte les liaisons multiples', longest: 'la plus longue' }[why]}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
-      /** @param {number[]} at */ alcohol: (at) => `Fonction prioritaire : alcool, suffixe -ol en ${at.join(' et ')}.`,
+        : `Chaîne principale : ${{ ol: 'celle qui porte l’OH', al: 'celle qui porte le CHO', multiples: 'celle qui porte les liaisons multiples', longest: 'la plus longue' }[why]}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
+      // The principal group, by its suffix.
+      principal: {
+        /** @param {number[]} at */ ol: (at) => `Fonction prioritaire : alcool, suffixe -ol en ${at.join(' et ')}.`,
+        al: () => 'Fonction prioritaire : aldéhyde, suffixe -al, toujours en bout de chaîne : son indice 1 ne s’écrit pas.',
+        carbaldéhyde: () => 'Fonction prioritaire : aldéhyde sur un cycle, suffixe -carbaldéhyde ; le carbone du CHO ne compte pas dans le cycle.',
+      },
       /** @param {string} group @param {string} word */
       retained: (group, word) => `${group} donne au benzène son nom familier, ${word} : il prend l’indice 1.`,
       /** @param {string} list */ prefixes: (list) => `Substituants et indices : ${list}.`,

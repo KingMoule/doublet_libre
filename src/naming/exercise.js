@@ -56,13 +56,14 @@ export function solution(item) {
     const angles = doc.bonds.filter((b) => b.a === id || b.b === id).map((b) => angleOf(sub(/** @type {M.Atom} */ (M.findAtom(doc, b.a === id ? b.b : b.a)), a)));
     M.addText(doc, { ...add(a, fromAngle(nextBondAngle(angles), 17)), text: String(k + 1), size: 11 });
   });
-  const { ring, prefixes, parent, doubles, triples, ols, word } = item.naming;
+  const { ring, prefixes, parent, doubles, triples, suffix, word } = item.naming;
   const n = parent.length;
-  const why = ols.length ? 'principal' : doubles.length + triples.length ? 'multiples' : 'longest';
+  const why = suffix.at.length ? (suffix.end === N.ol ? 'ol' : 'al') : doubles.length + triples.length ? 'multiples' : 'longest';
+  const principal = /** @type {Record<string, (at: number[]) => string>} */ (X.steps.principal)[suffix.end];
   const steps = [
     word && word !== N.benzene ? X.steps.retained(N.retained.find((r) => r.word === word)?.group ?? '', word)
       : X.steps.parent(ring, n, spell([], n, ring, doubles, triples, word), why),
-    ...(ols.length ? [X.steps.alcohol(ols)] : []),
+    ...(suffix.at.length && principal ? [principal(suffix.at)] : []),
     prefixes.length ? X.steps.prefixes(prefixes.map((p) => X.steps.at(p.name, p.locants)).join(', ')) : X.steps.none,
     X.steps.name(item.name),
   ];
