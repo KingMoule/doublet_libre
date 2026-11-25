@@ -2,9 +2,9 @@
 /**
  * Checks a name typed by a student against the expected names and the wrong ones (namer.wrongNames).
  * Case, spaces and a final period do not count. A right name without its accents, or with its commas
- * and hyphens off, still counts, with a remark (SPEC, Exercices de nomenclature); so does an accepted
- * name that carries its own remark, such as the systematic name of a toluène.
- * @typedef {'accents' | 'commas' | 'hyphens' | 'punctuation' | 'retained'} Remark keys of fr.naming.remarks
+ * and hyphens off, or a linking vowel off, still counts, with a remark (SPEC, Exercices de nomenclature); so
+ * does an accepted name that carries its own remark, such as the systematic name of a toluène.
+ * @typedef {'accents' | 'commas' | 'hyphens' | 'punctuation' | 'elision' | 'retained'} Remark keys of fr.naming.remarks
  * @typedef {{verdict: 'right' | 'wrong' | 'empty', remarks: Remark[], rule?: string}} Check
  */
 
@@ -16,6 +16,10 @@ const plain = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 // The same letters and numbers in the same order, whatever separates them; a digit next to a letter is a break.
 /** @param {string} s */
 const bare = (s) => s.replace(/(\d)(?=\D)/g, '$1 ').replace(/(\D)(?=\d)/g, '$1 ').replace(/[\s,'-]+/g, '|');
+// Without the linking vowels a suffix drops or keeps: the e of -ane, -ène, -yne before a locant (oct-1-ène-3,4-dione,
+// hex-4-én-2-ol) or before -dial (pentanedial), the a before diène (buta-1,3-diène) (2.5.4, 2.5.8 to 2.5.10).
+/** @param {string} s */
+const vowelless = (s) => bare(plain(s)).replace(/[ea](?=\|\d)/g, '').replace(/e(?=dial$)/, '');
 
 /** Which writing rule a name breaks (2.5.1): commas between numbers, hyphens between numbers and letters. @param {string} t @returns {Remark} */
 const punctuation = (t) => (/\d-\d/.test(t) ? 'commas' : /\d[^\d,'-]|[^\d,'\s-]\d|\d,\D/.test(t) ? 'hyphens' : 'punctuation');
@@ -40,5 +44,7 @@ export function checkName(typed, accepted, wrong = []) {
   if (m) return verdict(m, ['accents']);
   m = targets.find((x) => bare(plain(x.name)) === bare(plain(t)));
   if (m) return verdict(m, bare(m.name) === bare(t) ? [punctuation(t)] : [punctuation(t), 'accents']);
+  m = targets.find((x) => vowelless(x.name) === vowelless(t));
+  if (m) return verdict(m, ['elision']);
   return { verdict: 'wrong', remarks: [] };
 }

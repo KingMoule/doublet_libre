@@ -33,18 +33,37 @@ test('2.5.2 and 2.5.3: ring numbering, ring against chain, a locant that is left
   assert.equal(rule('CC1CCCCC1', '1-méthylcyclohexane'), 'locant');
 });
 
-test('2.5.4: the double bond numbered after the branches, both its carbons written, the a left out, a ring numbered across it', () => {
+test('2.5.4: the double bond numbered after the branches, both its carbons written, a ring numbered across it', () => {
   assert.equal(rule('CC=CC(C)(C)C', '2,2-diméthylpent-3-ène'), 'unsaturationFirst');
   assert.equal(rule('CC=CCC', 'pent-2,3-ène'), 'bothLocants');
-  assert.equal(rule('CC=CC=CC', 'hex-2,4-diène'), 'euphony');
   assert.equal(rule('CC1=CCCCC1C', '1,2-diméthylcyclohexène'), 'ringDoubleBond');
 });
 
-test('2.5.5: the triple bond before the double one on a tie, -ène kept before a single -yne, both carbons, the a', () => {
+test('2.5.5: the triple bond before the double one on a tie, both carbons', () => {
   assert.equal(rule('C#CCCC=C', 'hex-5-én-1-yne'), 'eneFirst');
-  assert.equal(rule('C=CCCC#CC', 'hept-1-ène-5-yne'), 'enElision');
   assert.equal(rule('CC#CCCCCC', 'oct-2,3-yne'), 'bothLocants');
-  assert.equal(rule('CCC#CC#CCC', 'oct-3,5-diyne'), 'euphony');
+});
+
+// A linking vowel off is a slip of writing, like a comma: the e of -ane, -ène, -yne that a suffix drops or keeps,
+// the a before diène (2.5.4, 2.5.5, 2.5.8 to 2.5.10). The right name, or the wrong one with its rule.
+const typed = (/** @type {string} */ smiles, /** @type {string} */ t) => {
+  const n = nameOf(fromSmiles(smiles));
+  return checkName(t, [n.name, ...n.also], wrongNames(fromSmiles(smiles)));
+};
+test('a linking vowel dropped or kept by mistake counts, with a remark', () => {
+  const elision = { verdict: 'right', remarks: ['elision'] };
+  assert.deepEqual(typed('C=C(C)C(=O)C(=O)CC(CC)CC', '6-éthyl-2-méthyloct-1-èn-3,4-dione'), elision);
+  assert.deepEqual(typed('CC=CC=CC', 'hex-2,4-diène'), elision);
+  assert.deepEqual(typed('CCC#CC#CCC', 'oct-3,5-diyne'), elision);
+  assert.deepEqual(typed('C=CCCC#CC', 'hept-1-ène-5-yne'), elision);
+  assert.deepEqual(typed('CC=CCC(C)O', 'hex-4-ène-2-ol'), elision);
+  assert.deepEqual(typed('CC(O)CCC(O)CC', 'heptan-2,5-diol'), elision);
+  assert.deepEqual(typed('O=CCCCC=O', 'pentandial'), elision);
+  assert.deepEqual(typed('C=CCC(=O)C', 'pent-4-ène-2-one'), elision);
+  assert.deepEqual(typed('CC(=O)CC(=O)C', 'pentan-2,4-dione'), elision);
+  // Still wrong: a wrong numbering with a vowel off gives its rule; the « an » left out is not a vowel.
+  assert.deepEqual(typed('CC=CCC(C)O', 'hex-2-ène-5-ol'), { verdict: 'wrong', remarks: [], rule: 'principalFirst' });
+  assert.equal(typed('CCC(O)CCCC', 'hept-3-ol').rule, 'olStem');
 });
 
 test('the right name is never among the wrong ones, and every rule has its message', () => {
@@ -75,26 +94,21 @@ test('2.5.7: the short side as the parent chain, méthyloxy for méthoxy, pentox
   assert.equal(rule('CCCCCCCOCCCCC', '1-pentoxyheptane'), 'alkoxy');
 });
 
-test('2.5.8: the double bond numbered before the OH, -an- dropped, -ène kept before -ol, -an- before -diol, a familiar name', () => {
+test('2.5.8: the double bond numbered before the OH, -an- dropped, a familiar name', () => {
   assert.equal(rule('CC=CCC(C)O', 'hex-2-én-5-ol'), 'principalFirst');
   assert.equal(rule('CCC(O)CCCC', 'hept-3-ol'), 'olStem');
-  assert.equal(rule('CC=CCC(C)O', 'hex-4-ène-2-ol'), 'olElision');
-  assert.equal(rule('CC(O)CCC(O)CC', 'heptan-2,5-diol'), 'diolStem');
   assert.equal(rule('CC(C)O', 'alcool isopropylique'), 'familiar');
 });
 
-test('2.5.9: -al with its locant 1, -dial without its e, a ring carbon taken for the CHO, a familiar name', () => {
+test('2.5.9: -al with its locant 1, a ring carbon taken for the CHO, a familiar name', () => {
   assert.equal(rule('CCCC=O', 'butan-1-al'), 'alLocant');
-  assert.equal(rule('O=CCCCC=O', 'pentandial'), 'dialStem');
   assert.equal(rule('O=CC1CCCCC1', 'cyclohexanal'), 'carbaldehyde');
   assert.equal(rule('CC=O', 'acétaldéhyde'), 'familiar');
 });
 
-test('2.5.10: the ketone after the other end, -an- dropped, -ène kept, -an- before -dione, locant 1 on a ring, acétone', () => {
+test('2.5.10: the ketone after the other end, -an- dropped, locant 1 on a ring, acétone', () => {
   assert.equal(rule('CCCC(=O)C', 'pentan-4-one'), 'principalFirst');
   assert.equal(rule('CCCC(=O)C', 'pent-2-one'), 'olStem');
-  assert.equal(rule('C=CCC(=O)C', 'pent-4-ène-2-one'), 'olElision');
-  assert.equal(rule('CC(=O)CC(=O)C', 'pentan-2,4-dione'), 'diolStem');
   assert.equal(rule('O=C1CCCCC1', 'cyclohexan-1-one'), 'ringLocant');
   assert.equal(rule('CC(=O)C', 'acétone'), 'familiar');
 });

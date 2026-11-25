@@ -262,24 +262,18 @@ export function wrongNames(g) {
   add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring, d, t, right.word, sfx(o)), 'multiplier');
   add(p.reduce((name, x) => name.replace(N.multipliers[x.locants.length] + x.name, x.name), right.name), 'multiplier');
   if (p.length === 1 && p[0].locants.length === 1 && !o.length && (n === 2 || (right.ring && !d.length && !t.length && (!right.word || right.word === N.benzene)))) add(`1-${right.name}`, 'locant');
-  // A multiple bond written with both its carbons, the a left out, -ène kept whole before a single -yne (2.5.4, 2.5.5).
+  // A multiple bond written with both its carbons (2.5.4, 2.5.5). A linking vowel off (buta-1,3-diène, hept-1-én-5-yne,
+  // heptane-2,5-diol) is a slip of writing, not a rule: check.js counts it right, with a remark.
   const one = d.length + t.length === 1 ? (d.length ? { at: d[0], end: N.ene } : { at: t[0], end: N.yne }) : null;
   if (one) add(right.name.replace(`-${one.at}-${one.end}`, `-${one.at},${one.at + 1}-${one.end}`), 'bothLocants');
   const stem = (right.ring ? N.cyclo : '') + N.stems[n - 1];
-  add(right.name.replace(`${stem}${N.euphonic}-`, `${stem}-`), 'euphony');
-  if (d.length && t.length === 1) add(right.name.replace(`${N.en}-`, `${N.ene}-`), 'enElision');
   // Méthyloxy for méthoxy, pentoxy for pentyloxy (2.5.7).
   for (const x of p) {
     const k = N.stems.findIndex((s, i) => x.name === (i < 4 ? s : s + N.yl) + N.oxy);
     if (k >= 0) add(right.name.replace(x.name, (k < 4 ? N.stems[k] + N.yl : N.stems[k]) + N.oxy), 'alkoxy');
   }
-  // Hept-3-ol for heptan-3-ol, hex-4-ène-2-ol for hex-4-én-2-ol, heptan-2,5-diol for heptane-2,5-diol (2.5.8);
-  // the same with -one (2.5.10).
-  if ((end === N.ol || end === N.one) && o.length === 1) {
-    add(right.name.replace(`${stem}an-`, `${stem}-`), 'olStem');
-    add(right.name.replace(`${N.en}-${o[0]}-${end}`, `${N.ene}-${o[0]}-${end}`).replace(`yn-${o[0]}-${end}`, `${N.yne}-${o[0]}-${end}`), 'olElision');
-  }
-  if ((end === N.ol || end === N.one) && o.length > 1) add(right.name.replace(`${stem}${N.ane}-`, `${stem}an-`), 'diolStem');
+  // Hept-3-ol for heptan-3-ol, pent-2-one for pentan-2-one: the « an » of the chain left out (2.5.8, 2.5.10).
+  if ((end === N.ol || end === N.one) && o.length === 1) add(right.name.replace(`${stem}an-`, `${stem}-`), 'olStem');
   // « Alcool isopropylique » for propan-2-ol: a familiar name the textbook does not accept (2.5.8).
   const { isOH, kind } = groups(g, adj);
   const oh = g.atoms.flatMap((_, i) => (isOH(i) ? [i] : []));
@@ -290,10 +284,9 @@ export function wrongNames(g) {
   if (kind !== 'ol' && oh.length) {
     try { add(nameOf({ ...g, kind: 'ol' }).name, 'priority'); } catch (e) { if (!(e instanceof NamingError)) throw e; }
   }
-  // Butan-1-al, pentandial, cyclohexanal for cyclohexanecarbaldéhyde, acétaldéhyde (2.5.9); a lone -ol or -one
-  // on a ring with its locant 1, acétone (2.5.10).
+  // Butan-1-al, cyclohexanal for cyclohexanecarbaldéhyde, acétaldéhyde (2.5.9); a lone -ol or -one on a ring with
+  // its locant 1, acétone (2.5.10).
   if (o.length === 1 && (end === N.al || (right.ring && (end === N.ol || end === N.one)))) add(right.name.replace(new RegExp(`${end}$`), `-1-${end}`), end === N.al ? 'alLocant' : 'ringLocant');
-  if (end === N.al && o.length === 2) add(right.name.replace(`e${N.multipliers[2]}${N.al}`, `${N.multipliers[2]}${N.al}`), 'dialStem');
   if (end === N.carbaldehyde && o.length === 1) add(right.name.replace(`${stem}${N.ane}${N.carbaldehyde}`, `${stem}an${N.al}`), 'carbaldehyde');
   const bare = !p.length && !d.length && !t.length && !right.ring;
   if (end === N.al && o.length === 1 && bare && n <= N.familiarAldehydes.length) add(N.familiarAldehydes[n - 1], 'familiar');
