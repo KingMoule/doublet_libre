@@ -299,6 +299,25 @@ export const fr = {
     // Written in italics and left out of the alphabetical order (2.5.1, règle 3d).
     italic: ['sec-', 'tert-'],
     cyclo: 'cyclo', ane: 'ane', yl: 'yl',
+    // What a wrong name breaks, by rule (namer.wrongNames), with the textbook section.
+    rules: {
+      chain: 'La chaîne principale est la plus longue chaîne de carbones (2.5.1).',
+      branches: 'Entre deux chaînes aussi longues, la chaîne principale est celle qui porte le plus de ramifications (2.5.1).',
+      ringChain: 'Un cycle est la chaîne principale s’il compte plus de carbones que la plus longue chaîne ; sinon, il devient un substituant cycloalkyle (2.5.2).',
+      numbering: 'On numérote dans le sens qui donne les plus petits indices à l’ensemble des substituants (2.5.1).',
+      sum: 'Les indices se comparent au premier chiffre qui diffère, jamais en les additionnant (2.5.1).',
+      alphabeticalNumbering: 'À indices égaux, le plus petit va au substituant cité en premier selon l’ordre alphabétique (2.5.1).',
+      alphabetical: 'Les substituants se citent par ordre alphabétique, sans compter di-, tri-, sec- ni tert- ; iso- compte (2.5.1).',
+      multiplier: 'Des substituants identiques se regroupent : leurs indices, puis di-, tri-, tétra- devant leur nom (2.5.1).',
+      locant: 'Un seul substituant sur un cycle ou sur l’éthane ne prend pas d’indice (2.5.2).',
+    },
+    // How a right name is written, when it counts with a remark (naming/check.js).
+    remarks: {
+      accents: 'Attention aux accents.',
+      commas: 'Les chiffres se séparent par des virgules (2.5.1).',
+      hyphens: 'Un trait d’union sépare les chiffres des lettres (2.5.1).',
+      punctuation: 'Vérifiez les virgules et les traits d’union (2.5.1).',
+    },
   },
   /** @param {number} q */
   chargeText: (q) => (q === 0 ? '0' : `${Math.abs(q) > 1 ? Math.abs(q) : ''}${q > 0 ? '+' : '−'}`),
