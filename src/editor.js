@@ -13,6 +13,8 @@ import { checkDoc } from './checks.js';
 import { GROUPS, attachGroup } from './groups.js';
 import { TEMPLATES, SETUP_TEMPLATES } from './templates.js';
 import * as A from './apparatus.js';
+import { LEVELS, series } from './naming/generate.js';
+import { answerDrawing, answerName, solution } from './naming/exercise.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
@@ -33,10 +35,12 @@ const TOOL_GROUPS = /** @type {const} */ ([
 const TOOLS = TOOL_GROUPS.flat();
 /** The glassware tools: each puts down the piece chosen in its option window. @type {Record<string, string[]>} */
 const FAMILIES = A.FAMILIES;
-/** The tools on the rail in each mode: drawing a mechanism, or a lab set-up. @type {Record<'mechanism' | 'setup', string[]>} */
+/** @typedef {'mechanism' | 'setup' | 'exercise'} Mode */
+/** The tools on the rail in each mode: drawing a mechanism, a lab set-up, or the molecule an exercise asks for. @type {Record<Mode, string[]>} */
 const MODE_TOOLS = {
   mechanism: TOOLS.filter((t) => !FAMILIES[t]),
   setup: ['select', ...Object.keys(FAMILIES), 'text', 'erase'],
+  exercise: ['select', 'bond', 'chain', 'ring', 'atom', 'erase'],
 };
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
 /** Text icon, shrunk to fit long labels such as CO₂H. */
@@ -132,6 +136,7 @@ function shell() {
     <div class="seg" role="group" aria-label="${fr.modeLabel}">
       <button type="button" data-mode="mechanism" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true">${ICONS.curved}</svg>${fr.modes.mechanism}</button>
       <button type="button" data-mode="setup" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true">${ICONS.synthesis}</svg>${fr.modes.setup}</button>
+      <button type="button" data-mode="exercise" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true">${ICONS.chain}</svg>${fr.modes.exercise}</button>
     </div>
     <div class="actions">
       <button type="button" id="btn-undo" class="icon" title="${fr.actions.undo} (Ctrl+Z)" aria-label="${fr.actions.undo}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3.5 L2.5 7 L6 10.5 M2.5 7 H11 A4.5 4.5 0 0 1 11 16 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -205,7 +210,15 @@ export function startEditor(root) {
     /** @type {{l:number,t:number,r:number,b:number} | null} */ marquee: null,
     ring: { size: 6, aromatic: false },
     bond: '1',
-    /** @type {'mechanism' | 'setup'} */ mode: 'mechanism',
+    /** @type {Mode} */ mode: 'mechanism',
+    /**
+     * The nomenclature series, kept while the student goes back to the other modes. The drawing of the
+     * other modes waits in `saved` (with its undo history), and is the only one stored in this browser.
+     * @type {{level: string, seed: number, items: import('./naming/generate.js').Item[], cur: number,
+     *   res: ('ok' | 'remark' | 'wrong')[], answers: string[], drafts: M.Doc[], showSol: boolean,
+     *   fb: import('./naming/exercise.js').Answer | null, saved: M.Doc, history: ReturnType<typeof M.createHistory>} | null}
+     */
+    ex: null,
     /** The piece each glassware tool puts down. @type {Record<string, string>} */
     piece: Object.fromEntries(Object.entries(FAMILIES).map(([f, kinds]) => [f, kinds[0]])),
     element: 'C',
@@ -276,13 +289,21 @@ export function startEditor(root) {
 
   /** @param {(doc: M.Doc) => void} fn */
   function commit(fn) {
+    if (readOnly()) return;
     M.record(S.history, S.doc);
     fn(S.doc);
     afterChange();
   }
 
-  /** @param {M.Doc} doc */
+  /** In the Exercice mode, only the molecule to draw can be changed; a given one or a solution cannot. */
+  function readOnly() {
+    const it = S.mode === 'exercise' && S.ex ? S.ex.items[S.ex.cur] : null;
+    return S.mode === 'exercise' && (!it || it.dir === 'name' || /** @type {NonNullable<typeof S.ex>} */ (S.ex).showSol);
+  }
+
+  /** A template, a file or a blank page replaces the drawing of the other modes, so it leaves the exercise first. @param {M.Doc} doc */
   function replaceDoc(doc) {
+    if (S.mode === 'exercise') setMode('mechanism');
     M.record(S.history, S.doc);
     S.doc = doc;
     S.selection = null;
@@ -322,6 +343,7 @@ export function startEditor(root) {
   // Whether the drawing is kept in this browser, which the help line says when it has nothing else to say.
   let stored = true;
   function save() {
+    if (S.mode === 'exercise') return; // the exercise drawing is not the student's document
     try {
       localStorage.setItem(STORAGE_KEY, M.serialize(S.doc));
       stored = true;
@@ -880,18 +902,106 @@ export function startEditor(root) {
     renderPanel();
   }
 
-  /** Shows the tools of a mode: drawing a mechanism, or a lab set-up. @param {'mechanism' | 'setup'} mode */
+  /**
+   * Shows a mode: drawing a mechanism, a lab set-up, or a nomenclature exercise. The exercise has
+   * its own drawing; the other one waits aside, with its undo history, until the student comes back.
+   * @param {Mode} mode
+   */
   function setMode(mode) {
+    const ex = S.ex;
+    if (S.mode === 'exercise' && mode !== 'exercise' && ex) {
+      keepDraft();
+      S.doc = ex.saved;
+      S.history = ex.history;
+      S.selection = S.hover = null;
+      try { window.history.replaceState(null, '', location.pathname + location.search); } catch { /* no history to edit */ }
+    }
+    if (mode === 'exercise' && S.mode !== 'exercise' && ex) { ex.saved = S.doc; ex.history = S.history; }
+    const leaving = S.mode === 'exercise' && mode !== 'exercise';
     S.mode = mode;
     for (const b of root.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b instanceof HTMLElement && b.dataset.mode === mode));
+    if (mode === 'exercise') { if (ex) showItem(); else startSeries(LEVELS[0], newSeed()); return; }
+    showTools(MODE_TOOLS[mode]);
+    setTool(MODE_TOOLS[mode].includes(S.tool) ? S.tool : 'select');
+    if (leaving) { render(); userMovedView = false; fit(); updateButtons(); }
+  }
+
+  /** @param {string[]} tools the tools shown on the rail */
+  function showTools(tools) {
     for (const b of root.querySelectorAll('.tool')) {
-      if (b instanceof HTMLElement) b.hidden = !MODE_TOOLS[mode].includes(b.dataset.tool ?? '');
+      if (b instanceof HTMLElement) b.hidden = !tools.includes(b.dataset.tool ?? '');
     }
     // A group with no tool in this mode goes too, and with it its separating line.
     for (const g of root.querySelectorAll('.tool-group')) {
       if (g instanceof HTMLElement) g.hidden = !g.querySelector('.tool:not([hidden])');
     }
-    setTool(MODE_TOOLS[mode].includes(S.tool) ? S.tool : 'select');
+  }
+
+  // ---------- nomenclature exercise ----------
+
+  const newSeed = () => 1000 + Math.floor(Math.random() * 9000);
+
+  /** A new series of the level; its link (level and seed) gives the same series to anyone. @param {string} level @param {number} seed */
+  function startSeries(level, seed) {
+    const { saved, history } = S.ex ?? { saved: S.doc, history: S.history };
+    S.ex = { level, seed, items: series(level, seed).items, cur: 0, res: [], answers: [], drafts: [], showSol: false, fb: null, saved, history };
+    showItem();
+  }
+
+  /** The student's drawing of the current molecule, kept when they move on or leave the mode. */
+  function keepDraft() {
+    const ex = S.ex;
+    if (ex && S.mode === 'exercise' && !ex.showSol && ex.items[ex.cur]?.dir === 'draw') ex.drafts[ex.cur] = S.doc;
+  }
+
+  /** Puts the current molecule on the canvas: given to name, the student's drawing, or the solution. */
+  function showItem() {
+    const ex = /** @type {NonNullable<typeof S.ex>} */ (S.ex);
+    const it = ex.items[ex.cur];
+    try { window.history.replaceState(null, '', `#exercice-${ex.level}-${ex.seed}`); } catch { /* no history to edit */ }
+    S.history = M.createHistory();
+    S.selection = S.hover = null;
+    S.doc = !it ? M.emptyDoc() : ex.showSol ? solution(it).doc : it.dir === 'name' ? structuredClone(it.doc) : ex.drafts[ex.cur] ?? M.emptyDoc();
+    showTools(readOnly() ? ['select'] : MODE_TOOLS.exercise);
+    setTool(readOnly() ? 'select' : MODE_TOOLS.exercise.includes(S.tool) && S.tool !== 'select' ? S.tool : 'chain');
+    render();
+    userMovedView = false;
+    fit();
+    updateButtons();
+    updateStatus();
+  }
+
+  /** @param {string} act a button of the exercise panel */
+  function exerciseAction(act) {
+    const ex = /** @type {NonNullable<typeof S.ex>} */ (S.ex);
+    const it = ex.items[ex.cur];
+    if (act === 'check') {
+      const input = /** @type {HTMLInputElement | null} */ (panel.querySelector('#ex-answer'));
+      const a = it.dir === 'name' ? answerName(it, input?.value ?? '') : answerDrawing(it, S.doc);
+      ex.fb = a;
+      if (a.verdict !== 'empty' && !ex.res[ex.cur]) ex.res[ex.cur] = a.verdict === 'wrong' ? 'wrong' : it.dir === 'name' && a.lines.length ? 'remark' : 'ok';
+      renderPanel();
+      /** @type {HTMLInputElement | null} */ (panel.querySelector('#ex-answer'))?.focus();
+    } else if (act === 'clear') {
+      M.record(S.history, S.doc);
+      S.doc = M.emptyDoc();
+      ex.fb = null;
+      afterChange();
+    } else if (act === 'solution') {
+      if (!ex.res[ex.cur]) ex.res[ex.cur] = 'wrong';
+      keepDraft();
+      ex.showSol = true;
+      showItem();
+    } else if (act === 'next') {
+      keepDraft();
+      ex.cur++;
+      ex.showSol = false;
+      ex.fb = null;
+      showItem();
+      /** @type {HTMLInputElement | null} */ (panel.querySelector('#ex-answer'))?.focus();
+    } else if (act === 'restart' || act === 'new') {
+      startSeries(ex.level, act === 'new' ? newSeed() : ex.seed);
+    }
   }
 
   // Tool options (Bond: order or wedge, Atom: element, Ring: size, Group, glassware, two-variant tools): a small vertical window beside the tool.
@@ -982,7 +1092,7 @@ export function startEditor(root) {
   });
   $('.seg').addEventListener('click', (e) => {
     const mode = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.mode;
-    if (mode === 'mechanism' || mode === 'setup') setMode(mode);
+    if (mode === 'mechanism' || mode === 'setup' || mode === 'exercise') setMode(mode);
   });
   $('#btn-undo').addEventListener('click', doUndo);
   $('#btn-redo').addEventListener('click', doRedo);
@@ -1103,6 +1213,15 @@ export function startEditor(root) {
   }
 
   function updateStatus() {
+    const ex = S.ex;
+    if (S.mode === 'exercise' && ex) {
+      const X = fr.exercise;
+      const level = /** @type {Record<string, string>} */ (X.levels)[ex.level];
+      statusEl.classList.remove('kept');
+      const good = ex.res.filter((r) => r !== 'wrong').length;
+      statusEl.textContent = ex.cur < ex.items.length ? X.status(ex.cur + 1, ex.items.length, level, ex.seed) : X.scoreStatus(good, ex.items.length);
+      return;
+    }
     // The help line is for what the pointer is over; how to use the tool is in the panel.
     const h = S.hover;
     const loose = h?.kind === 'piece' && A.loose(S.doc.apparatus.find((g) => g.id === h.id)?.kind ?? '');
@@ -1139,7 +1258,43 @@ export function startEditor(root) {
   /** @param {string} action @param {string} label @param {boolean} [on] */
   const btn = (action, label, on) => `<button type="button" data-action="${action}"${on === undefined ? '' : ` aria-pressed="${on}"`}>${label}</button>`;
 
+  /** The exercise panel: the question, the answer, Vérifier, Solution, Suivant; at the end, the score. */
+  function exercisePanel() {
+    const X = fr.exercise;
+    const ex = /** @type {NonNullable<typeof S.ex>} */ (S.ex);
+    const n = ex.items.length;
+    // data-r: the result of each molecule, ok, remark or wrong.
+    const dots = `<div class="dots" aria-hidden="true">${ex.items.map((_, i) => `<i${ex.res[i] ? ` data-r="${ex.res[i]}"` : ''}${i === ex.cur ? ' class="cur"' : ''}></i>`).join('')}</div>`;
+    let h = `<div class="card"><span class="card-icon"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${ICONS.chain}</svg></span>
+      <div><h2>${X.title}</h2><p class="muted small">${X.seriesOf(n)}</p></div></div>
+      <label for="ex-level">${X.level}</label>
+      <select id="ex-level">${LEVELS.map((l) => `<option value="${l}"${l === ex.level ? ' selected' : ''}>${/** @type {Record<string, string>} */ (X.levels)[l]}</option>`).join('')}</select>`;
+    if (ex.cur >= n) {
+      const good = ex.res.filter((r) => r !== 'wrong').length;
+      return `${h}<h2>${X.done}</h2><p class="score">${good} / ${n}</p>${dots}
+        <ul class="recap">${ex.items.map((it, i) => `<li><span class="mark" data-r="${ex.res[i] ?? 'wrong'}">${ex.res[i] === 'wrong' ? '✗' : '✓'}</span>
+          <span><span class="chem">${esc(it.name)}</span> <span class="muted small">· ${it.dir === 'name' ? X.nameDir : X.drawDir}${ex.res[i] === 'remark' ? `, ${X.withRemark}` : ''}</span></span></li>`).join('')}</ul>
+        <div class="row"><button type="button" class="primary" data-ex="restart">${X.again}</button><button type="button" data-ex="new">${X.newSeries}</button></div>`;
+    }
+    const it = ex.items[ex.cur];
+    h += `<div class="progress"><span class="count">${X.question(ex.cur + 1, n)}</span>${dots}</div>`;
+    h += it.dir === 'name'
+      ? `<p>${X.nameIt}</p><label for="ex-answer">${X.answer}</label>
+        <div class="row"><input id="ex-answer" class="grow" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${X.placeholder}" value="${esc(ex.answers[ex.cur] ?? '')}"><button type="button" class="primary" data-ex="check">${X.check}</button></div>`
+      : `<p>${X.drawIt} <strong class="chem">${esc(it.name)}</strong></p><p class="muted small">${X.drawHelp}</p>
+        <div class="row"><button type="button" class="primary" data-ex="check"${ex.showSol ? ' disabled' : ''}>${X.check}</button><button type="button" data-ex="clear"${ex.showSol ? ' disabled' : ''}>${X.clear}</button></div>`;
+    const fb = ex.fb;
+    if (fb) h += fb.verdict === 'empty' ? `<p class="muted small">${fb.title}</p>`
+      : `<div class="fb" data-r="${fb.verdict === 'wrong' ? 'wrong' : fb.title === X.remark ? 'remark' : 'ok'}"><b>${esc(fb.title)}</b>${fb.lines.map((l) => `<span>${esc(l)}</span>`).join('')}</div>`;
+    h += `<div class="row"><button type="button" data-ex="solution"${ex.showSol ? ' disabled' : ''}>${X.solution}</button>
+      <button type="button" data-ex="next"${ex.res[ex.cur] ? '' : ' disabled'}>${ex.cur === n - 1 ? X.score : X.next}</button></div>`;
+    if (ex.showSol) h += `<h3>${X.solution}</h3><ol class="steps">${solution(it).steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>`;
+    else if (!ex.res[ex.cur]) h += `<p class="muted small">${X.firstCheck}</p>`;
+    return h;
+  }
+
   function renderPanel() {
+    if (S.mode === 'exercise' && S.ex) { panel.innerHTML = exercisePanel(); return; }
     const P = fr.panel;
     const d = S.doc;
     const sel = S.selection;
@@ -1364,8 +1519,22 @@ export function startEditor(root) {
     if (id === 'rx-below') r.below = value;
   }
 
+  // The exercise panel: its buttons, Enter in the answer, the level.
+  panel.addEventListener('click', (e) => {
+    const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-ex]'));
+    if (b && S.ex && !(/** @type {HTMLButtonElement} */ (b).disabled)) exerciseAction(b.dataset.ex ?? '');
+  });
+  panel.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && /** @type {HTMLElement} */ (e.target).id === 'ex-answer') { e.preventDefault(); exerciseAction('check'); }
+  });
+  panel.addEventListener('change', (e) => {
+    const el = /** @type {HTMLSelectElement} */ (e.target);
+    if (el.id === 'ex-level') startSeries(el.value, newSeed());
+  });
+
   panel.addEventListener('input', (e) => {
     const el = /** @type {HTMLInputElement | HTMLTextAreaElement} */ (e.target);
+    if (S.mode === 'exercise') { if (S.ex && el.id === 'ex-answer') S.ex.answers[S.ex.cur] = el.value; return; }
     if (!S.fieldSession) { M.record(S.history, S.doc); S.fieldSession = true; }
     applyField(el.id, el.value);
     save();
@@ -1395,6 +1564,15 @@ export function startEditor(root) {
   render();
   fit();
   setMode('mechanism');
+  // A series' link (#exercice-alkanes-4821) opens that series, the same for everyone, on load or pasted later.
+  const openLink = () => {
+    const link = /^#exercice-(\w+)-(\d+)$/.exec(location.hash);
+    if (!link || !LEVELS.includes(link[1]) || (S.mode === 'exercise' && S.ex?.level === link[1] && S.ex.seed === Number(link[2]))) return;
+    if (S.mode !== 'exercise') setMode('exercise');
+    startSeries(link[1], Number(link[2]));
+  };
+  openLink();
+  window.addEventListener('hashchange', openLink);
   renderPanel();
   updateButtons();
 }
