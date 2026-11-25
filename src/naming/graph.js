@@ -9,7 +9,7 @@
  */
 
 /** Neighbours of each atom, with the order of the bond to it. @param {Graph} g */
-function adjacency(g) {
+export function adjacency(g) {
   const adj = g.atoms.map(() => /** @type {Map<number, number>} */ (new Map()));
   for (const { a, b, order } of g.bonds) { adj[a].set(b, order); adj[b].set(a, order); }
   return adj;
