@@ -16,7 +16,7 @@ import { fr } from '../i18n/fr.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols', 'aldehydes'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -43,16 +43,22 @@ function bondAngles(doc, id) {
 /** Carbons that can take one more single bond: fewer than four, a double bond counting twice. @param {M.Doc} doc @param {string[]} ids */
 const free = (doc, ids) => ids.filter((id) => doc.bonds.filter((b) => b.a === id || b.b === id).reduce((s, b) => s + b.order, 0) < 4);
 
-/** Hangs a branch, written in SMILES from its first atom, from an atom: each atom in the free direction. @param {M.Doc} doc @param {string} at @param {string} smiles */
-function attach(doc, at, smiles) {
+/** Of those, the ones with single bonds only, which can carry an OH. @param {M.Doc} doc @param {string[]} ids */
+const saturated = (doc, ids) => free(doc, ids).filter((id) => doc.bonds.every((b) => (b.a !== id && b.b !== id) || b.order === 1));
+
+/**
+ * Hangs a branch, written in SMILES from its first atom, from an atom: each atom in the free direction.
+ * @param {M.Doc} doc @param {string} at @param {string} smiles @param {M.Bond['order']} [order] of the bond to the branch
+ */
+function attach(doc, at, smiles, order = 1) {
   const t = fromSmiles(smiles);
-  const place = (/** @type {number} */ i, /** @type {string} */ from) => {
+  const place = (/** @type {number} */ i, /** @type {string} */ from, /** @type {M.Bond['order']} */ order) => {
     const p = add(/** @type {M.Atom} */ (M.findAtom(doc, from)), fromAngle(nextBondAngle(bondAngles(doc, from)), L));
     const atom = M.addAtom(doc, { element: t.atoms[i].el, ...p });
-    M.addBond(doc, from, atom.id);
-    for (const b of t.bonds) if (b.a === i) place(b.b, atom.id);
+    M.addBond(doc, from, atom.id, order);
+    for (const b of t.bonds) if (b.a === i) place(b.b, atom.id, /** @type {M.Bond['order']} */ (b.order));
   };
-  place(0, at);
+  place(0, at, order);
 }
 
 /** Hangs a bare ring of n carbons from an atom. @param {M.Doc} doc @param {string} at @param {number} n */
@@ -164,7 +170,6 @@ const BUILD = {
   alcohols: (r) => {
     const d = M.emptyDoc();
     const kind = r();
-    const sp3 = (/** @type {string[]} */ ids) => free(d, ids).filter((id) => d.bonds.every((b) => (b.a !== id && b.b !== id) || b.order === 1));
     if (kind < 0.2) {
       const ids = M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true);
       attach(d, pick(r, ids), 'O');
@@ -177,10 +182,37 @@ const BUILD = {
     const ids = kind < 0.35 ? ring(d, int(r, 5, 6)) : chainWithTriples(d, n, new Set(multiple === 3 ? [k] : []));
     if (multiple === 2) M.setBondOrder(d, /** @type {M.Bond} */ (M.bondBetween(d, ids[k], ids[k + 1])).id, 2);
     for (let oh = int(r, 1, 2); oh > 0; oh--) {
-      const f = sp3(ids).filter((id) => !d.bonds.some((b) => (b.a === id || b.b === id) && M.findAtom(d, b.a === id ? b.b : b.a)?.element === 'O'));
+      const f = saturated(d, ids).filter((id) => !d.bonds.some((b) => (b.a === id || b.b === id) && M.findAtom(d, b.a === id ? b.b : b.a)?.element === 'O'));
       if (f.length) attach(d, pick(r, f), 'O');
     }
     if (r() < 0.5) { const f = free(d, ids); if (f.length) attach(d, pick(r, f), pick(r, ALKYLS)); }
+    return d;
+  },
+  // 2.5.9: a CHO at one end of a chain of 1 to 8 carbons, sometimes at both (-dial), sometimes with a double bond
+  // away from the CHO carbons; up to 2 branches, halogens or OH (hydroxy-) on the carbons between. Or a CHO
+  // on a ring of 5 or 6 (-carbaldéhyde) or on a benzene ring (benzaldéhyde) with up to 2 other groups.
+  aldehydes: (r) => {
+    const d = M.emptyDoc();
+    const kind = r();
+    if (kind < 0.35) {
+      const ids = kind < 0.2 ? M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true) : ring(d, int(r, 5, 6));
+      attach(d, ids[0], 'C=O');
+      for (let k = int(r, 0, kind < 0.2 ? 2 : 1); k > 0; k--) attach(d, pick(r, free(d, ids.slice(1))), pick(r, ['C', 'CC', 'Cl', 'Br', 'O', 'OC']));
+      return d;
+    }
+    const n = int(r, 1, 8);
+    const two = n > 1 && r() < 0.25;
+    const ids = chain(d, n);
+    const inner = ids.slice(1, two ? -1 : undefined);
+    for (const end of two ? [ids[0], ids[n - 1]] : [ids[0]]) attach(d, end, 'O', 2);
+    // The double bond between inner carbons only: ids[k] to ids[k + 1], with k from 1 to the last inner bond.
+    const last = n - (two ? 3 : 2);
+    if (last >= 1 && r() < 0.3) { const k = int(r, 1, last); M.setBondOrder(d, /** @type {M.Bond} */ (M.bondBetween(d, ids[k], ids[k + 1])).id, 2); }
+    for (let b = int(r, 0, 2); b > 0; b--) {
+      const group = pick(r, [...ALKYLS, 'Cl', 'Br', 'O']);
+      const f = group === 'O' ? saturated(d, inner) : free(d, inner);
+      if (f.length) attach(d, pick(r, f), group);
+    }
     return d;
   },
   // 2.5.3: 1 to 3 halogens on a chain or a ring, with up to 2 branches.

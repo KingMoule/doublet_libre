@@ -59,6 +59,14 @@ test('an alcohol: the solution chooses the chain by its OH and says where the -o
   assert.ok(steps.some((s) => s.includes('-ol en 3')));
 });
 
+test('an aldehyde: the solution chooses the chain by its CHO and says that its locant 1 is left out (2.5.9)', () => {
+  const aldehyde = series('aldehydes', 1).items.find((i) => i.naming.suffix.end === 'al' && !i.naming.ring);
+  assert.ok(aldehyde);
+  const { steps } = solution(aldehyde);
+  assert.ok(steps[0].includes('le CHO'));
+  assert.ok(steps.some((s) => s.includes('-al')));
+});
+
 test('the solution numbers the parent chain on the drawing and says how the name is built', () => {
   const s = solution(item);
   assert.deepEqual(s.doc.texts.map((t) => t.text), ['1', '2', '3', '4', '5', '6']);

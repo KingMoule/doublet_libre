@@ -83,6 +83,13 @@ test('2.5.8: the double bond numbered before the OH, -an- dropped, -ène kept be
   assert.equal(rule('CC(C)O', 'alcool isopropylique'), 'familiar');
 });
 
+test('2.5.9: -al with its locant 1, -dial without its e, a ring carbon taken for the CHO, a familiar name', () => {
+  assert.equal(rule('CCCC=O', 'butan-1-al'), 'alLocant');
+  assert.equal(rule('O=CCCCC=O', 'pentandial'), 'dialStem');
+  assert.equal(rule('O=CC1CCCCC1', 'cyclohexanal'), 'carbaldehyde');
+  assert.equal(rule('CC=O', 'acétaldéhyde'), 'familiar');
+});
+
 const wrong = wrongNames(fromSmiles('CC(C)C(C)CC'));
 const check = (/** @type {string} */ typed) => checkName(typed, ['2,3-diméthylpentane'], wrong);
 
