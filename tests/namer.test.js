@@ -70,8 +70,34 @@ test('2.5.3 (P-61.3.1): halogens are prefixes of the same rank as the branches',
   assert.deepEqual(['CCl', 'CCCl'].map(name), ['chlorométhane', 'chloroéthane']);
 });
 
+test('2.5.4 (P-31.1.4.2.4): -ène with the locant of its first carbon, numbered from the nearest end', () => {
+  assert.deepEqual(['C=CCCC', 'CC=CCC', 'CC=CC(C)C'].map(name), ['pent-1-ène', 'pent-2-ène', '4-méthylpent-2-ène']);
+});
+
+test('2.5.4 (P-31.1.4.2.4): the double bond takes the lowest locant before the branches', () => {
+  assert.equal(name('CC=CC(C)(C)C'), '4,4-diméthylpent-2-ène');
+});
+
+test('2.5.4: no locant for two or three carbons, nor for a ring with one double bond', () => {
+  assert.deepEqual(['C=C', 'C=CC', 'CC(C)=C', 'C=CCl', 'C1=CCCCC1'].map(name), ['éthène', 'propène', '2-méthylpropène', 'chloroéthène', 'cyclohexène']);
+});
+
+test('2.5.4: in a ring the double bond is C1=C2, then the branches take the lowest locants', () => {
+  assert.equal(name('CC1C=CCCC1'), '3-méthylcyclohexène');
+  assert.equal(name('CC1=CCCCC1C'), '1,6-diméthylcyclohexène');
+});
+
+test('2.5.4 (P-31.1.4.2.4): several double bonds take a multiplying prefix, and the chain an a before it', () => {
+  assert.deepEqual(['C=CC=C', 'CC=CCC=CC', 'C1=CC=CCC1'].map(name), ['buta-1,3-diène', 'hepta-2,5-diène', 'cyclohexa-1,3-diène']);
+});
+
+// IUPAC 2013 (P-44.4.1.1) takes the longest chain first; the textbook the one with the most double bonds.
+test('2.5.4: the parent chain holds the most double bonds, even when it is shorter', () => {
+  assert.equal(name('C=CC(CCC)CCCCC'), '3-propyloct-1-ène');
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
-  assert.equal(reason('C=CC'), 'scope'); // alkenes: 2.5.4
+  assert.equal(reason('C#CC'), 'scope'); // alkynes: 2.5.5
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)
 });
 
