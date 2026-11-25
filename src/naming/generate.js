@@ -14,7 +14,7 @@ import { NamingError, nameOf, wrongNames } from './namer.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -62,6 +62,22 @@ function attachRing(doc, at, n) {
 }
 
 const chain = (/** @type {M.Doc} */ doc, /** @type {number} */ n) => M.addPath(doc, [{ x: 0, y: 0 }, ...zigzag({ x: 0, y: 0 }, 0, n - 1, L)]).ids;
+
+/**
+ * A chain of n carbons with triple bonds at the given bond indexes: a zigzag at 120° (±30° from the
+ * horizontal), but straight through each carbon of a triple bond, which is sp and linear.
+ * @param {M.Doc} doc @param {number} n @param {Set<number>} triple
+ */
+function chainWithTriples(doc, n, triple) {
+  const pts = [{ x: 0, y: 0 }];
+  for (let k = 0, dir = 30, turn = -60; k < n - 1; k++) {
+    if (k > 0 && !triple.has(k - 1) && !triple.has(k)) { dir += turn; turn = -turn; }
+    pts.push(add(pts[k], fromAngle(dir, L)));
+  }
+  const ids = M.addPath(doc, pts).ids;
+  for (const k of triple) M.setBondOrder(doc, /** @type {M.Bond} */ (M.bondBetween(doc, ids[k], ids[k + 1])).id, 3);
+  return ids;
+}
 const ring = (/** @type {M.Doc} */ doc, /** @type {number} */ n) => M.addRing(doc, ringAt({ x: 0, y: 0 }, n, L));
 
 /** @type {Record<string, (r: Rand) => M.Doc>} */
@@ -98,6 +114,24 @@ const BUILD = {
       if (b) M.setBondOrder(d, b.id, 2);
     }
     for (let k = int(r, 0, 2); k > 0; k--) attach(d, pick(r, free(d, ids)), pick(r, ALKYLS));
+    return d;
+  },
+  // 2.5.5: 1 or 2 triple bonds in a chain of 2 to 9 carbons, sometimes a double bond too, never two side by side;
+  // up to 2 branches on the other carbons.
+  alkynes: (r) => {
+    const d = M.emptyDoc();
+    const n = int(r, 2, 9);
+    /** @type {Set<number>} */
+    const triple = new Set();
+    const apart = (/** @type {number} */ k) => ![...triple].some((x) => Math.abs(x - k) < 2);
+    for (let t = int(r, 1, 2); t > 0; t--) { const k = int(r, 0, n - 2); if (apart(k)) triple.add(k); }
+    const ids = chainWithTriples(d, n, triple);
+    const k = int(r, 0, n - 2);
+    if (r() < 0.4 && apart(k)) M.setBondOrder(d, /** @type {M.Bond} */ (M.bondBetween(d, ids[k], ids[k + 1])).id, 2);
+    for (let b = int(r, 0, 2); b > 0; b--) {
+      const f = free(d, ids.slice(1, -1));
+      if (f.length) attach(d, pick(r, f), pick(r, ALKYLS));
+    }
     return d;
   },
   // 2.5.3: 1 to 3 halogens on a chain or a ring, with up to 2 branches.

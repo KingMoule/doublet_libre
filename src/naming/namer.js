@@ -5,14 +5,14 @@ import { adjacency } from './graph.js';
 /**
  * Names a molecule by the rules of the course's textbook (Girouard, Marrano and Lapierre,
  * Chimie organique, 3e éd., ch. 2, section 2.5), even where IUPAC 2013 has changed them.
- * For now: alkanes, cycloalkanes, halogen compounds and alkenes (2.5.1 to 2.5.4).
+ * For now: alkanes, cycloalkanes, halogen compounds, alkenes and alkynes (2.5.1 to 2.5.5).
  * Outside that, or where the textbook does not decide, it throws a NamingError, and the
  * exercise generator draws another molecule.
  * @typedef {import('./graph.js').Graph} Graph
  * @typedef {{name: string, locants: number[]}} Prefix
- * @typedef {{name: string, parent: number[], ring: boolean, prefixes: Prefix[], doubles: number[]}} Naming
+ * @typedef {{name: string, parent: number[], ring: boolean, prefixes: Prefix[], doubles: number[], triples: number[]}} Naming
  *   parent: the parent chain's atoms in numbering order; prefixes: in the order the name cites them;
- *   doubles: the locants of its double bonds
+ *   doubles, triples: the locants of its double and triple bonds
  */
 
 export class NamingError extends Error {
@@ -45,22 +45,28 @@ const ascending = (/** @type {number[]} */ xs) => [...xs].sort((a, b) => a - b);
  * The French name from its pieces. Locants are left out when they could only be 1: methane, a single
  * prefix on ethane, ethene or a saturated ring; prefixes are then written together. A single double bond
  * has no locant on two or three carbons or in a ring; several take a multiplying prefix, and the chain
- * an a before it: buta-1,3-diène (2.5.4).
+ * an a before it: buta-1,3-diène (2.5.4). The same for triple bonds; with both, -ène comes first and
+ * loses its e before a single -yne (hex-1-én-5-yne), and the a comes only with several -ène (2.5.5).
  * @param {Prefix[]} prefixes in citation order @param {number} size carbons of the parent @param {boolean} ring
- * @param {number[]} [doubles] locants of the double bonds
+ * @param {number[]} [doubles] locants of the double bonds @param {number[]} [triples] locants of the triple bonds
  */
-export function spell(prefixes, size, ring, doubles = []) {
+export function spell(prefixes, size, ring, doubles = [], triples = []) {
   const count = prefixes.reduce((s, p) => s + p.locants.length, 0);
-  const omit = size === 1 || (count === 1 && (size === 2 || (ring && !doubles.length)));
+  const saturated = !doubles.length && !triples.length;
+  const omit = size === 1 || (count === 1 && (size === 2 || (ring && saturated)));
   const words = prefixes.map(({ name, locants }) => {
     const mult = N.multipliers[locants.length];
     const word = mult + (mult && N.italic.some((p) => name.startsWith(p)) ? '-' : '') + name; // di-tert-butyl
     return omit ? word : `${locants.join(',')}-${word}`;
   });
   const stem = (ring ? N.cyclo : '') + N.stems[size - 1];
-  const parent = !doubles.length ? stem + N.ane
-    : doubles.length === 1 && (ring || size <= 3) ? stem + N.ene
-      : `${stem}${doubles.length > 1 ? N.euphonic : ''}-${doubles.join(',')}-${N.multipliers[doubles.length]}${N.ene}`;
+  const part = (/** @type {number[]} */ at, /** @type {string} */ end) => `-${at.join(',')}-${N.multipliers[at.length]}${end}`;
+  const one = doubles.length + triples.length === 1 && (ring || size <= 3); // éthène, propyne, cyclohexène
+  const parent = saturated ? stem + N.ane
+    : one ? stem + (doubles.length ? N.ene : N.yne)
+      : !triples.length ? stem + (doubles.length > 1 ? N.euphonic : '') + part(doubles, N.ene)
+        : !doubles.length ? stem + (triples.length > 1 ? N.euphonic : '') + part(triples, N.yne)
+          : stem + (doubles.length > 1 ? N.euphonic : '') + part(doubles, triples.length > 1 ? N.ene : N.en) + part(triples, N.yne);
   return words.join(omit ? '' : '-') + parent;
 }
 
@@ -72,8 +78,8 @@ function skeleton(g) {
   const adj = adjacency(g);
   const el = (/** @type {number} */ i) => g.atoms[i].el;
   const carbons = g.atoms.map((_, i) => i).filter((i) => el(i) === 'C');
-  // Single bonds, and double bonds between carbons (2.5.4); triple bonds come with the alkynes (2.5.5).
-  if (!carbons.length || g.bonds.some((b) => b.order !== 1 && !(b.order === 2 && el(b.a) === 'C' && el(b.b) === 'C'))) throw scope();
+  // Single bonds, and double or triple bonds between carbons (2.5.4, 2.5.5).
+  if (!carbons.length || g.bonds.some((b) => b.order !== 1 && !((b.order === 2 || b.order === 3) && el(b.a) === 'C' && el(b.b) === 'C'))) throw scope();
   for (const [i, a] of g.atoms.entries()) {
     if (a.charge !== 0 || (a.el !== 'C' && !HALOGENS.includes(a.el))) throw scope();
     if (a.el !== 'C' && (adj[i].size !== 1 || el([...adj[i].keys()][0]) !== 'C')) throw scope();
@@ -99,6 +105,7 @@ function skeleton(g) {
       [prev, at] = [at, next[0] === prev ? next[1] : next[0]];
     }
     if (ring.length !== core.size) throw scope(); // two rings
+    if (g.bonds.some((b) => b.order === 3 && core.has(b.a) && core.has(b.b))) throw scope(); // no triple bond in a ring
   }
 
   // Chains: every path through the carbons outside the ring.
@@ -111,18 +118,18 @@ function skeleton(g) {
   for (const s of carbons) if (!core.has(s)) walk([s]);
   const longest = Math.max(0, ...chains.map((c) => c.length));
   const branches = (/** @type {number[]} */ c) => c.reduce((s, i) => s + [...adj[i].keys()].filter((j) => !c.includes(j)).length, 0);
-  const doubles = (/** @type {number[]} */ c) => g.bonds.filter((b) => b.order === 2 && c.includes(b.a) && c.includes(b.b)).length;
-  return { adj, core, ring, chains, longest, branches, doubles };
+  const multiples = (/** @type {number[]} */ c) => g.bonds.filter((b) => b.order > 1 && c.includes(b.a) && c.includes(b.b)).length;
+  return { adj, core, ring, chains, longest, branches, multiples };
 }
 
 /** @param {Graph} g @returns {Naming} */
 export function nameOf(g) {
-  const { adj, core, ring, chains, branches, doubles } = skeleton(g);
-  // The parent holds the most double bonds, even when shorter (2.5.4); then it is the longest, a ring
-  // against a chain by their sizes, a tie the textbook does not decide (2.5.2); then the most branched (2.5.1, règle 1).
+  const { adj, core, ring, chains, branches, multiples } = skeleton(g);
+  // The parent holds the most double and triple bonds, even when shorter (2.5.4, 2.5.5); then it is the longest,
+  // a ring against a chain by their sizes, a tie the textbook does not decide (2.5.2); then the most branched (2.5.1, règle 1).
   /** @typedef {{atoms: number[], ring: boolean}} Candidate */
   const most = (/** @type {Candidate[]} */ cs, /** @type {(c: Candidate) => number} */ f) => cs.filter((c) => f(c) === Math.max(...cs.map(f)));
-  let top = most(most([...(ring.length ? [{ atoms: ring, ring: true }] : []), ...chains.map((atoms) => ({ atoms, ring: false }))], (c) => doubles(c.atoms)), (c) => c.atoms.length);
+  let top = most(most([...(ring.length ? [{ atoms: ring, ring: true }] : []), ...chains.map((atoms) => ({ atoms, ring: false }))], (c) => multiples(c.atoms)), (c) => c.atoms.length);
   if (top.some((c) => c.ring) && top.some((c) => !c.ring)) throw new NamingError('undecided');
   top = most(top, (c) => (c.ring ? 0 : branches(c.atoms)));
   const named = top.map((c) => numbered(g, adj, c.atoms, c.ring, core));
@@ -142,33 +149,40 @@ export function wrongNames(g) {
   const wrong = new Map();
   const add = (/** @type {string} */ name, /** @type {string} */ rule) => { if (name !== right.name && !wrong.has(name)) wrong.set(name, rule); };
   const n = right.parent.length;
-  const d = right.doubles;
+  const [d, t] = [right.doubles, right.triples];
 
-  // On the right parent: a ring numbered across its double bond, the branches numbered before the double
-  // bonds, the sum of locants, the alphabet ignored on a tie, or simply the other way.
+  // On the right parent: a ring numbered across its double bond, the triple bond before the double one on
+  // a tie, the branches before the multiple bonds, the sum of locants, the alphabet ignored on a tie, or simply the other way.
   const { cited, scored } = numberings(g, adj, right.parent, right.ring, core);
   const best = scored[0];
-  const sum = (/** @type {{all: number[]}} */ s) => s.all.reduce((t, x) => t + x, 0);
+  const sum = (/** @type {{all: number[]}} */ s) => s.all.reduce((x, y) => x + y, 0);
   const leastSum = scored.filter((s) => s.valid).sort((a, b) => sum(a) - sum(b))[0];
-  const other = scored.slice(1).map((s) => ({
-    name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring, s.doubles),
-    rule: !s.valid ? 'ringDoubleBond'
-      : firstDifference(s.doubles, best.doubles) > 0 && firstDifference(s.all, best.all) < 0 ? 'unsaturationFirst'
-        : firstDifference(s.doubles, best.doubles) === 0 && firstDifference(s.all, best.all) === 0 ? 'alphabeticalNumbering'
-          : s === leastSum && sum(s) < sum(best) ? 'sum' : 'numbering',
-  }));
-  for (const r of ['ringDoubleBond', 'unsaturationFirst', 'sum', 'alphabeticalNumbering', 'numbering']) for (const o of other) if (o.rule === r) add(o.name, r);
+  const other = scored.slice(1).map((s) => {
+    const same = firstDifference(s.multiples, best.multiples) === 0;
+    return {
+      name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring, s.doubles, s.triples),
+      rule: !s.valid ? 'ringDoubleBond'
+        : same && firstDifference(s.doubles, best.doubles) > 0 ? 'eneFirst'
+          : firstDifference(s.multiples, best.multiples) > 0 && firstDifference(s.all, best.all) < 0 ? 'unsaturationFirst'
+            : same && firstDifference(s.doubles, best.doubles) === 0 && firstDifference(s.all, best.all) === 0 ? 'alphabeticalNumbering'
+              : s === leastSum && sum(s) < sum(best) ? 'sum' : 'numbering',
+    };
+  });
+  for (const r of ['ringDoubleBond', 'eneFirst', 'unsaturationFirst', 'sum', 'alphabeticalNumbering', 'numbering']) for (const o of other) if (o.rule === r) add(o.name, r);
 
   // Prefixes cited by locant, with di- or sec-/tert- counted; identical ones not grouped, or grouped without di-.
   const p = right.prefixes;
   const key = (/** @type {Prefix} */ x) => (N.multipliers[x.locants.length] + x.name).normalize('NFD').replace(/[̀-ͯ]/g, '');
-  for (const order of [[...p].sort((a, b) => a.locants[0] - b.locants[0]), [...p].sort((a, b) => (key(a) < key(b) ? -1 : 1))]) add(spell(order, n, right.ring, d), 'alphabetical');
-  add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring, d), 'multiplier');
+  for (const order of [[...p].sort((a, b) => a.locants[0] - b.locants[0]), [...p].sort((a, b) => (key(a) < key(b) ? -1 : 1))]) add(spell(order, n, right.ring, d, t), 'alphabetical');
+  add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring, d, t), 'multiplier');
   add(p.reduce((name, x) => name.replace(N.multipliers[x.locants.length] + x.name, x.name), right.name), 'multiplier');
-  if (p.length === 1 && p[0].locants.length === 1 && (n === 2 || (right.ring && !d.length))) add(`1-${right.name}`, 'locant');
-  // A double bond written with both its carbons, or several without the a before the multiplying prefix (2.5.4).
-  if (d.length === 1) add(right.name.replace(`-${d[0]}-${N.ene}`, `-${d[0]},${d[0] + 1}-${N.ene}`), 'bothLocants');
-  if (d.length > 1) add(right.name.replace(`${N.euphonic}-${d.join(',')}-`, `-${d.join(',')}-`), 'euphony');
+  if (p.length === 1 && p[0].locants.length === 1 && (n === 2 || (right.ring && !d.length && !t.length))) add(`1-${right.name}`, 'locant');
+  // A multiple bond written with both its carbons, the a left out, -ène kept whole before a single -yne (2.5.4, 2.5.5).
+  const one = d.length + t.length === 1 ? (d.length ? { at: d[0], end: N.ene } : { at: t[0], end: N.yne }) : null;
+  if (one) add(right.name.replace(`-${one.at}-${one.end}`, `-${one.at},${one.at + 1}-${one.end}`), 'bothLocants');
+  const stem = (right.ring ? N.cyclo : '') + N.stems[n - 1];
+  add(right.name.replace(`${stem}${N.euphonic}-`, `${stem}-`), 'euphony');
+  if (d.length && t.length === 1) add(right.name.replace(`${N.en}-`, `${N.ene}-`), 'enElision');
 
   // Another parent: a shorter or less branched chain, or the ring and the chain the other way round.
   const attempt = (/** @type {number[]} */ parent, /** @type {boolean} */ isRing, /** @type {string} */ rule) => {
@@ -191,7 +205,7 @@ function numbered(g, adj, parent, ring, core) {
   const { cited, scored } = numberings(g, adj, parent, ring, core);
   const best = scored[0];
   const prefixes = cited.map((name) => ({ name, locants: best.of(name) }));
-  return { name: spell(prefixes, parent.length, ring, best.doubles), parent: best.order, ring, prefixes, doubles: best.doubles };
+  return { name: spell(prefixes, parent.length, ring, best.doubles, best.triples), parent: best.order, ring, prefixes, doubles: best.doubles, triples: best.triples };
 }
 
 /**
@@ -205,7 +219,8 @@ function numberings(g, adj, parent, ring, core) {
   const inParent = new Set(parent);
   const subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
   const cited = [...new Set(subs.map((s) => s.name))].sort(alphabetical);
-  const double = g.bonds.filter((b) => b.order === 2 && inParent.has(b.a) && inParent.has(b.b));
+  const bonds = (/** @type {number} */ o) => g.bonds.filter((b) => b.order === o && inParent.has(b.a) && inParent.has(b.b));
+  const [double, triple] = [bonds(2), bonds(3)];
   const n = parent.length;
   const orders = ring
     ? parent.flatMap((_, s) => [1, -1].map((dir) => parent.map((__, k) => parent[(((s + dir * k) % n) + n) % n])))
@@ -214,13 +229,17 @@ function numberings(g, adj, parent, ring, core) {
     const locant = (/** @type {number} */ at) => order.indexOf(at) + 1;
     const of = (/** @type {string} */ name) => ascending(subs.filter((s) => s.name === name).map((s) => locant(s.at)));
     const ends = double.map((b) => [locant(b.a), locant(b.b)]);
+    const doubles = ascending(ends.map(([x, y]) => Math.min(x, y)));
+    const triples = ascending(triple.map((b) => Math.min(locant(b.a), locant(b.b))));
     return {
       order, of, all: ascending(subs.map((s) => locant(s.at))), cited: cited.flatMap(of),
       valid: ends.every(([x, y]) => Math.abs(x - y) === 1),
-      doubles: ascending(ends.map(([x, y]) => Math.min(x, y))),
+      doubles, triples, multiples: ascending([...doubles, ...triples]),
     };
   });
-  scored.sort((a, b) => Number(b.valid) - Number(a.valid) || firstDifference(a.doubles, b.doubles) || firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited));
+  // Double and triple bonds together first, then the double bonds on a tie (2.5.5), then the prefixes.
+  scored.sort((a, b) => Number(b.valid) - Number(a.valid) || firstDifference(a.multiples, b.multiples) || firstDifference(a.doubles, b.doubles)
+    || firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited));
   return { cited, scored };
 }
 

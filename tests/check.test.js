@@ -40,8 +40,15 @@ test('2.5.4: the double bond numbered after the branches, both its carbons writt
   assert.equal(rule('CC1=CCCCC1C', '1,2-diméthylcyclohexène'), 'ringDoubleBond');
 });
 
+test('2.5.5: the triple bond before the double one on a tie, -ène kept before a single -yne, both carbons, the a', () => {
+  assert.equal(rule('C#CCCC=C', 'hex-5-én-1-yne'), 'eneFirst');
+  assert.equal(rule('C=CCCC#CC', 'hept-1-ène-5-yne'), 'enElision');
+  assert.equal(rule('CC#CCCCCC', 'oct-2,3-yne'), 'bothLocants');
+  assert.equal(rule('CCC#CC#CCC', 'oct-3,5-diyne'), 'euphony');
+});
+
 test('the right name is never among the wrong ones, and every rule has its message', () => {
-  for (const s of ['CCC(C)CCC', 'CC(C)CCCCC(C)(C)CC', 'BrC1CCCC(C)C1', 'CCCCC1CCCCC1', 'FC(F)(F)C(Cl)Br', 'CC=CC(C)(C)C', 'CC1=CCCCC1C', 'CC=CC=CC']) {
+  for (const s of ['CCC(C)CCC', 'CC(C)CCCCC(C)(C)CC', 'BrC1CCCC(C)C1', 'CCCCC1CCCCC1', 'FC(F)(F)C(Cl)Br', 'CC=CC(C)(C)C', 'CC1=CCCCC1C', 'CC=CC=CC', 'C#CCCC=C', 'C=CCCC#CC', 'CCC#CC#CCC']) {
     const right = nameOf(fromSmiles(s)).name;
     for (const w of wrongNames(fromSmiles(s))) {
       assert.notEqual(w.name, right);

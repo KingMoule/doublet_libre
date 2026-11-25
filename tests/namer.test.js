@@ -96,8 +96,22 @@ test('2.5.4: the parent chain holds the most double bonds, even when it is short
   assert.equal(name('C=CC(CCC)CCCCC'), '3-propyloct-1-ène');
 });
 
+test('2.5.5 (P-31.1.4.2.4): -yne like -ène, with no locant on two or three carbons', () => {
+  assert.deepEqual(['C#C', 'CC#C', 'CC#CCCCCC', 'C#CCC(C)C', 'CCC#CC#CCC'].map(name), ['éthyne', 'propyne', 'oct-2-yne', '4-méthylpent-1-yne', 'octa-3,5-diyne']);
+});
+
+test('2.5.5 (P-31.1.4.2.4, P-31.1.4.3.4): double and triple bonds together take the lowest locants, the double bond first on a tie', () => {
+  assert.equal(name('C=CCCC#CC'), 'hept-1-én-5-yne');
+  assert.equal(name('C#CCCC=C'), 'hex-1-én-5-yne');
+});
+
+test('2.5.5: -én before -yne, an a only when -ène is multiplied, -ène kept before -diyne', () => {
+  assert.equal(name('C=CC=CCC#C'), 'hepta-1,3-dién-6-yne');
+  assert.equal(name('C#CCC=CCCC#CC'), 'déc-4-ène-1,8-diyne');
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
-  assert.equal(reason('C#CC'), 'scope'); // alkynes: 2.5.5
+  assert.equal(reason('CC=O'), 'scope'); // aldehydes: 2.5.9
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)
 });
 

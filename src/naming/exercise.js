@@ -39,7 +39,7 @@ export function answerDrawing(item, doc) {
   const count = (/** @type {import('./graph.js').Graph} */ x, /** @type {boolean} */ carbon) => x.atoms.filter((a) => (a.el === 'C') === carbon).length;
   if (count(g, true) !== count(target, true)) lines.push(X.carbons(count(g, true), count(target, true)));
   else if (count(g, false) !== count(target, false)) lines.push(X.others);
-  else if (g.bonds.filter((b) => b.order === 2).length !== target.bonds.filter((b) => b.order === 2).length) lines.push(X.doubles);
+  else if ([2, 3].some((o) => g.bonds.filter((b) => b.order === o).length !== target.bonds.filter((b) => b.order === o).length)) lines.push(X.doubles);
   else lines.push(X.place);
   return { verdict: 'wrong', title: X.drawnWrong, lines };
 }
@@ -56,10 +56,10 @@ export function solution(item) {
     const angles = doc.bonds.filter((b) => b.a === id || b.b === id).map((b) => angleOf(sub(/** @type {M.Atom} */ (M.findAtom(doc, b.a === id ? b.b : b.a)), a)));
     M.addText(doc, { ...add(a, fromAngle(nextBondAngle(angles), 17)), text: String(k + 1), size: 11 });
   });
-  const { ring, prefixes, parent, doubles } = item.naming;
+  const { ring, prefixes, parent, doubles, triples } = item.naming;
   const n = parent.length;
   const steps = [
-    X.steps.parent(ring, n, spell([], n, ring, doubles), doubles.length > 0),
+    X.steps.parent(ring, n, spell([], n, ring, doubles, triples), doubles.length + triples.length > 0),
     prefixes.length ? X.steps.prefixes(prefixes.map((p) => X.steps.at(p.name, p.locants)).join(', ')) : X.steps.none,
     X.steps.name(item.name),
   ];
