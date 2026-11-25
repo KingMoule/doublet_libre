@@ -75,6 +75,14 @@ test('2.5.7: the short side as the parent chain, méthyloxy for méthoxy, pentox
   assert.equal(rule('CCCCCCCOCCCCC', '1-pentoxyheptane'), 'alkoxy');
 });
 
+test('2.5.8: the double bond numbered before the OH, -an- dropped, -ène kept before -ol, -an- before -diol, a familiar name', () => {
+  assert.equal(rule('CC=CCC(C)O', 'hex-2-én-5-ol'), 'principalFirst');
+  assert.equal(rule('CCC(O)CCCC', 'hept-3-ol'), 'olStem');
+  assert.equal(rule('CC=CCC(C)O', 'hex-4-ène-2-ol'), 'olElision');
+  assert.equal(rule('CC(O)CCC(O)CC', 'heptan-2,5-diol'), 'diolStem');
+  assert.equal(rule('CC(C)O', 'alcool isopropylique'), 'familiar');
+});
+
 const wrong = wrongNames(fromSmiles('CC(C)C(C)CC'));
 const check = (/** @type {string} */ typed) => checkName(typed, ['2,3-diméthylpentane'], wrong);
 

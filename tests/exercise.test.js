@@ -51,6 +51,14 @@ test('a toluène: o-, m-, p- count, its systematic name counts with a remark, th
   assert.ok(solution(toluene).steps[0].includes('toluène'));
 });
 
+test('an alcohol: the solution chooses the chain by its OH and says where the -ol goes', () => {
+  const alcohol = series('alcohols', 2).items.find((i) => i.name === '9,9-diméthyldéc-5-én-3-ol');
+  assert.ok(alcohol);
+  const { steps } = solution(alcohol);
+  assert.ok(steps[0].includes("l’OH"));
+  assert.ok(steps.some((s) => s.includes('-ol en 3')));
+});
+
 test('the solution numbers the parent chain on the drawing and says how the name is built', () => {
   const s = solution(item);
   assert.deepEqual(s.doc.texts.map((t) => t.text), ['1', '2', '3', '4', '5', '6']);
