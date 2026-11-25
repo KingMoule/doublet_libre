@@ -33,8 +33,15 @@ test('2.5.2 and 2.5.3: ring numbering, ring against chain, a locant that is left
   assert.equal(rule('CC1CCCCC1', '1-méthylcyclohexane'), 'locant');
 });
 
+test('2.5.4: the double bond numbered after the branches, both its carbons written, the a left out, a ring numbered across it', () => {
+  assert.equal(rule('CC=CC(C)(C)C', '2,2-diméthylpent-3-ène'), 'unsaturationFirst');
+  assert.equal(rule('CC=CCC', 'pent-2,3-ène'), 'bothLocants');
+  assert.equal(rule('CC=CC=CC', 'hex-2,4-diène'), 'euphony');
+  assert.equal(rule('CC1=CCCCC1C', '1,2-diméthylcyclohexène'), 'ringDoubleBond');
+});
+
 test('the right name is never among the wrong ones, and every rule has its message', () => {
-  for (const s of ['CCC(C)CCC', 'CC(C)CCCCC(C)(C)CC', 'BrC1CCCC(C)C1', 'CCCCC1CCCCC1', 'FC(F)(F)C(Cl)Br']) {
+  for (const s of ['CCC(C)CCC', 'CC(C)CCCCC(C)(C)CC', 'BrC1CCCC(C)C1', 'CCCCC1CCCCC1', 'FC(F)(F)C(Cl)Br', 'CC=CC(C)(C)C', 'CC1=CCCCC1C', 'CC=CC=CC']) {
     const right = nameOf(fromSmiles(s)).name;
     for (const w of wrongNames(fromSmiles(s))) {
       assert.notEqual(w.name, right);

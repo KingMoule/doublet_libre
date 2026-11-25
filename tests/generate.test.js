@@ -40,6 +40,7 @@ test('each level draws what its section of the textbook names (2.5.1 to 2.5.3)',
       assert.ok((naming.ring || naming.prefixes.some(isCyclo)) && !naming.prefixes.some(isHalo), naming.name);
     }
     for (const { naming } of series('halogens', seed).items) assert.ok(naming.prefixes.some(isHalo), naming.name);
+    for (const { naming } of series('alkenes', seed).items) assert.ok(naming.doubles.length > 0 && !naming.prefixes.some(isHalo), naming.name);
   }
 });
 

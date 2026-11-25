@@ -29,6 +29,15 @@ test('a drawing: the same molecule wherever it is drawn, or the name of what was
   assert.equal(answerDrawing(item, M.emptyDoc()).verdict, 'empty');
 });
 
+test('an alkene: the solution names its parent with its double bond, a wrong drawing hears about its double bonds', () => {
+  const alkene = series('alkenes', 1).items[1];
+  assert.equal(alkene.name, '4-méthylhept-1-ène');
+  assert.ok(solution(alkene).steps[0].includes('hept-1-ène'));
+  const saturated = structuredClone(alkene.doc);
+  for (const b of saturated.bonds) b.order = 1;
+  assert.ok(answerDrawing(alkene, saturated).lines.some((l) => /liaisons doubles/.test(l)));
+});
+
 test('the solution numbers the parent chain on the drawing and says how the name is built', () => {
   const s = solution(item);
   assert.deepEqual(s.doc.texts.map((t) => t.text), ['1', '2', '3', '4', '5', '6']);

@@ -14,7 +14,7 @@ import { NamingError, nameOf, wrongNames } from './namer.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -38,8 +38,8 @@ function bondAngles(doc, id) {
   const a = /** @type {M.Atom} */ (M.findAtom(doc, id));
   return doc.bonds.filter((b) => b.a === id || b.b === id).map((b) => angleOf(sub(/** @type {M.Atom} */ (M.findAtom(doc, b.a === id ? b.b : b.a)), a)));
 }
-/** Atoms that can take one more single bond. @param {M.Doc} doc @param {string[]} ids */
-const free = (doc, ids) => ids.filter((id) => doc.bonds.filter((b) => b.a === id || b.b === id).length < 4);
+/** Carbons that can take one more single bond: fewer than four, a double bond counting twice. @param {M.Doc} doc @param {string[]} ids */
+const free = (doc, ids) => ids.filter((id) => doc.bonds.filter((b) => b.a === id || b.b === id).reduce((s, b) => s + b.order, 0) < 4);
 
 /** Hangs a branch, written in SMILES from its first atom, from an atom: each atom in the free direction. @param {M.Doc} doc @param {string} at @param {string} smiles */
 function attach(doc, at, smiles) {
@@ -85,6 +85,19 @@ const BUILD = {
       attachRing(d, pick(r, ids), n);
       if (r() < 0.5) attach(d, pick(r, free(d, ids.slice(1, -1))), 'C');
     }
+    return d;
+  },
+  // 2.5.4: 1 or 2 double bonds, never side by side, in a chain of 2 to 8 carbons or a ring of 5 to 7, with up to 2 branches.
+  alkenes: (r) => {
+    const d = M.emptyDoc();
+    const isRing = r() < 0.3;
+    const ids = isRing ? ring(d, int(r, 5, 7)) : chain(d, int(r, 2, 8));
+    const links = ids.slice(isRing ? 0 : 1).map((id, k) => M.bondBetween(d, ids[isRing ? (k + ids.length - 1) % ids.length : k], id));
+    for (let k = int(r, 1, 2); k > 0; k--) {
+      const b = pick(r, links.filter((x) => x && !d.bonds.some((y) => y.order === 2 && [y.a, y.b].some((a) => a === x.a || a === x.b))));
+      if (b) M.setBondOrder(d, b.id, 2);
+    }
+    for (let k = int(r, 0, 2); k > 0; k--) attach(d, pick(r, free(d, ids)), pick(r, ALKYLS));
     return d;
   },
   // 2.5.3: 1 to 3 halogens on a chain or a ring, with up to 2 branches.
