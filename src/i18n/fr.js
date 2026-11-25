@@ -368,7 +368,7 @@ export const fr = {
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
-    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)', alcohols: 'Alcools (2.5.8)', aldehydes: 'Aldéhydes (2.5.9)', ketones: 'Cétones (2.5.10)' },
+    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)', alcohols: 'Alcools (2.5.8)', aldehydes: 'Aldéhydes (2.5.9)', ketones: 'Cétones (2.5.10)', mix: 'Mélange' },
     /** @param {number} k @param {number} n */ question: (k, n) => `Question ${k} sur ${n}`,
     nameIt: 'Nommez cette molécule selon les règles de l’UICPA.',
     drawIt: 'Dessinez :',
@@ -389,7 +389,8 @@ export const fr = {
     /** @param {string} name */ write: (name) => `On écrit : ${name}.`,
     emptyName: 'Tapez un nom avant de vérifier.',
     emptyDraw: 'Dessinez d’abord la molécule.',
-    /** @param {string} name */ drawnRight: (name) => `C’est bien le ${name}.`,
+    // No article before the name: it would need its gender and elision (la butanone, l’éthanol).
+    /** @param {string} name */ drawnRight: (name) => `C’est bien la molécule demandée : ${name}.`,
     drawnWrong: 'Ce n’est pas la molécule demandée',
     /** @param {string} name */ yourDrawing: (name) => `Votre dessin : ${name}.`,
     /** @param {number} a @param {number} b */ carbons: (a, b) => `Votre dessin compte ${a} carbone${a > 1 ? 's' : ''} ; il en faut ${b}.`,
