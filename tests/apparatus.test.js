@@ -181,8 +181,13 @@ test('a beaker stands on the gauze of a tripod', () => {
 });
 
 // A loose piece fits nothing: its panel offers no Detach, and its help says so.
-test('stand, clamp, heat gun and burner are loose; a flask is not', () => {
-  assert.deepEqual(['stand', 'clamp', 'heatgun', 'burner', 'flask'].map((k) => A.loose?.(k)), [true, true, true, true, false]);
+test('stand, clamp, ring, heat gun and burner are loose; a flask is not', () => {
+  assert.deepEqual(['stand', 'clamp', 'ring', 'heatgun', 'burner', 'flask'].map((k) => A.loose?.(k)), [true, true, true, true, true, false]);
+});
+
+// An iron ring holds a separatory funnel or a funnel on the stand, its boss on the rod like the clamp's.
+test('an iron ring sits with the stand and the clamp', () => {
+  assert.ok(A.FAMILIES.heating.includes('ring'));
 });
 
 test('a distillation train fits together: column, head, condenser along the side arm, adapter, receiver', () => {

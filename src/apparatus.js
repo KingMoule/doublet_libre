@@ -8,7 +8,7 @@ import { r2 } from './model.js';
  * a ground-glass joint takes a joint of the other sex facing it; a seat (the bottom of a flask)
  * goes into a cup (a heating mantle); a flat base stands on a flat top (a hotplate); a stem goes into
  * a mouth (a funnel into a filter flask); a fluted paper sits in a funnel.
- * Pieces whose joints meet form one set-up. A stand and its clamps have no joint: they are placed freely.
+ * Pieces whose joints meet form one set-up. A stand, its clamps and rings have no joint: they are placed freely.
  * @typedef {import('./model.js').Doc} Doc
  * @typedef {import('./model.js').Piece} Piece
  * @typedef {{x: number, y: number, dir: number, kind: 'joint' | 'seat' | 'base' | 'stem' | 'paper', male: boolean}} Joint
@@ -357,6 +357,15 @@ export const PIECES = {
     box: { l: -72, t: -14, r: 12, b: 14 },
     joints: [],
   },
+  // Iron ring, placed freely: a thick ring (ellipses rx 24, ry 7 and rx 20, ry 4.5) that a separatory
+  // funnel's bulb (22 at its widest) or a funnel's cone rests in. Its arm (y ±1.5) meets the outer
+  // ellipse at x = 24·√(1 − (1.5/7)²) = 23.44; its boss is the clamp's, so both line up on the rod.
+  ring: {
+    d: 'M-24 0 a24 7 0 1 0 48 0 a24 7 0 1 0 -48 0 M-20 0 a20 4.5 0 1 0 40 0 a20 4.5 0 1 0 -40 0'
+      + ' M-60 -1.5 L-23.44 -1.5 M-60 1.5 L-23.44 1.5 M-72 -8 L-60 -8 L-60 8 L-72 8 Z M-66 -8 L-66 -14 M-69 -14 L-63 -14',
+    box: { l: -72, t: -14, r: 24, b: 8 },
+    joints: [],
+  },
 };
 
 /** The pieces of each glassware tool, in the order of its option window. */
@@ -365,10 +374,10 @@ export const FAMILIES = {
   distillation: ['flask', 'vigreux', 'head', 'thermometer', 'liebig', 'adapter', 'vacadapter', 'soxhlet', 'rotavap'],
   separation: ['sepfunnel', 'funnel', 'filterpaper', 'buchner', 'filterflask', 'heatgun'],
   glassware: ['beaker', 'erlenmeyer', 'cylinder', 'testtube', 'pipette', 'burette', 'thiele'],
-  heating: ['mantle', 'stirrer', 'burner', 'tripod', 'bath', 'stand', 'clamp'],
+  heating: ['mantle', 'stirrer', 'burner', 'tripod', 'bath', 'stand', 'clamp', 'ring'],
 };
 
-/** A loose piece (stand, clamp, heat gun, burner) has no joint: it is placed freely and never part of a set-up. @param {string} kind */
+/** A loose piece (stand, clamp, ring, heat gun, burner) has no joint: it is placed freely and never part of a set-up. @param {string} kind */
 export const loose = (kind) => PIECES[kind]?.joints.length === 0;
 
 const SNAP = 15;

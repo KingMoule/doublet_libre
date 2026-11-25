@@ -43,7 +43,7 @@ export const fr = {
     heatgun: 'Pistolet à air chaud',
     beaker: 'Bécher', erlenmeyer: 'Erlenmeyer', cylinder: 'Éprouvette graduée', testtube: 'Tube à essai', pipette: 'Pipette jaugée',
     burette: 'Burette', thiele: 'Tube de Thiele',
-    mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', burner: 'Bec Bunsen', tripod: 'Trépied et toile métallique', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince',
+    mantle: 'Chauffe-ballon', stirrer: 'Plaque chauffante agitatrice', burner: 'Bec Bunsen', tripod: 'Trépied et toile métallique', bath: 'Cristallisoir (bain)', stand: 'Support', clamp: 'Pince', ring: 'Anneau de fer',
   },
   actions: {
     setups: 'Montages',
@@ -153,7 +153,7 @@ export const fr = {
     heating: [
       'Choisissez la pièce dans la petite fenêtre à côté de l’outil.',
       'Touchez le fond pour la poser, ou sous un ballon ou un cristallisoir pour l’y placer.',
-      'Bec Bunsen, support et pince se placent librement.',
+      'Bec Bunsen, support, pince et anneau se placent librement.',
     ],
   },
   status: {
@@ -186,7 +186,7 @@ export const fr = {
       'Doublets, charges, δ, flèches courbes accrochées aux électrons, flèches de réaction.',
       'Avertissements : octet dépassé, flèche inversée, charge non conservée, résonance mal employée.',
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
-      'Mode Montage : 36 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
+      'Mode Montage : 37 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
       'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
     shortcutsTitle: 'Raccourcis clavier',
