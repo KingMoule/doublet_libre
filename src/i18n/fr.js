@@ -311,8 +311,11 @@ export const fr = {
       { prefix: 'méthoxy', word: 'anisole', group: 'Le groupe méthoxy' },
       { prefix: '', word: 'phénol', group: 'Le groupe OH' },
       { prefix: '', word: 'benzaldéhyde', group: 'Le groupe CHO' },
+      { prefix: '', word: 'acétophénone', group: 'Le groupe COCH₃' },
     ],
-    phenol: 'phénol', benzaldehyde: 'benzaldéhyde',
+    phenol: 'phénol', benzaldehyde: 'benzaldéhyde', acetophenone: 'acétophénone',
+    // Ketones (2.5.10): -one, oxo- below an aldehyde; acétone, the familiar name the textbook does not accept.
+    one: 'one', oxo: 'oxo', acetone: 'acétone',
     // Aldehydes (2.5.9): -al, -carbaldéhyde on a ring, hydroxy- below them; familiar names by carbons, from one.
     al: 'al', carbaldehyde: 'carbaldéhyde', hydroxy: 'hydroxy',
     familiarAldehydes: ['formaldéhyde', 'acétaldéhyde', 'propionaldéhyde', 'butyraldéhyde', 'valéraldéhyde'],
@@ -339,11 +342,13 @@ export const fr = {
       eneFirst: 'À égalité d’indices, le plus petit va à la liaison double, citée avant la triple : hex-1-én-5-yne (2.5.5).',
       enElision: 'Devant un seul -yne, -ène perd son e final et son accent devient aigu : hept-1-én-5-yne (2.5.5).',
       alkoxy: 'Jusqu’à 4 carbones, on écrit alkoxy (méthoxy à butoxy) ; à partir de 5, alkyloxy (pentyloxy) (2.5.7).',
-      principalFirst: 'La fonction prioritaire, ici l’alcool, prend le plus petit indice, avant les liaisons multiples (2.5.8).',
-      olStem: 'Devant -ol, la chaîne garde son « an » : heptan-3-ol, pas hept-3-ol (2.5.8).',
-      olElision: 'Devant -ol, -ène et -yne perdent leur e : hex-4-én-2-ol, pent-4-yn-2-ol (2.5.8).',
-      diolStem: 'Devant -diol, la chaîne garde son e : heptane-2,5-diol (2.5.8).',
-      familiar: 'Nom familier : selon les règles de l’UICPA, on donne le nom systématique (2.5.8, 2.5.9).',
+      principalFirst: 'La fonction prioritaire (alcool, aldéhyde, cétone) prend le plus petit indice, avant les liaisons multiples (2.5.8 à 2.5.10).',
+      priority: 'Le suffixe va à la fonction prioritaire : aldéhyde, puis cétone, puis alcool ; l’OH devient alors hydroxy- et le C=O oxo- (figure 2.21).',
+      olStem: 'Devant -ol ou -one, la chaîne garde son « an » : heptan-3-ol, pentan-2-one (2.5.8, 2.5.10).',
+      olElision: 'Devant -ol ou -one, -ène et -yne perdent leur e : hex-4-én-2-ol, pent-4-yn-2-one (2.5.8, 2.5.10).',
+      diolStem: 'Devant -diol ou -dione, la chaîne garde son e : heptane-2,5-diol, pentane-2,4-dione (2.5.8, 2.5.10).',
+      ringLocant: 'Sur un cycle, une seule fonction -ol ou -one est en 1 : son indice ne s’écrit pas (cyclohexanone) (2.5.8, 2.5.10).',
+      familiar: 'Nom familier : selon les règles de l’UICPA, on donne le nom systématique (2.5.8 à 2.5.10).',
       alLocant: 'L’aldéhyde est toujours en bout de chaîne, en 1 : son indice ne s’écrit pas (butanal) (2.5.9).',
       dialStem: 'Devant -dial, la chaîne garde son e : pentanedial (2.5.9).',
       carbaldehyde: 'Le carbone du CHO ne fait pas partie du cycle : on ajoute -carbaldéhyde au nom du cycle (cyclohexanecarbaldéhyde) (2.5.9).',
@@ -363,7 +368,7 @@ export const fr = {
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
-    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)', alcohols: 'Alcools (2.5.8)', aldehydes: 'Aldéhydes (2.5.9)' },
+    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)', ethers: 'Éthers (2.5.7)', alcohols: 'Alcools (2.5.8)', aldehydes: 'Aldéhydes (2.5.9)', ketones: 'Cétones (2.5.10)' },
     /** @param {number} k @param {number} n */ question: (k, n) => `Question ${k} sur ${n}`,
     nameIt: 'Nommez cette molécule selon les règles de l’UICPA.',
     drawIt: 'Dessinez :',
@@ -392,14 +397,17 @@ export const fr = {
     place: 'Les atomes sont les bons, mais pas à leur place : vérifiez la numérotation de la chaîne principale.',
     doubles: 'Vérifiez les liaisons doubles et triples : leur nombre et leur place.',
     steps: {
-      /** @param {boolean} ring @param {number} n @param {string} name @param {'ol' | 'al' | 'multiples' | 'longest'} why */
+      /** @param {boolean} ring @param {number} n @param {string} name @param {string} why the principal group's suffix, 'multiples' or 'longest' */
       parent: (ring, n, name, why) => (ring ? `Chaîne principale : le cycle de ${n} carbones, ${name}.`
-        : `Chaîne principale : ${{ ol: 'celle qui porte l’OH', al: 'celle qui porte le CHO', multiples: 'celle qui porte les liaisons multiples', longest: 'la plus longue' }[why]}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
-      // The principal group, by its suffix.
+        : `Chaîne principale : ${/** @type {Record<string, string>} */ ({ ol: 'celle qui porte l’OH', al: 'celle qui porte le CHO', one: 'celle qui porte le C=O', multiples: 'celle qui porte les liaisons multiples', longest: 'la plus longue' })[why]}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
+      // The principal group, by its suffix; written: whether the name shows its locant.
       principal: {
-        /** @param {number[]} at */ ol: (at) => `Fonction prioritaire : alcool, suffixe -ol en ${at.join(' et ')}.`,
+        /** @param {number[]} at @param {boolean} written */
+        ol: (at, written) => `Fonction prioritaire : alcool, suffixe -ol en ${at.join(' et ')}${written ? '' : ' ; seule place possible, son indice ne s’écrit pas'}.`,
         al: () => 'Fonction prioritaire : aldéhyde, suffixe -al, toujours en bout de chaîne : son indice 1 ne s’écrit pas.',
         carbaldéhyde: () => 'Fonction prioritaire : aldéhyde sur un cycle, suffixe -carbaldéhyde ; le carbone du CHO ne compte pas dans le cycle.',
+        /** @param {number[]} at @param {boolean} written */
+        one: (at, written) => `Fonction prioritaire : cétone, suffixe -one en ${at.join(' et ')}${written ? '' : ' ; seule place possible, son indice ne s’écrit pas'}.`,
       },
       /** @param {string} group @param {string} word */
       retained: (group, word) => `${group} donne au benzène son nom familier, ${word} : il prend l’indice 1.`,

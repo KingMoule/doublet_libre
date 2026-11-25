@@ -5,7 +5,8 @@
  * is the same graph whichever Kekulé form is drawn, and a nitro group whether drawn with its charges or not.
  * @typedef {{el: string, charge: number}} GAtom
  * @typedef {{a: number, b: number, order: number}} GBond order 1, 2 or 3; 1.5 in an aromatic ring
- * @typedef {{atoms: GAtom[], bonds: GBond[], ids?: string[]}} Graph ids: the document atom of each atom
+ * @typedef {{atoms: GAtom[], bonds: GBond[], ids?: string[], kind?: string}} Graph ids: the document atom of each atom;
+ *   kind: the principal group to name it by ('al', 'one', 'ol'), for a wrong name that takes another one
  */
 
 /** Neighbours of each atom, with the order of the bond to it. @param {Graph} g */

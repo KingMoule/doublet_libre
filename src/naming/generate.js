@@ -16,7 +16,7 @@ import { fr } from '../i18n/fr.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols', 'aldehydes'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics', 'ethers', 'alcohols', 'aldehydes', 'ketones'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -208,6 +208,37 @@ const BUILD = {
     // The double bond between inner carbons only: ids[k] to ids[k + 1], with k from 1 to the last inner bond.
     const last = n - (two ? 3 : 2);
     if (last >= 1 && r() < 0.3) { const k = int(r, 1, last); M.setBondOrder(d, /** @type {M.Bond} */ (M.bondBetween(d, ids[k], ids[k + 1])).id, 2); }
+    for (let b = int(r, 0, 2); b > 0; b--) {
+      const group = pick(r, [...ALKYLS, 'Cl', 'Br', 'O']);
+      const f = group === 'O' ? saturated(d, inner) : free(d, inner);
+      if (f.length) attach(d, pick(r, f), group);
+    }
+    return d;
+  },
+  // 2.5.10: 1 or 2 C=O inside a chain of 3 to 8 carbons that sometimes has a double or triple bond, on carbons
+  // with single bonds only, and sometimes a CHO at its end (oxo-); or in a ring of 4 to 7. Up to 2 branches,
+  // halogens or OH (hydroxy-). Or an acetyl on a benzene ring (acétophénone) with up to 2 other groups.
+  ketones: (r) => {
+    const d = M.emptyDoc();
+    const kind = r();
+    if (kind < 0.15) {
+      const ids = M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true);
+      attach(d, ids[0], 'C(=O)C');
+      for (let k = int(r, 0, 2); k > 0; k--) attach(d, pick(r, free(d, ids.slice(1))), pick(r, ['C', 'CC', 'Cl', 'Br', 'O', 'OC']));
+      return d;
+    }
+    const isRing = kind < 0.4;
+    const n = isRing ? int(r, 4, 7) : int(r, 3, 8);
+    // The C=O carbons first (inside the chain), then the multiple bond on a bond that touches none of them.
+    const ones = new Set(Array.from({ length: int(r, 1, 2) }, () => (isRing ? int(r, 0, n - 1) : int(r, 1, n - 2))));
+    const away = [...Array(n - 1).keys()].filter((k) => !ones.has(k) && !ones.has(k + 1));
+    const multiple = isRing || !away.length || r() > 0.3 ? 0 : int(r, 2, 3);
+    const k = pick(r, away);
+    const ids = isRing ? ring(d, n) : chainWithTriples(d, n, new Set(multiple === 3 ? [k] : []));
+    if (multiple === 2) M.setBondOrder(d, /** @type {M.Bond} */ (M.bondBetween(d, ids[k], ids[k + 1])).id, 2);
+    for (const c of ones) attach(d, ids[c], 'O', 2);
+    const inner = isRing ? ids : ids.slice(1, -1);
+    if (!isRing && r() < 0.2 && saturated(d, [ids[0]]).length) attach(d, ids[0], 'O', 2);
     for (let b = int(r, 0, 2); b > 0; b--) {
       const group = pick(r, [...ALKYLS, 'Cl', 'Br', 'O']);
       const f = group === 'O' ? saturated(d, inner) : free(d, inner);
