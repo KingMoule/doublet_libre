@@ -186,8 +186,35 @@ test('2.5.9, 2.5.6: an aldehyde on a ring is a -carbaldéhyde; on a benzene ring
   assert.deepEqual(['O=CC1CCCCC1', 'O=Cc1ccccc1', 'O=Cc1ccc(O)cc1'].map(name), ['cyclohexanecarbaldéhyde', 'benzaldéhyde', '4-hydroxybenzaldéhyde']);
 });
 
+test('2.5.10, figure 2.44 (P-64.2.1): -one with the lowest locant; -dione keeps the e; -én and -yn before -one', () => {
+  assert.deepEqual(['CCCC(=O)C', 'CCC(=O)CC', 'CCC(I)C(=O)CCC'].map(name), ['pentan-2-one', 'pentan-3-one', '3-iodoheptan-4-one']);
+  assert.deepEqual(['CC(=O)CC(=O)C', 'CC(=O)C(C(C)C)CCC(=O)C'].map(name), ['pentane-2,4-dione', '3-isopropylheptane-2,6-dione']);
+  assert.deepEqual(['C#CCC(=O)C', 'CCC#CC(=O)C', 'CC(=O)C=CC(=O)C=C'].map(name), ['pent-4-yn-2-one', 'hex-3-yn-2-one', 'hepta-3,6-diène-2,5-dione']);
+});
+
+test('2.5.10, figure 2.44: no locant where the C=O has one place only (propanone, butanone) or alone in a ring', () => {
+  assert.deepEqual(['CC(=O)C', 'CCC(=O)C', 'O=C1CCC1', 'O=C1CC(Br)CC1', 'O=C1CCCC(=O)C1'].map(name), ['propanone', 'butanone', 'cyclobutanone', '3-bromocyclopentanone', 'cyclohexane-1,3-dione']);
+  // « L’indice de position peut être omis » : with it, the name counts too.
+  assert.ok(nameOf(fromSmiles('CC(=O)C')).also.some((a) => a.name === 'propan-2-one' && !a.remark));
+  // Beside a -yn-3- the locant stays in the name shown, so that 3 is not read as the ketone's; without it, it counts.
+  assert.equal(name('C#CC(=O)C'), 'but-3-yn-2-one');
+  assert.ok(nameOf(fromSmiles('C#CC(=O)C')).also.some((a) => a.name === 'but-3-ynone'));
+});
+
+test('2.5.10, exemple 2.10, figure 2.45: a ketone before an alcohol (hydroxy-); under an aldehyde, an oxo- prefix', () => {
+  assert.equal(name('CC(=O)CC(O)C=C'), '4-hydroxyhex-5-én-2-one');
+  assert.deepEqual(['O=CCCCC(=O)C', 'O=CC(C)=CC(=O)CC(=O)C#C', 'O=CCCCC(=O)C(C)CCCl'].map(name), ['5-oxohexanal', '2-méthyl-4,6-dioxooct-2-én-7-ynal', '8-chloro-6-méthyl-5-oxooctanal']);
+});
+
+test('2.5.6, 2.5.10: an acetyl on a benzene ring makes it acétophénone, numbered from it', () => {
+  assert.deepEqual(['CC(=O)c1ccccc1', 'CC(=O)c1ccc(Br)cc1'].map(name), ['acétophénone', '4-bromoacétophénone']);
+  assert.ok(nameOf(fromSmiles('CC(=O)c1ccccc1')).also.some((a) => a.name === '1-phényléthanone' && a.remark === 'retained'));
+  assert.equal(name('CCC(=O)c1ccccc1'), '1-phénylpropan-1-one');
+});
+
 test('what the textbook leaves to later sections or never asks is out of scope for now', () => {
-  assert.equal(reason('CC(=O)C'), 'scope'); // ketones: 2.5.10
+  assert.equal(reason('CC(=O)O'), 'scope'); // acids: annexe C
+  assert.equal(reason('C=C=O'), 'scope'); // a ketene is not a ketone
   assert.equal(reason('CCCCCC(CC(C)CC)CCCCC'), 'scope'); // a branch named in parentheses (Enrichissement)
 });
 

@@ -46,6 +46,7 @@ test('each level draws what its section of the textbook names (2.5.1 to 2.5.3)',
     for (const { naming } of series('ethers', seed).items) assert.ok(/oxy|anisole/.test(naming.name), naming.name);
     for (const { naming } of series('alcohols', seed).items) assert.ok(/ol$/.test(naming.name), naming.name);
     for (const { naming } of series('aldehydes', seed).items) assert.ok(/al$|aldéhyde$/.test(naming.name), naming.name);
+    for (const { naming } of series('ketones', seed).items) assert.ok(/one$|oxo/.test(naming.name), naming.name);
   }
 });
 

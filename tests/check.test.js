@@ -90,6 +90,20 @@ test('2.5.9: -al with its locant 1, -dial without its e, a ring carbon taken for
   assert.equal(rule('CC=O', 'acétaldéhyde'), 'familiar');
 });
 
+test('2.5.10: the ketone after the other end, -an- dropped, -ène kept, -an- before -dione, locant 1 on a ring, acétone', () => {
+  assert.equal(rule('CCCC(=O)C', 'pentan-4-one'), 'principalFirst');
+  assert.equal(rule('CCCC(=O)C', 'pent-2-one'), 'olStem');
+  assert.equal(rule('C=CCC(=O)C', 'pent-4-ène-2-one'), 'olElision');
+  assert.equal(rule('CC(=O)CC(=O)C', 'pentan-2,4-dione'), 'diolStem');
+  assert.equal(rule('O=C1CCCCC1', 'cyclohexan-1-one'), 'ringLocant');
+  assert.equal(rule('CC(=O)C', 'acétone'), 'familiar');
+});
+
+test('2.5.9, 2.5.10: the alcohol taken as the suffix under an aldehyde or a ketone', () => {
+  assert.equal(rule('CC(=O)CC(O)C=C', '5-oxohex-1-én-3-ol'), 'priority');
+  assert.equal(rule('CC(O)CC=O', '4-oxobutan-2-ol'), 'priority');
+});
+
 const wrong = wrongNames(fromSmiles('CC(C)C(C)CC'));
 const check = (/** @type {string} */ typed) => checkName(typed, ['2,3-diméthylpentane'], wrong);
 

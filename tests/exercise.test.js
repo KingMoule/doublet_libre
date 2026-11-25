@@ -67,6 +67,16 @@ test('an aldehyde: the solution chooses the chain by its CHO and says that its l
   assert.ok(steps.some((s) => s.includes('-al')));
 });
 
+test('a ketone: the solution chooses the chain by its C=O, says where the -one goes and why propanone has no locant (2.5.10)', () => {
+  const ketone = series('ketones', 1).items.find((i) => i.name === 'propanone');
+  assert.ok(ketone);
+  const { steps } = solution(ketone);
+  assert.ok(steps[0].includes('le C=O'));
+  assert.ok(steps.some((s) => s.includes('-one en 2') && s.includes('ne s’écrit pas')));
+  const written = series('ketones', 1).items.find((i) => i.name === 'but-3-yn-2-one');
+  assert.ok(written && !solution(written).steps.some((s) => s.includes('ne s’écrit pas')));
+});
+
 test('the solution numbers the parent chain on the drawing and says how the name is built', () => {
   const s = solution(item);
   assert.deepEqual(s.doc.texts.map((t) => t.text), ['1', '2', '3', '4', '5', '6']);

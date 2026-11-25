@@ -58,12 +58,14 @@ export function solution(item) {
   });
   const { ring, prefixes, parent, doubles, triples, suffix, word } = item.naming;
   const n = parent.length;
-  const why = suffix.at.length ? (suffix.end === N.ol ? 'ol' : 'al') : doubles.length + triples.length ? 'multiples' : 'longest';
-  const principal = /** @type {Record<string, (at: number[]) => string>} */ (X.steps.principal)[suffix.end];
+  const why = suffix.at.length ? suffix.end : doubles.length + triples.length ? 'multiples' : 'longest';
+  const principal = /** @type {Record<string, (at: number[], written: boolean) => string>} */ (X.steps.principal)[suffix.end];
+  // The suffix's locant is written unless the name is the same without it (propanone, cyclohexanol).
+  const written = spell(prefixes, n, ring, doubles, triples, word, { ...suffix, omit: true }) !== item.name;
   const steps = [
     word && word !== N.benzene ? X.steps.retained(N.retained.find((r) => r.word === word)?.group ?? '', word)
       : X.steps.parent(ring, n, spell([], n, ring, doubles, triples, word), why),
-    ...(suffix.at.length && principal ? [principal(suffix.at)] : []),
+    ...(suffix.at.length && principal ? [principal(suffix.at, written)] : []),
     prefixes.length ? X.steps.prefixes(prefixes.map((p) => X.steps.at(p.name, p.locants)).join(', ')) : X.steps.none,
     X.steps.name(item.name),
   ];
