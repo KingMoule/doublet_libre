@@ -38,6 +38,19 @@ test('an alkene: the solution names its parent with its double bond, a wrong dra
   assert.ok(answerDrawing(alkene, saturated).lines.some((l) => /liaisons doubles/.test(l)));
 });
 
+test('a toluène: o-, m-, p- count, its systematic name counts with a remark, the solution says why toluène', () => {
+  const toluene = series('aromatics', 1).items.find((i) => /^\d-\D+toluène$/.test(i.name));
+  assert.ok(toluene);
+  const k = Number(toluene.name[0]);
+  const sub = toluene.name.slice(2, -'toluène'.length);
+  assert.equal(answerName(toluene, `${{ 2: 'o', 3: 'm', 4: 'p' }[k]}-${sub}toluène`).verdict, 'right');
+  const systematic = toluene.naming.also.find((a) => a.remark)?.name ?? '';
+  const a = answerName(toluene, systematic);
+  assert.equal(a.verdict, 'right');
+  assert.ok(a.lines.some((l) => /nom familier/.test(l)));
+  assert.ok(solution(toluene).steps[0].includes('toluène'));
+});
+
 test('the solution numbers the parent chain on the drawing and says how the name is built', () => {
   const s = solution(item);
   assert.deepEqual(s.doc.texts.map((t) => t.text), ['1', '2', '3', '4', '5', '6']);

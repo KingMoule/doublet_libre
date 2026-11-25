@@ -5,14 +5,17 @@ import { adjacency } from './graph.js';
 /**
  * Names a molecule by the rules of the course's textbook (Girouard, Marrano and Lapierre,
  * Chimie organique, 3e éd., ch. 2, section 2.5), even where IUPAC 2013 has changed them.
- * For now: alkanes, cycloalkanes, halogen compounds, alkenes and alkynes (2.5.1 to 2.5.5).
+ * For now: alkanes, cycloalkanes, halogen compounds, alkenes, alkynes, and benzene rings with alkyl,
+ * halogen and nitro groups (2.5.1 to 2.5.6).
  * Outside that, or where the textbook does not decide, it throws a NamingError, and the
  * exercise generator draws another molecule.
  * @typedef {import('./graph.js').Graph} Graph
  * @typedef {{name: string, locants: number[]}} Prefix
- * @typedef {{name: string, parent: number[], ring: boolean, prefixes: Prefix[], doubles: number[], triples: number[]}} Naming
+ * @typedef {{name: string, parent: number[], ring: boolean, prefixes: Prefix[], doubles: number[], triples: number[],
+ *   word: string, also: {name: string, remark?: 'retained'}[]}} Naming
  *   parent: the parent chain's atoms in numbering order; prefixes: in the order the name cites them;
- *   doubles, triples: the locants of its double and triple bonds
+ *   doubles, triples: the locants of its double and triple bonds; word: benzène or toluène for a benzene ring;
+ *   also: the other names accepted (o-, m-, p-; the systematic name of a toluène, with a remark)
  */
 
 export class NamingError extends Error {
@@ -48,12 +51,14 @@ const ascending = (/** @type {number[]} */ xs) => [...xs].sort((a, b) => a - b);
  * an a before it: buta-1,3-diène (2.5.4). The same for triple bonds; with both, -ène comes first and
  * loses its e before a single -yne (hex-1-én-5-yne), and the a comes only with several -ène (2.5.5).
  * @param {Prefix[]} prefixes in citation order @param {number} size carbons of the parent @param {boolean} ring
+ * A benzene ring is named by its word, benzène or toluène; on benzène a single prefix takes no locant (2.5.6).
  * @param {number[]} [doubles] locants of the double bonds @param {number[]} [triples] locants of the triple bonds
+ * @param {string} [word] the parent's name when the textbook gives one: benzène, toluène
  */
-export function spell(prefixes, size, ring, doubles = [], triples = []) {
+export function spell(prefixes, size, ring, doubles = [], triples = [], word = '') {
   const count = prefixes.reduce((s, p) => s + p.locants.length, 0);
   const saturated = !doubles.length && !triples.length;
-  const omit = size === 1 || (count === 1 && (size === 2 || (ring && saturated)));
+  const omit = size === 1 || (count === 1 && (size === 2 || (ring && saturated && word !== N.toluene)));
   const words = prefixes.map(({ name, locants }) => {
     const mult = N.multipliers[locants.length];
     const word = mult + (mult && N.italic.some((p) => name.startsWith(p)) ? '-' : '') + name; // di-tert-butyl
@@ -62,7 +67,7 @@ export function spell(prefixes, size, ring, doubles = [], triples = []) {
   const stem = (ring ? N.cyclo : '') + N.stems[size - 1];
   const part = (/** @type {number[]} */ at, /** @type {string} */ end) => `-${at.join(',')}-${N.multipliers[at.length]}${end}`;
   const one = doubles.length + triples.length === 1 && (ring || size <= 3); // éthène, propyne, cyclohexène
-  const parent = saturated ? stem + N.ane
+  const parent = word || saturated ? word || stem + N.ane
     : one ? stem + (doubles.length ? N.ene : N.yne)
       : !triples.length ? stem + (doubles.length > 1 ? N.euphonic : '') + part(doubles, N.ene)
         : !doubles.length ? stem + (triples.length > 1 ? N.euphonic : '') + part(triples, N.yne)
@@ -78,11 +83,21 @@ function skeleton(g) {
   const adj = adjacency(g);
   const el = (/** @type {number} */ i) => g.atoms[i].el;
   const carbons = g.atoms.map((_, i) => i).filter((i) => el(i) === 'C');
-  // Single bonds, and double or triple bonds between carbons (2.5.4, 2.5.5).
-  if (!carbons.length || g.bonds.some((b) => b.order !== 1 && !((b.order === 2 || b.order === 3) && el(b.a) === 'C' && el(b.b) === 'C'))) throw scope();
+  // Carbons bonded by single, double, triple or aromatic bonds (2.5.4 to 2.5.6); halogens and nitro groups on a carbon.
+  const nitro = (/** @type {number} */ i) => el(i) === 'N' && adj[i].size === 3
+    && [...adj[i]].filter(([j, o]) => el(j) === 'O' && o === 2 && adj[j].size === 1).length === 2 && [...adj[i]].some(([j, o]) => el(j) === 'C' && o === 1);
+  if (!carbons.length) throw scope();
+  for (const b of g.bonds) {
+    const cc = el(b.a) === 'C' && el(b.b) === 'C';
+    if (b.order !== 1 && !(cc && [1.5, 2, 3].includes(b.order)) && !(b.order === 2 && [el(b.a), el(b.b)].sort().join() === 'N,O')) throw scope();
+  }
   for (const [i, a] of g.atoms.entries()) {
-    if (a.charge !== 0 || (a.el !== 'C' && !HALOGENS.includes(a.el))) throw scope();
-    if (a.el !== 'C' && (adj[i].size !== 1 || el([...adj[i].keys()][0]) !== 'C')) throw scope();
+    const [first] = [...adj[i].keys()];
+    if (a.charge !== 0) throw scope();
+    if (HALOGENS.includes(a.el) && (adj[i].size !== 1 || el(first) !== 'C')) throw scope();
+    if (a.el === 'N' && !nitro(i)) throw scope();
+    if (a.el === 'O' && (adj[i].size !== 1 || !nitro(first))) throw scope();
+    if (!['C', 'N', 'O', ...HALOGENS].includes(a.el)) throw scope();
   }
   const reached = new Set([0]);
   for (const q = [0]; q.length;) for (const j of adj[/** @type {number} */ (q.pop())].keys()) if (!reached.has(j)) { reached.add(j); q.push(j); }
@@ -107,6 +122,9 @@ function skeleton(g) {
     if (ring.length !== core.size) throw scope(); // two rings
     if (g.bonds.some((b) => b.order === 3 && core.has(b.a) && core.has(b.b))) throw scope(); // no triple bond in a ring
   }
+  // Aromatic bonds only around a benzene ring, all six of them.
+  const aromatic = g.bonds.filter((b) => b.order === 1.5);
+  if (aromatic.length && (aromatic.length !== 6 || ring.length !== 6 || aromatic.some((b) => !core.has(b.a) || !core.has(b.b)))) throw scope();
 
   // Chains: every path through the carbons outside the ring.
   /** @type {number[][]} */
@@ -118,7 +136,8 @@ function skeleton(g) {
   for (const s of carbons) if (!core.has(s)) walk([s]);
   const longest = Math.max(0, ...chains.map((c) => c.length));
   const branches = (/** @type {number[]} */ c) => c.reduce((s, i) => s + [...adj[i].keys()].filter((j) => !c.includes(j)).length, 0);
-  const multiples = (/** @type {number[]} */ c) => g.bonds.filter((b) => b.order > 1 && c.includes(b.a) && c.includes(b.b)).length;
+  // Double and triple bonds; a benzene ring's aromatic bonds are not alkenes (2.5.6).
+  const multiples = (/** @type {number[]} */ c) => g.bonds.filter((b) => (b.order === 2 || b.order === 3) && c.includes(b.a) && c.includes(b.b)).length;
   return { adj, core, ring, chains, longest, branches, multiples };
 }
 
@@ -160,7 +179,7 @@ export function wrongNames(g) {
   const other = scored.slice(1).map((s) => {
     const same = firstDifference(s.multiples, best.multiples) === 0;
     return {
-      name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring, s.doubles, s.triples),
+      name: spell(cited.map((name) => ({ name, locants: s.of(name) })), n, right.ring, s.doubles, s.triples, right.word),
       rule: !s.valid ? 'ringDoubleBond'
         : same && firstDifference(s.doubles, best.doubles) > 0 ? 'eneFirst'
           : firstDifference(s.multiples, best.multiples) > 0 && firstDifference(s.all, best.all) < 0 ? 'unsaturationFirst'
@@ -173,10 +192,10 @@ export function wrongNames(g) {
   // Prefixes cited by locant, with di- or sec-/tert- counted; identical ones not grouped, or grouped without di-.
   const p = right.prefixes;
   const key = (/** @type {Prefix} */ x) => (N.multipliers[x.locants.length] + x.name).normalize('NFD').replace(/[̀-ͯ]/g, '');
-  for (const order of [[...p].sort((a, b) => a.locants[0] - b.locants[0]), [...p].sort((a, b) => (key(a) < key(b) ? -1 : 1))]) add(spell(order, n, right.ring, d, t), 'alphabetical');
-  add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring, d, t), 'multiplier');
+  for (const order of [[...p].sort((a, b) => a.locants[0] - b.locants[0]), [...p].sort((a, b) => (key(a) < key(b) ? -1 : 1))]) add(spell(order, n, right.ring, d, t, right.word), 'alphabetical');
+  add(spell(p.flatMap((x) => x.locants.map((l) => ({ name: x.name, locants: [l] }))), n, right.ring, d, t, right.word), 'multiplier');
   add(p.reduce((name, x) => name.replace(N.multipliers[x.locants.length] + x.name, x.name), right.name), 'multiplier');
-  if (p.length === 1 && p[0].locants.length === 1 && (n === 2 || (right.ring && !d.length && !t.length))) add(`1-${right.name}`, 'locant');
+  if (p.length === 1 && p[0].locants.length === 1 && (n === 2 || (right.ring && !d.length && !t.length && right.word !== N.toluene))) add(`1-${right.name}`, 'locant');
   // A multiple bond written with both its carbons, the a left out, -ène kept whole before a single -yne (2.5.4, 2.5.5).
   const one = d.length + t.length === 1 ? (d.length ? { at: d[0], end: N.ene } : { at: t[0], end: N.yne }) : null;
   if (one) add(right.name.replace(`-${one.at}-${one.end}`, `-${one.at},${one.at + 1}-${one.end}`), 'bothLocants');
@@ -201,30 +220,51 @@ export function wrongNames(g) {
  * @param {Graph} g @param {Map<number, number>[]} adj @param {number[]} parent @param {boolean} ring @param {Set<number>} core
  * @returns {Naming}
  */
-function numbered(g, adj, parent, ring, core) {
-  const { cited, scored } = numberings(g, adj, parent, ring, core);
+function numbered(g, adj, parent, ring, core, plain = false) {
+  const { cited, scored, word } = numberings(g, adj, parent, ring, core, plain);
   const best = scored[0];
   const prefixes = cited.map((name) => ({ name, locants: best.of(name) }));
-  return { name: spell(prefixes, parent.length, ring, best.doubles, best.triples), parent: best.order, ring, prefixes, doubles: best.doubles, triples: best.triples };
+  const name = spell(prefixes, parent.length, ring, best.doubles, best.triples, word);
+  // Also accepted on a benzene ring (2.5.6): o-, m-, p- for two substituents, and for a toluène its
+  // systematic name, with a remark since the textbook asks for the familiar one.
+  /** @type {{name: string, remark?: 'retained'}[]} */
+  const also = [];
+  const locs = prefixes.flatMap((p) => p.locants);
+  const relative = /** @type {Record<number, string[]>} */ (N.omp);
+  if (word === N.toluene) {
+    also.push({ name: numbered(g, adj, parent, ring, core, true).name, remark: 'retained' });
+    if (locs.length === 1) for (const a of relative[locs[0]] ?? []) also.push({ name: `${a}-${prefixes[0].name}${word}` });
+  }
+  if (word === N.benzene && locs.length === 2) {
+    const two = prefixes.length === 1 ? N.multipliers[2] + (N.italic.some((p) => prefixes[0].name.startsWith(p)) ? '-' : '') + prefixes[0].name : prefixes.map((p) => p.name).join('');
+    for (const a of relative[Math.max(...locs)] ?? []) also.push({ name: `${a}-${two}${word}` });
+  }
+  return { name, parent: best.order, ring, prefixes, doubles: best.doubles, triples: best.triples, word, also };
 }
 
 /**
  * Every numbering of a parent, the best first: the prefixes in citation order, and for each numbering
  * the locants of its double bonds, of all prefixes and of each one. The double bonds take the lowest
  * locants first (2.5.4); in a ring, the two carbons of a double bond must follow each other, so a
- * numbering that crosses one from 1 to the last carbon is not valid.
+ * numbering that crosses one from 1 to the last carbon is not valid. A benzene ring with a single methyl
+ * is toluène, its methyl at 1; with none, or several, it is benzène (2.5.6, unless `plain`: always benzène).
  * @param {Graph} g @param {Map<number, number>[]} adj @param {number[]} parent @param {boolean} ring @param {Set<number>} core
+ * @param {boolean} [plain]
  */
-function numberings(g, adj, parent, ring, core) {
+function numberings(g, adj, parent, ring, core, plain = false) {
   const inParent = new Set(parent);
-  const subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
+  let subs = parent.flatMap((p) => [...adj[p].keys()].filter((q) => !inParent.has(q)).map((q) => ({ at: p, name: prefix(g, adj, q, inParent, core) })));
+  const aromatic = ring && g.bonds.some((b) => b.order === 1.5 && inParent.has(b.a) && inParent.has(b.b));
+  const methyls = aromatic && !plain ? subs.filter((s) => s.name === N.stems[0] + N.yl) : [];
+  if (methyls.length === 1) subs = subs.filter((s) => s !== methyls[0]);
+  const word = !aromatic ? '' : methyls.length === 1 ? N.toluene : N.benzene;
   const cited = [...new Set(subs.map((s) => s.name))].sort(alphabetical);
   const bonds = (/** @type {number} */ o) => g.bonds.filter((b) => b.order === o && inParent.has(b.a) && inParent.has(b.b));
   const [double, triple] = [bonds(2), bonds(3)];
   const n = parent.length;
-  const orders = ring
+  const orders = (ring
     ? parent.flatMap((_, s) => [1, -1].map((dir) => parent.map((__, k) => parent[(((s + dir * k) % n) + n) % n])))
-    : [parent, [...parent].reverse()];
+    : [parent, [...parent].reverse()]).filter((o) => methyls.length !== 1 || o[0] === methyls[0].at);
   const scored = orders.map((order) => {
     const locant = (/** @type {number} */ at) => order.indexOf(at) + 1;
     const of = (/** @type {string} */ name) => ascending(subs.filter((s) => s.name === name).map((s) => locant(s.at)));
@@ -240,7 +280,7 @@ function numberings(g, adj, parent, ring, core) {
   // Double and triple bonds together first, then the double bonds on a tie (2.5.5), then the prefixes.
   scored.sort((a, b) => Number(b.valid) - Number(a.valid) || firstDifference(a.multiples, b.multiples) || firstDifference(a.doubles, b.doubles)
     || firstDifference(a.all, b.all) || firstDifference(a.cited, b.cited));
-  return { cited, scored };
+  return { cited, scored, word };
 }
 
 /**
@@ -251,15 +291,19 @@ function numberings(g, adj, parent, ring, core) {
  */
 function prefix(g, adj, root, parent, core) {
   const el = g.atoms[root].el;
+  if (el === 'N') return N.nitro;
   if (el !== 'C') return /** @type {Record<string, string>} */ (N.halo)[el];
   const branch = new Set([root]);
   for (const q = [root]; q.length;) for (const j of adj[/** @type {number} */ (q.pop())].keys()) if (!parent.has(j) && !branch.has(j)) { branch.add(j); q.push(j); }
   if ([...branch].some((i) => g.atoms[i].el !== 'C')) throw scope();
   // A double bond in a branch (vinyl, allyl…) or towards it is left out by the textbook (2.5.4).
-  if ([...branch].some((i) => [...adj[i].values()].some((o) => o !== 1))) throw scope();
-  if (core.has(root)) {
-    if (branch.size !== core.size) throw scope(); // a ring with its own branches
-    return N.cyclo + N.stems[core.size - 1] + N.yl;
+  if ([...branch].some((i) => [...adj[i].values()].some((o) => o !== 1 && o !== 1.5))) throw scope();
+  const aromatic = g.bonds.some((b) => b.order === 1.5);
+  if ([...branch].some((i) => core.has(i))) {
+    // A bare ring: cycloalkyl, or phényl for a benzene ring; benzyl is CH₂ and a phényl (tableau 2.6).
+    if (core.has(root) && branch.size === core.size) return aromatic ? N.phenyl : N.cyclo + N.stems[core.size - 1] + N.yl;
+    if (!core.has(root) && aromatic && branch.size === core.size + 1) return N.benzyl;
+    throw scope(); // a ring with its own branches
   }
   const degree = (/** @type {number} */ i) => [...adj[i].keys()].filter((j) => branch.has(j)).length;
   const size = branch.size;

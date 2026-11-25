@@ -3,6 +3,8 @@ import * as M from '../model.js';
 import { add, angleOf, fromAngle, nextBondAngle, ringAt, ringOnAtom, sub, zigzag } from '../geometry.js';
 import { fromSmiles, toGraph } from './graph.js';
 import { NamingError, nameOf, wrongNames } from './namer.js';
+import { attachGroup } from '../groups.js';
+import { fr } from '../i18n/fr.js';
 
 /**
  * Molecules for the nomenclature exercises, one level per section of the textbook. A molecule is
@@ -14,7 +16,7 @@ import { NamingError, nameOf, wrongNames } from './namer.js';
  */
 
 const L = 40;
-export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes'];
+export const LEVELS = ['alkanes', 'cycloalkanes', 'halogens', 'alkenes', 'alkynes', 'aromatics'];
 // Branches written from their first atom (tableau 2.6); methyl and ethyl come up most often.
 const ALKYLS = ['C', 'C', 'C', 'CC', 'CC', 'CCC', 'C(C)C', 'CCCC', 'CC(C)C', 'C(C)CC', 'C(C)(C)C'];
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -134,6 +136,19 @@ const BUILD = {
     }
     return d;
   },
+  // 2.5.6: a benzene ring with 1 to 3 groups: methyls (toluène) most often, other alkyls, halogens, nitro.
+  // The nitro is drawn as the Groupe tool draws it, charge-separated.
+  aromatics: (r) => {
+    const d = M.emptyDoc();
+    const ids = M.addRing(d, ringAt({ x: 0, y: 0 }, 6, L), true);
+    for (let k = int(r, 1, 3); k > 0; k--) {
+      const at = pick(r, free(d, ids));
+      const group = pick(r, ['C', 'C', 'C', 'CC', 'CCC', 'C(C)C', 'C(C)(C)C', 'F', 'Cl', 'Br', 'I', 'NO2', 'NO2']);
+      if (group === 'NO2') attachGroup(d, at, 'NO2', nextBondAngle(bondAngles(d, at)));
+      else attach(d, at, group);
+    }
+    return d;
+  },
   // 2.5.3: 1 to 3 halogens on a chain or a ring, with up to 2 branches.
   halogens: (r) => {
     const d = M.emptyDoc();
@@ -173,6 +188,8 @@ export function series(level, seed, count = 10) {
     try { naming = nameOf(g); } catch (e) { if (e instanceof NamingError) continue; throw e; }
     // Ten carbons at most in the parent, as in the textbook's exercises; and no molecule twice.
     if (naming.parent.length > 10 || items.some((i) => i.name === naming.name)) continue;
+    // Two methyls alone on a benzene ring: xylène or diméthylbenzène, the textbook does not settle it (2.5.6).
+    if (naming.word && naming.prefixes.length === 1 && naming.prefixes[0].name === fr.naming.stems[0] + fr.naming.yl && naming.prefixes[0].locants.length === 2) continue;
     const parentIds = naming.parent.map((i) => /** @type {string[]} */ (g.ids)[i]);
     items.push({ dir: items.length % 2 ? 'draw' : 'name', doc, name: naming.name, naming, wrong: wrongNames(g), parentIds });
   }

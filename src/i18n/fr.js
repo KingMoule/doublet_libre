@@ -302,6 +302,9 @@ export const fr = {
     cyclo: 'cyclo', ane: 'ane', yl: 'yl', ene: 'ène', yne: 'yne',
     // -ène before a single -yne: hex-1-én-5-yne (2.5.5).
     en: 'én',
+    // Benzene rings (2.5.6, tableaux 2.6 and 2.7): the parents, the prefixes, o-, m-, p- by the second locant.
+    benzene: 'benzène', toluene: 'toluène', nitro: 'nitro', phenyl: 'phényl', benzyl: 'benzyl',
+    omp: { 2: ['o', 'ortho'], 3: ['m', 'méta'], 4: ['p', 'para'] },
     // Before a multiplied -ène: buta-1,3-diène (2.5.4).
     euphonic: 'a',
     // What a wrong name breaks, by rule (namer.wrongNames), with the textbook section.
@@ -328,6 +331,7 @@ export const fr = {
       commas: 'Les chiffres se séparent par des virgules (2.5.1).',
       hyphens: 'Un trait d’union sépare les chiffres des lettres (2.5.1).',
       punctuation: 'Vérifiez les virgules et les traits d’union (2.5.1).',
+      retained: 'Juste selon l’IUPAC, mais le manuel attend le nom familier (2.5.6).',
     },
   },
   // The Exercice mode: a series of molecules to name or to draw (naming/exercise.js).
@@ -335,7 +339,7 @@ export const fr = {
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
-    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)' },
+    levels: { alkanes: 'Alcanes (2.5.1)', cycloalkanes: 'Cycloalcanes (2.5.2)', halogens: 'Halogénés (2.5.3)', alkenes: 'Alcènes (2.5.4)', alkynes: 'Alcynes (2.5.5)', aromatics: 'Benzéniques (2.5.6)' },
     /** @param {number} k @param {number} n */ question: (k, n) => `Question ${k} sur ${n}`,
     nameIt: 'Nommez cette molécule selon les règles de l’UICPA.',
     drawIt: 'Dessinez :',
@@ -367,6 +371,7 @@ export const fr = {
       /** @param {boolean} ring @param {number} n @param {string} name @param {boolean} unsaturated */
       parent: (ring, n, name, unsaturated) => (ring ? `Chaîne principale : le cycle de ${n} carbones, ${name}.`
         : `Chaîne principale : ${unsaturated ? 'celle qui porte les liaisons multiples' : 'la plus longue'}, ${n} carbone${n > 1 ? 's' : ''}, ${name}.`),
+      toluene: 'Le méthyle donne au benzène son nom familier, toluène : il prend l’indice 1.',
       /** @param {string} list */ prefixes: (list) => `Substituants et indices : ${list}.`,
       none: 'Aucun substituant.',
       /** @param {string} name @param {number[]} locants */ at: (name, locants) => `${name} en ${locants.join(' et ')}`,
