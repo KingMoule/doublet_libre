@@ -11,9 +11,11 @@ import { NamingError, nameOf } from '../naming/namer.js';
  * @typedef {import('../model.js').Doc} Doc
  * @typedef {import('../model.js').CurvedArrow} CurvedArrow
  * @typedef {import('../naming/graph.js').Graph} Graph
- * @typedef {{doc: Doc, roles: Record<string, string>}} Mechanism roles: what each expected curved arrow does (pi, leaving, attack)
- * @typedef {{code: string, step: number, role?: string, ids: string[], params: Record<string, string | number>}} Finding
- *   step: the state of a species (0: the reactants) or the step of an arrow (1: the first); ids: what to outline
+ * @typedef {{doc: Doc, roles: Record<string, string>, forms?: Record<string, [string, string]>}} Mechanism
+ *   roles: what each expected curved arrow does (pi, leaving, attack); forms: the bond an arrow drawn to an atom
+ *   forms, where it matters (π drawn to the H, as in the textbooks, forms the C–H bond on the carbon with more H)
+ * @typedef {{code: string, at: 'state' | 'step', step: number, role?: string, ids: string[], params: Record<string, string | number>}} Finding
+ *   at, step: a species' state (0: the reactants) or an arrow's step (1: the first); ids: what to outline
  * @typedef {{kind: 'pair' | 'bond' | 'atom' | 'new', atoms: string[]}} End where an arrow starts or ends, in the expected
  *   drawing's atoms: a lone pair on an atom, a bond, an atom, or a bond being formed
  * @typedef {{from: End, to: End}} Move
@@ -29,7 +31,7 @@ const HALOGENS = ['F', 'Cl', 'Br', 'I'];
 export function checkMechanism(doc, answer, steps) {
   const got = M.regions(doc), want = M.regions(answer.doc);
   const n = want.arrows.length;
-  if (got.arrows.length !== n) return [{ code: 'steps', step: 0, ids: got.arrows.map((r) => r.id), params: { n } }];
+  if (got.arrows.length !== n) return [{ code: 'steps', at: 'state', step: 0, ids: got.arrows.map((r) => r.id), params: { n } }];
   // The halogen of H–X, for the messages (HBr, Br⁻).
   const x = answer.doc.atoms.find((a) => HALOGENS.includes(a.element))?.element ?? '';
   /** @type {Finding[]} */
@@ -86,13 +88,13 @@ function species(doc, ids, ans, wantIds, k) {
   });
   for (const e of missing) {
     const d = drawn.find((x) => sameMolecule(skeleton(x.g), skeleton(e.g))) ?? drawn.find((x) => formula(x.g) === formula(e.g)) ?? drawn[0];
-    if (!d) { found.push({ code: 'missingSpecies', step: k, ids: [], params: { name: label(e.g) } }); continue; }
+    if (!d) { found.push({ code: 'missingSpecies', at: 'state', step: k, ids: [], params: { name: label(e.g) } }); continue; }
     drawn.splice(drawn.indexOf(d), 1);
     const code = sameMolecule(skeleton(d.g), skeleton(e.g)) ? (charge(d.g) === charge(e.g) ? 'cationPosition' : 'charge')
       : formula(d.g) === formula(e.g) ? 'antiMarkovnikov' : 'otherSpecies';
-    found.push({ code, step: k, ids: d.ids, params: { name: label(d.g) } });
+    found.push({ code, at: 'state', step: k, ids: d.ids, params: { name: label(d.g) } });
   }
-  for (const d of drawn) found.push({ code: 'extraSpecies', step: k, ids: d.ids, params: {} });
+  for (const d of drawn) found.push({ code: 'extraSpecies', at: 'state', step: k, ids: d.ids, params: {} });
   return { found, maps };
 }
 
@@ -108,7 +110,7 @@ function label(g) {
 // ---------- curved arrows ----------
 
 /** The atoms an anchor rests on. @param {Doc} doc @param {import('../model.js').Anchor} an */
-function atomsOf(doc, an) {
+export function atomsOf(doc, an) {
   if ('mark' in an) return [doc.marks.find((m) => m.id === an.mark)?.atom ?? ''];
   if ('bond' in an) { const b = M.findBond(doc, an.bond); return b ? [b.a, b.b] : []; }
   if ('atom' in an) return [an.atom];
@@ -178,7 +180,9 @@ function arrows(doc, ids, answer, wantIds, maps, step) {
   let best = null;
   for (const map of mappings(doc, answer.doc, maps)) {
     const id = (/** @type {string} */ a) => map.get(a) ?? `?${a}`;
-    const found = compare(drawn.map((c) => ({ c, move: { from: end(doc, c.from, id), to: end(doc, c.to, id) } })), expected.map((c) => ({ c, move: { from: end(answer.doc, c.from, (a) => a), to: end(answer.doc, c.to, (a) => a) } })), answer.roles, step);
+    const formed = (/** @type {CurvedArrow} */ c) => answer.forms?.[c.id];
+    const want = expected.map((c) => ({ c, move: { from: end(answer.doc, c.from, (a) => a), to: formed(c) ? { kind: /** @type {const} */ ('new'), atoms: [...formed(c) ?? []].sort() } : end(answer.doc, c.to, (a) => a) } }));
+    const found = compare(drawn.map((c) => ({ c, move: { from: end(doc, c.from, id), to: end(doc, c.to, id) } })), want, answer.roles, step);
     if (!best || found.length < best.length) best = found;
     if (!best.length) break;
   }
@@ -195,7 +199,7 @@ function compare(drawn, expected, roles, step) {
   /** @type {Finding[]} */
   const found = [];
   const left = [...drawn];
-  const finding = (/** @type {string} */ code, /** @type {CurvedArrow} */ e, /** @type {CurvedArrow} [s] */ s) => found.push({ code, step, role: roles[e.id], ids: s ? [s.id] : [], params: {} });
+  const finding = (/** @type {string} */ code, /** @type {CurvedArrow} */ e, /** @type {CurvedArrow} [s] */ s) => found.push({ code, at: 'step', step, role: roles[e.id], ids: s ? [s.id] : [], params: {} });
   const take = (/** @type {(d: {c: CurvedArrow, move: Move}) => boolean} */ f) => { const i = left.findIndex(f); return i < 0 ? null : left.splice(i, 1)[0]; };
   const unmatched = expected.filter((e) => {
     const s = take((d) => same(d.move.from, e.move.from) && fits(d.move.to, e.move));
@@ -213,6 +217,6 @@ function compare(drawn, expected, roles, step) {
     const r = take((d) => d.move.from.atoms.every((a) => e.move.to.atoms.includes(a)) && d.move.to.atoms.some((a) => e.move.from.atoms.includes(a)));
     finding(r ? 'reversed' : 'missingArrow', e.c, r?.c);
   }
-  for (const d of left) found.push({ code: 'extraArrow', step, ids: [d.c.id], params: {} });
+  for (const d of left) found.push({ code: 'extraArrow', at: 'step', step, ids: [d.c.id], params: {} });
   return found;
 }

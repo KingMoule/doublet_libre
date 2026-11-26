@@ -7,14 +7,13 @@ import { fr } from '../src/i18n/fr.js';
 
 /**
  * The expected mechanism: propène + HBr from the Modèles menu, three states between two reaction arrows.
- * Its π arrow is aimed at the C–H bond it forms on the CH₂ (Markovnikov), so that the other carbon can be told apart.
+ * Its π arrow is drawn to the H, and forms the C–H bond on the CH₂ (Markovnikov): that tells the other carbon apart.
  * Atoms: a1 CH₂, a2 CH, a3 CH₃, a4 H, a5 Br; a6 to a8 the carbocation (a7 C⁺), a9 Br⁻; a10 to a13 the product.
  */
 function propene() {
   const doc = TEMPLATES.electrophilicAddition();
   const [pi, leaving, attack] = doc.curvedArrows;
-  pi.to = { between: ['a1', 'a4'] };
-  return { doc, roles: { [pi.id]: 'pi', [leaving.id]: 'leaving', [attack.id]: 'attack' } };
+  return { doc, roles: { [pi.id]: 'pi', [leaving.id]: 'leaving', [attack.id]: 'attack' }, forms: { [pi.id]: /** @type {[string, string]} */ (['a1', 'a4']) } };
 }
 const answer = propene();
 /** A student's drawing: the right mechanism, changed by f. @param {(d: M.Doc) => void} [f] */
@@ -28,8 +27,9 @@ test('the right mechanism has nothing to say, wherever it is drawn', () => {
   assert.deepEqual(found(drawn((d) => M.moveObjects(d, new Set([...d.atoms, ...d.reactionArrows, ...d.texts].map((o) => o.id)), 40, 80))), []);
 });
 
-test('an arrow from π to the H stands for the C–H bond it forms, as drawn in the Modèles menu', () => {
-  assert.deepEqual(found(TEMPLATES.electrophilicAddition()), []);
+test('an arrow from π to the H stands for the C–H bond it forms, and the other way round', () => {
+  assert.deepEqual(found(drawn((d) => { arrow(d, 0).to = { between: ['a1', 'a4'] }; })), []);
+  assert.deepEqual(found(drawn((d) => { arrow(d, 2).to = { between: ['a9', 'a7'] }; })), []);
 });
 
 test('a missing arrow is named by what it does', () => {

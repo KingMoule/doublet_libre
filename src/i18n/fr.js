@@ -362,6 +362,18 @@ export const fr = {
   // Mechanism exercises (mechanism/check.js): what is wrong, by finding; x is the halogen of H–X, name a species'.
   // A missing or misplaced arrow is told by what it does: pi (π to H), leaving (H–X to X), attack (X⁻ to C⁺).
   mechanism: {
+    wrong: 'Pas tout à fait',
+    /** @param {number} k */ step: (k) => `Étape ${k}`,
+    /** @param {'reactants' | 'intermediate' | 'product'} s */ state: (s) => ({ reactants: 'Réactifs', intermediate: 'Intermédiaire', product: 'Produit' }[s]),
+    solution: {
+      cations: { primary: 'primaire', secondary: 'secondaire', tertiary: 'tertiaire' },
+      /** @param {string} x @param {string} cation */
+      first: (x, cation) => `Étape 1 : le doublet π attaque le H de H${x} ; la liaison H–${x} se rompt et ses électrons partent avec le ${x}. Le H se lie au carbone de la double liaison qui porte le plus de H : il se forme le carbocation ${cation}, le plus substitué possible (Markovnikov).`,
+      /** @param {string} x @param {string} product */
+      second: (x, product) => `Étape 2 : un doublet de ${x}⁻ attaque le carbocation. Produit : ${product}.`,
+      /** @param {string} x @param {string} product */
+      product: (x, product) => `Le H se lie au carbone de la double liaison qui porte le plus de H, et le ${x} au carbone le plus substitué (Markovnikov). Produit : ${product}.`,
+    },
     findings: {
       /** @param {{n: number}} p */ steps: ({ n }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''} : une flèche de réaction par étape.`,
       /** @param {{name: string}} p */ missingSpecies: ({ name }) => `Il manque ${name || 'une espèce'} : ce qui se forme à une étape reste dessiné jusqu’à ce qu’il réagisse.`,

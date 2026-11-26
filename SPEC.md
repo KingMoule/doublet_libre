@@ -97,6 +97,8 @@ Le menu Exercice ouvre aussi Mécanismes : des mécanismes à compléter. Preuve
 | Complet | Les réactifs et les flèches de réaction | Tout |
 | Produit | Les réactifs et une flèche de réaction | Le produit majeur |
 
+**Générateur** (`src/mechanism/generate.js`) : les alcènes viennent du générateur de nomenclature, déjà dessinés et nommés ; il écarte ceux dont le H pourrait aller sur l'un ou l'autre carbone (sauf si les deux donnent le même produit) et ceux dont le carbocation se réarrangerait. Réactif : HCl, HBr ou HI. Niveaux : Progressif (3 Flèches, 3 Structures, 2 Complet, 2 Produit) ou un style seul.
+
 **Correction** (`src/mechanism/check.js`, pur) : tout le dessin de l'étudiant, donné et ajouté, se compare au mécanisme attendu, état par état (découpés par les flèches de réaction), sur les graphes comme en nomenclature.
 - Une flèche courbe se lit par les électrons qu'elle déplace (n'importe quel doublet d'un atome, ou une liaison) et par où ils vont. Une flèche vers un atome vaut la flèche vers la liaison qu'elle forme avec l'atome de départ (π vers le H, ou vers la liaison C–H en formation).
 - Une molécule symétrique s'apparie de toutes les façons possibles (but-2-ène) ; on garde celle qui laisse le moins à dire.
