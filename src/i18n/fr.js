@@ -359,6 +359,33 @@ export const fr = {
       retained: 'Juste selon l’IUPAC, mais le manuel attend le nom familier (2.5.6).',
     },
   },
+  // Mechanism exercises (mechanism/check.js): what is wrong, by finding; x is the halogen of H–X, name a species'.
+  // A missing or misplaced arrow is told by what it does: pi (π to H), leaving (H–X to X), attack (X⁻ to C⁺).
+  mechanism: {
+    findings: {
+      /** @param {{n: number}} p */ steps: ({ n }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''} : une flèche de réaction par étape.`,
+      /** @param {{name: string}} p */ missingSpecies: ({ name }) => `Il manque ${name || 'une espèce'} : ce qui se forme à une étape reste dessiné jusqu’à ce qu’il réagisse.`,
+      extraSpecies: () => 'Une espèce de trop : chacune vient de l’étape d’avant.',
+      cationPosition: () => 'Le H se lie au carbone de la double liaison qui porte le plus de H : le carbocation le plus substitué, le plus stable, se forme (Markovnikov).',
+      /** @param {{x: string}} p */ charge: ({ x }) => `Vérifiez les charges : le carbone qui perd la liaison π porte une charge +, et l’ion ${x}⁻ une charge −.`,
+      /** @param {{name: string, x: string}} p */ antiMarkovnikov: ({ name, x }) => `${name ? `Votre produit : ${name}. ` : ''}Le ${x} se lie au carbone du carbocation, le plus substitué (Markovnikov).`,
+      /** @param {{name: string}} p */ otherSpecies: ({ name }) => `${name ? `Votre dessin : ${name}. ` : ''}Ce n’est pas l’espèce attendue ici.`,
+      missingArrow: {
+        /** @param {{x: string}} p */ pi: ({ x }) => `Il manque la flèche du doublet π vers le H de H${x}.`,
+        /** @param {{x: string}} p */ leaving: ({ x }) => `Il manque la flèche de la liaison H–${x} vers le ${x} : sans elle, le H aurait deux liaisons.`,
+        /** @param {{x: string}} p */ attack: ({ x }) => `Il manque la flèche d’un doublet de ${x}⁻ vers le carbocation.`,
+      },
+      wrongTarget: {
+        /** @param {{x: string}} p */ pi: ({ x }) => `Le doublet π attaque le H de H${x}, pauvre en électrons (δ+), pas le ${x}.`,
+        /** @param {{x: string}} p */ leaving: ({ x }) => `Les électrons de la liaison H–${x} partent avec le ${x}, plus électronégatif.`,
+        /** @param {{x: string}} p */ attack: ({ x }) => `Le ${x}⁻ attaque le carbone qui porte la charge +.`,
+      },
+      reversed: () => 'Une flèche part des électrons (un doublet ou une liaison) et pointe vers l’atome qui les reçoit.',
+      markovnikovArrow: () => 'Le H se lie au carbone de la double liaison qui porte le plus de H (Markovnikov).',
+      halfArrow: () => 'Deux électrons se déplacent : une flèche à pointe complète, pas une demi-flèche.',
+      extraArrow: () => 'Une flèche de trop à cette étape.',
+    },
+  },
   // The Exercice mode: a series of molecules to name or to draw (naming/exercise.js).
   exercise: {
     title: 'Exercice de nomenclature',

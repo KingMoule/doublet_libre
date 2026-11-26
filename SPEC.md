@@ -17,6 +17,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 | Interface | Ce que l'outil va dessiner se choisit dans la petite fenêtre à côté de l'outil ; ce qui est sélectionné se règle dans le panneau ; sans sélection, le panneau explique l'outil ; la barre du bas ne sert qu'aux messages. Barre du haut : sélecteur Mécanisme | Montage | Exercice, annuler\| Montage, annuler, Modèles, Fichier, et Copier l'image en bouton principal. Maquettes : https://claude.ai/artifact/8dfrzyt2TVefRm6GXTwstX |
 | Montages de laboratoire | Mode « Montage » séparé (sélecteur Mécanisme \| Montage dans la barre du haut) avec ses outils par famille de verrerie ; même document que le mécanisme. Pièces aimantées aux rodages ; un montage assemblé se déplace d'un bloc. Une famille garde son icône (une pièce haute serait illisible en 22 pixels) |
 | Exercices de nomenclature | Troisième choix du sélecteur (Mécanisme \| Montage \| Exercice) ; molécules générées, nommées selon le manuel du cours ; voir la section « Exercices de nomenclature » |
+| Exercices de mécanisme | Le bouton Exercice ouvre un menu : Nomenclature, Mécanismes. Un numéro est un mécanisme complet dont des parties sont cachées ; voir la section « Exercices de mécanisme » |
 | Technique | Site statique sans build ni dépendance ; JavaScript en modules avec JSDoc `// @ts-check` ; tests `node --test` |
 
 ## Ce que l'app dessine
@@ -83,6 +84,28 @@ Ces critères sont des listes ordonnées : une famille y ajoute des entrées et 
 
 **Hors programme** : la stéréo (E/Z, R/S : chapitre 3) ; les ramifications complexes entre parenthèses (rubriques Enrichissement) ; les ramifications insaturées (vinyle, allyle, éthynyle) ; les éthers cycliques ; les fonctions de l'annexe C en ligne (acides, esters, amides, amines, nitriles, halogénures d'acide, thiols), sauf comme noms familiers du benzène (aniline, acide benzoïque, benzonitrile).
 
+## Exercices de mécanisme
+
+Le menu Exercice ouvre aussi Mécanismes : des mécanismes à compléter. Preuve de concept : l'addition électrophile de HX (HCl, HBr, HI) sur les alcènes, sans réarrangement.
+
+**Un numéro** est un mécanisme complet dont des parties sont cachées : les états (réactifs, intermédiaire, produit) entre des flèches de réaction, et les flèches courbes de chaque étape, chacune avec son rôle (π vers le H, H–X vers X, X⁻ vers C⁺). Le style dit ce qui est donné :
+
+| Style | Donné | Demandé |
+|---|---|---|
+| Flèches | Tous les états | Les flèches courbes de chaque étape |
+| Structures | Les réactifs et les flèches de l'étape 1 | L'intermédiaire (C⁺ et X⁻), puis le produit |
+| Complet | Les réactifs et les flèches de réaction | Tout |
+| Produit | Les réactifs et une flèche de réaction | Le produit majeur |
+
+**Correction** (`src/mechanism/check.js`, pur) : tout le dessin de l'étudiant, donné et ajouté, se compare au mécanisme attendu, état par état (découpés par les flèches de réaction), sur les graphes comme en nomenclature.
+- Une flèche courbe se lit par les électrons qu'elle déplace (n'importe quel doublet d'un atome, ou une liaison) et par où ils vont. Une flèche vers un atome vaut la flèche vers la liaison qu'elle forme avec l'atome de départ (π vers le H, ou vers la liaison C–H en formation).
+- Une molécule symétrique s'apparie de toutes les façons possibles (but-2-ène) ; on garde celle qui laisse le moins à dire.
+- Le premier écart est montré, avec son étape, et entouré sur le dessin.
+
+**Retours** : espèce manquante ou de trop ; + sur le mauvais carbone (Markovnikov) ; charge oubliée ; produit anti-Markovnikov ou autre espèce, nommés par le nommeur ; flèche manquante ou mal dirigée, dite selon son rôle ; flèche à l'envers ; H sur le mauvais carbone de la double liaison ; demi-flèche ; flèche de trop.
+
+**À confirmer avec le manuel** : la flèche π vers le H ou vers la liaison C–H en formation (les deux comptent) ; les doublets de X⁻ (exigés, puisqu'une flèche part d'un doublet) ; δ+ et δ− ignorés ; X⁻ oublié dans l'intermédiaire compté faux ; étiquettes « lente » et « rapide » non vérifiées.
+
 ## Phases
 
 Chaque phase se termine par une vérification qu'on peut lancer.
@@ -98,7 +121,8 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 6 | Vérifications pédagogiques (liste ci-dessus) | Une erreur d'étudiant typique par test ; aucune sur la SN2 correcte | faite |
 | 7 | Outil Groupe (Ph, OMe, OEt, CO₂H, CHO, CN, NO₂, OAc, Boc, dessinés en entier) ; menu Modèles : SN2, SN1, E2, E1, addition électrophile, addition nucléophile au carbonyle (les cycles restent à l'outil Cycle) | Chaque groupe et chaque modèle s'insère sans avertissement | faite |
 | 8 | Tablette et stylet : pincer pour zoomer, deux doigts pour déplacer la vue, outils à toucher qui agissent au relâchement, cibles agrandies au doigt, élément d'un atome changeable dans le panneau | Test du pincement ; scénario tactile : pincement sans effet de bord, dessin et changement d'élément au doigt | faite |
-| 9 | Exercices de mécanisme, mode présentation, import SMILES/MOL, interface en anglais (un chantier à la fois) | — | plus tard |
+| 9 | Mode présentation, import SMILES/MOL, interface en anglais (un chantier à la fois) | — | plus tard |
 | 10 | Montages de laboratoire : mode Montage, 37 pièces en cinq familles (synthèse, distillation, séparation avec le pistolet à air chaud de la filtration à chaud, verrerie, chauffage et support avec le bec Bunsen, son trépied et l'anneau de fer), rodages aimantés, modèles reflux, distillation simple et Dean-Stark | Tests d'emboîtement ; reflux monté au doigt, déplacé d'un bloc, détaché, tourné | faite |
 | 11 | Interface revue : barre du haut, outils en groupes, panneau de l'outil et de la sélection, zoom et barre du bas sur une ligne, petites fenêtres de Doublet, Charge, δ, Flèche courbe et Flèche de réaction | `edges.mjs` sur six tailles d'écran ; scénarios au doigt, sans Maj ; reflux monté en suivant les étapes du panneau | faite |
 | 12 | Exercices de nomenclature (voir la section) : mode Exercice, d'abord alcanes, cycloalcanes et halogénés de bout en bout (graphe, nommeur, générateur, interface), puis une famille du manuel par PR, jusqu'aux cétones, et le Mélange | Par famille : molécules et noms en SMILES dans les tests, une erreur typique reconnue par règle ; une série faite dans l'app dans les deux sens | faite |
+| 13 | Exercices de mécanisme (voir la section), preuve de concept sur l'addition de HX aux alcènes : correction, puis générateur et quatre styles de numéros, puis menu Exercice et interface | Chaque erreur typique donne son retour ; chaque mécanisme généré passe sa propre correction ; un numéro de chaque style fait dans l'app | en cours |
