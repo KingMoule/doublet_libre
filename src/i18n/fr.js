@@ -374,6 +374,8 @@ export const fr = {
       product: 'Dessinez le produit majeur après la flèche de réaction.',
     },
     help: 'Une flèche courbe part d’un doublet ou d’une liaison : l’outil Doublet en ajoute un sur un ion.',
+    // Over the reaction arrows, as in the textbook (figure 7.6).
+    slow: 'Étape lente', fast: 'Étape rapide',
     restart: 'Recommencer',
     wrong: 'Pas tout à fait',
     /** @param {number} k */ step: (k) => `Étape ${k}`,
@@ -381,9 +383,9 @@ export const fr = {
     solution: {
       cations: { primary: 'primaire', secondary: 'secondaire', tertiary: 'tertiaire' },
       /** @param {string} x @param {string} cation */
-      first: (x, cation) => `Étape 1 : le doublet π attaque le H de H${x} ; la liaison H–${x} se rompt et ses électrons partent avec le ${x}. Le H se lie au carbone de la double liaison qui porte le plus de H : il se forme le carbocation ${cation}, le plus substitué possible (Markovnikov).`,
+      first: (x, cation) => `Étape 1, lente : le doublet π de l’alcène (nucléophile) attaque le H de H${x} (électrophile, δ+) ; la liaison H–${x} se rompt et ses électrons partent avec le ${x}. Le H se lie au carbone de la double liaison qui porte le plus de H : il se forme le carbocation ${cation}, le plus substitué possible (Markovnikov).`,
       /** @param {string} x @param {string} product */
-      second: (x, product) => `Étape 2 : un doublet de ${x}⁻ attaque le carbocation. Produit : ${product}.`,
+      second: (x, product) => `Étape 2, rapide : un doublet de ${x}⁻ (nucléophile) attaque le carbocation (électrophile). Produit : ${product}.`,
       /** @param {string} x @param {string} product */
       product: (x, product) => `Le H se lie au carbone de la double liaison qui porte le plus de H, et le ${x} au carbone le plus substitué (Markovnikov). Produit : ${product}.`,
     },
