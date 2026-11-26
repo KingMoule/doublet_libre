@@ -84,6 +84,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .top .seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg); border: 1px solid var(--rule); border-radius: 9px; }
 .top .seg button { display: inline-flex; align-items: center; gap: 0.35rem; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-weight: 500; }
 .top .seg button[aria-pressed="true"] { background: var(--surface); color: var(--accent); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 0.18); }
+/* The Exercice menu sits in the frame like a mode, raised while an exercise is shown; its choices read like any menu's. */
+.top .seg .menu summary { display: inline-flex; align-items: center; gap: 0.35rem; border: 0; color: var(--muted); font-weight: 500; }
+.top .seg .menu.on summary { background: var(--surface); color: var(--accent); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 0.18); }
+.top .seg .menu > div button { color: inherit; font-weight: inherit; }
 .menu { position: relative; }
 .menu summary { list-style: none; cursor: pointer; border: 1px solid var(--rule); border-radius: 6px; padding: 0.25rem 0.65rem; }
 .menu summary::-webkit-details-marker { display: none; }
@@ -254,6 +258,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .tools { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--rule); }
   .tool { width: 52px; }
   .top .sep { display: none; }
+  /* The modes by their names only: with the Exercice menu's ▾, their icons would push the frame off a phone's screen. */
+  .top .seg svg { display: none; }
   /* Tools in a row on a phone: no groups, so that they wrap in as few rows as before. */
   .tool-group { display: contents; }
   .panel { border-left: 0; border-top: 1px solid var(--rule); }

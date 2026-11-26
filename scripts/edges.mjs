@@ -1,7 +1,8 @@
 // Checks, on tablet and short screens and in each mode, that every tool's option window and every top-bar menu
 // stays inside the screen without hiding its button, that every tool and the zoom buttons stay reachable,
 // that every help text fits in the one line of the status bar, that no selection's panel squashes a field,
-// and that the exercise's answer field has room for a name.
+// that the nomenclature exercise's answer field has room for a name, and that a mechanism exercise has its
+// curved arrow and its Recommencer button.
 // Usage: node scripts/edges.mjs   (needs Edge or Chrome, see browser.mjs; exits 1 on a problem)
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -19,10 +20,26 @@ const CHECK = `(async () => {
   const inScreen = (r) => r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const problems = [];
-  // Each mode: drawing a mechanism, a lab set-up, then an exercise, each with its own tools.
-  for (const mode of ['mécanisme', 'montage', 'exercice']) {
+  // Each mode: drawing a mechanism, a lab set-up, then the two exercises of the Exercice menu, each with its own tools.
+  for (const mode of ['mécanisme', 'montage', 'mécanismes', 'nomenclature']) {
     if (mode === 'montage') document.querySelector('[data-mode="setup"]').click();
-    if (mode === 'exercice') document.querySelector('[data-mode="exercise"]').click();
+    if (mode === 'mécanismes') document.querySelector('[data-exercise="mechanism"]').click();
+    if (mode === 'nomenclature') document.querySelector('[data-exercise="naming"]').click();
+    // A mechanism to complete needs the curved arrow, and a way back to what was given.
+    if (mode === 'mécanismes') {
+      if (!document.querySelector('.tool[data-tool="curved"]:not([hidden])')) problems.push('flèche courbe absente des exercices de mécanisme');
+      const again = document.querySelector('[data-ex="clear"]');
+      again?.scrollIntoView({ block: 'nearest' });
+      if (!again || !inScreen(again.getBoundingClientRect())) problems.push('bouton Recommencer inaccessible');
+      // The product to draw: the canvas leaves room after the reaction arrow, not only what is given.
+      const level = document.querySelector('#ex-level');
+      level.value = 'product';
+      level.dispatchEvent(new Event('change', { bubbles: true }));
+      await wait(50);
+      const canvas = document.querySelector('#canvas').getBoundingClientRect();
+      const arrow = [...document.querySelectorAll('#canvas [data-kind="rxn"]')].at(-1).getBoundingClientRect();
+      if (canvas.right - arrow.right < 80) problems.push('pas de place pour dessiner le produit');
+    }
     for (const b of document.querySelectorAll('.tool:not([hidden])')) {
       b.scrollIntoView({ block: 'nearest' });
       const r = b.getBoundingClientRect(), rail = document.querySelector('.tools').getBoundingClientRect();
@@ -44,6 +61,8 @@ const CHECK = `(async () => {
   zoom.scrollIntoView({ block: 'nearest' });
   if (!inScreen(zoom.getBoundingClientRect())) problems.push('boutons de zoom hors écran');
   for (const d of document.querySelectorAll('.top details')) {
+    // As a student would: its button in view first (on a phone the page scrolls), then open.
+    d.querySelector('summary').scrollIntoView({ block: 'nearest' });
     d.open = true;
     await wait(20);
     const m = d.querySelector(':scope > div').getBoundingClientRect();
@@ -107,8 +126,9 @@ try {
     await cdp('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
     await cdp('Page.navigate', { url: `http://localhost:${APP_PORT}/` });
     await waitFor(cdp, `!!document.querySelector('#flyout')`);
-    const { result } = await cdp('Runtime.evaluate', { expression: CHECK, awaitPromise: true, returnByValue: true });
-    const problems = /** @type {string[]} */ (result.value);
+    const { result, exceptionDetails } = await cdp('Runtime.evaluate', { expression: CHECK, awaitPromise: true, returnByValue: true });
+    // A check that throws in the page found nothing: that is a problem too, never an « ok ».
+    const problems = /** @type {string[]} */ (exceptionDetails ? [`erreur dans la page : ${exceptionDetails.exception?.description?.split('\n')[0] ?? exceptionDetails.text}`] : result.value);
     failed ||= problems.length > 0;
     console.log(`${width} × ${height} : ${problems.length ? problems.join(' ; ') : 'ok'}`);
   }
