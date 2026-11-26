@@ -115,6 +115,20 @@ export function component(doc, atomId) {
 }
 
 /**
+ * The states of a reaction, left to right: the atoms between neighbouring reaction arrows, by x.
+ * n arrows give n + 1 states; an atom under an arrow belongs to none.
+ * @param {Doc} doc @returns {{arrows: ReactionArrow[], states: string[][]}}
+ */
+export function regions(doc) {
+  const arrows = [...doc.reactionArrows].sort((p, q) => Math.min(p.x1, p.x2) - Math.min(q.x1, q.x2));
+  const edges = [-Infinity, ...arrows.flatMap((r) => [Math.min(r.x1, r.x2), Math.max(r.x1, r.x2)]), Infinity];
+  /** @type {string[][]} */
+  const states = [];
+  for (let k = 0; k <= arrows.length; k++) states.push(doc.atoms.filter((a) => a.x > edges[2 * k] && a.x < edges[2 * k + 1]).map((a) => a.id));
+  return { arrows, states };
+}
+
+/**
  * The atom whose midpoint with atomId lies within tol of p: the partner of a bond that an
  * arrow dropped there would form.
  * @param {Doc} doc @param {string} atomId @param {{x: number, y: number}} p @param {number} [tol]

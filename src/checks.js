@@ -1,6 +1,6 @@
 // @ts-check
 import { ELEMENTS } from './chem.js';
-import { bondOrderSum, hydrogenCount, component, findAtom } from './model.js';
+import { bondOrderSum, hydrogenCount, component, findAtom, regions } from './model.js';
 
 /**
  * Pedagogical checks, re-run after every change. They never block: each returns a warning
@@ -70,15 +70,11 @@ function mixedCharges(doc) {
 function reactionSides(doc) {
   /** @type {Warning[]} */
   const out = [];
-  const arrows = doc.reactionArrows
-    .map((r) => ({ r, l: Math.min(r.x1, r.x2), rt: Math.max(r.x1, r.x2) }))
-    .sort((p, q) => p.l - q.l);
-  arrows.forEach(({ r, l, rt }, i) => {
+  const { arrows, states } = regions(doc);
+  arrows.forEach((r, i) => {
     if (r.kind === 'retro') return;
-    const lo = i > 0 ? arrows[i - 1].rt : -Infinity;
-    const hi = i + 1 < arrows.length ? arrows[i + 1].l : Infinity;
-    const left = doc.atoms.filter((a) => a.x > lo && a.x < l);
-    const right = doc.atoms.filter((a) => a.x > rt && a.x < hi);
+    const atoms = (/** @type {string[]} */ ids) => ids.map((id) => /** @type {import('./model.js').Atom} */ (findAtom(doc, id)));
+    const [left, right] = [atoms(states[i]), atoms(states[i + 1])];
     if (!left.length || !right.length) return;
     const charge = (/** @type {typeof left} */ atoms) => atoms.reduce((s, a) => s + a.charge, 0);
     if (charge(left) !== charge(right)) out.push({ code: 'charge', ids: [r.id], params: { left: charge(left), right: charge(right) } });

@@ -110,19 +110,23 @@ export function fromSmiles(s) {
   return normalize(g);
 }
 
+/** Whether two graphs are the same molecule. @param {Graph} g1 @param {Graph} g2 */
+export const sameMolecule = (g1, g2) => !isomorphisms(g1, g2).next().done;
+
 /**
- * Whether two graphs are the same molecule: a one-to-one match of their atoms keeping elements,
- * charges and bonds. The molecules of an exercise are small, so a plain search is enough.
- * @param {Graph} g1 @param {Graph} g2
+ * Every one-to-one match of two graphs' atoms keeping elements, charges and bonds: map[i] is the atom of
+ * g2 for atom i of g1. A symmetric molecule has several (but-2-ène: its two halves swapped). The
+ * molecules of an exercise are small, so a plain search is enough.
+ * @param {Graph} g1 @param {Graph} g2 @returns {Generator<number[]>}
  */
-export function sameMolecule(g1, g2) {
+export function* isomorphisms(g1, g2) {
   const n = g1.atoms.length;
-  if (n !== g2.atoms.length || g1.bonds.length !== g2.bonds.length) return false;
+  if (n !== g2.atoms.length || g1.bonds.length !== g2.bonds.length) return;
   const a1 = adjacency(g1), a2 = adjacency(g2);
   const sig = (/** @type {Graph} */ g, /** @type {Map<number, number>[]} */ adj, /** @type {number} */ i) =>
     `${g.atoms[i].el}${g.atoms[i].charge}:${[...adj[i].values()].sort().join(',')}`;
   const s1 = g1.atoms.map((_, i) => sig(g1, a1, i)), s2 = g2.atoms.map((_, i) => sig(g2, a2, i));
-  if ([...s1].sort().join(' ') !== [...s2].sort().join(' ')) return false;
+  if ([...s1].sort().join(' ') !== [...s2].sort().join(' ')) return;
   // Match atoms in breadth-first order, so each new atom has a matched neighbour to agree with.
   const order = [], seen = new Set();
   for (let s = 0; s < n; s++) {
@@ -135,17 +139,17 @@ export function sameMolecule(g1, g2) {
     }
   }
   const map = new Array(n).fill(-1), used = new Array(n).fill(false);
-  const match = (/** @type {number} */ k) => {
-    if (k === n) return true;
+  /** @param {number} k @returns {Generator<number[]>} */
+  function* match(k) {
+    if (k === n) { yield [...map]; return; }
     const x = order[k];
     for (let y = 0; y < n; y++) {
       if (used[y] || s2[y] !== s1[x]) continue;
       if ([...a1[x]].some(([z, o]) => map[z] >= 0 && a2[y].get(map[z]) !== o)) continue;
       map[x] = y; used[y] = true;
-      if (match(k + 1)) return true;
+      yield* match(k + 1);
       map[x] = -1; used[y] = false;
     }
-    return false;
-  };
-  return match(0);
+  }
+  yield* match(0);
 }

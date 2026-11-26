@@ -12,7 +12,8 @@ import { fr } from './i18n/fr.js';
  * @typedef {import('./model.js').Anchor} Anchor
  */
 
-function builder() {
+/** Draws a mechanism step by step; curved arrows are added last, with their default bend (also for mechanism/). */
+export function builder() {
   const d = emptyDoc();
   /** @type {[Anchor, Anchor, number | undefined][]} */
   const arrows = [];
