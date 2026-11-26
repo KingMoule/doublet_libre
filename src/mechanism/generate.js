@@ -6,6 +6,7 @@ import { atomsOf } from './check.js';
 import { series as namingSeries } from '../naming/generate.js';
 import { sameMolecule, toGraph } from '../naming/graph.js';
 import { nameOf } from '../naming/namer.js';
+import { fr } from '../i18n/fr.js';
 
 /**
  * Mechanism exercises (SPEC, Exercices de mécanisme): HX added to an alkene, in two steps through the
@@ -71,7 +72,7 @@ function draw(d, a, x, short) {
     const bonds = new Map(d.bonds.map((bd) => [bd.id, b.bond(/** @type {{id: string}} */ (ids.get(bd.a)), /** @type {{id: string}} */ (ids.get(bd.b)), state ? 1 : bd.order)]));
     return { atom: (/** @type {string} */ id) => /** @type {{id: string}} */ (ids.get(id)).id, bonds };
   };
-  const step = (/** @type {number} */ left) => { b.step(left, left + ARROW); return left + ARROW + GAP; };
+  const step = (/** @type {number} */ left, label = '') => { b.step(left, left + ARROW, label); return left + ARROW + GAP; };
   // Reactants: the alkene + H–X.
   const alkene = copy(0, 0);
   let left = maxX - minX + GAP;
@@ -79,7 +80,8 @@ function draw(d, a, x, short) {
   const h = b.atom('H', M.r2(left + GAP), 0);
   const hal = b.atom(x, M.r2(left + GAP + L), 0, 0, 3);
   const hx = b.bond(h, hal);
-  left = step(left + 2 * GAP + L);
+  // Over the arrows, as in the textbook (figure 7.6): the carbocation forms slowly, then reacts fast.
+  left = step(left + 2 * GAP + L, short ? '' : fr.mechanism.slow);
   /** @type {[string, string] | null} */
   let ch = null; // the C–H bond the π arrow forms
   if (!short) {
@@ -88,7 +90,7 @@ function draw(d, a, x, short) {
     left += maxX - minX + GAP;
     b.plus(left);
     const ion = b.atom(x, M.r2(left + GAP), 0, -1, 4);
-    left = step(left + 2 * GAP);
+    left = step(left + 2 * GAP, fr.mechanism.fast);
     b.arrow({ bond: /** @type {string} */ (alkene.bonds.get(a.pi.id)) }, { atom: h.id });
     b.arrow({ bond: hx }, { atom: hal.id });
     b.arrow({ mark: ion.lp[3] }, { atom: cation.atom(a.c.id) });
@@ -99,6 +101,10 @@ function draw(d, a, x, short) {
   const product = copy(left + shift, 2);
   b.bond({ id: product.atom(a.c.id) }, b.atom(x, M.r2(a.x.x - minX + left + shift), M.r2(a.x.y - midY), 0, 3));
   const doc = b.done();
+  // H–X polarised, δ+ on the H that the π bond attacks; below, as in the textbook (figure 7.6), clear of the
+  // arrow curling above from H–X to X. The check does not ask for them.
+  M.addMark(doc, h.id, 'partial', { value: 'δ+', angle: 225 });
+  M.addMark(doc, hal.id, 'partial', { value: 'δ−', angle: 315 });
   const roles = Object.fromEntries(doc.curvedArrows.map((c, i) => [c.id, ['pi', 'leaving', 'attack'][i]]));
   return { doc, roles, forms: ch ? { [doc.curvedArrows[0].id]: ch } : {} };
 }

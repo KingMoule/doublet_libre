@@ -108,7 +108,7 @@ Le menu Exercice ouvre aussi Mécanismes : des mécanismes à compléter. Preuve
 
 **Retours** : espèce manquante ou de trop ; + sur le mauvais carbone (Markovnikov) ; charge oubliée ; produit anti-Markovnikov ou autre espèce, nommés par le nommeur ; flèche manquante ou mal dirigée, dite selon son rôle ; flèche à l'envers ; H sur le mauvais carbone de la double liaison ; demi-flèche ; flèche de trop.
 
-**À confirmer avec le manuel** : la flèche π vers le H ou vers la liaison C–H en formation (les deux comptent) ; les doublets de X⁻ (exigés, puisqu'une flèche part d'un doublet) ; δ+ et δ− ignorés ; X⁻ oublié dans l'intermédiaire compté faux ; étiquettes « lente » et « rapide » non vérifiées.
+**Conventions du manuel** (figure 7.6 et addition de HBr sur l'éthène) : la flèche π va vers le H (vers la liaison C–H en formation compte aussi) ; X⁻ porte ses quatre doublets et sa flèche part de l'un d'eux ; δ+ sous le H et δ− sous X, dessinés mais non exigés ; X⁻ reste dessiné à côté du carbocation (oublié, c'est faux) ; « Étape lente » et « Étape rapide » au-dessus des flèches de réaction, dessinées mais non vérifiées ; la solution nomme le nucléophile et l'électrophile de chaque étape.
 
 ## Phases
 

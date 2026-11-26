@@ -59,6 +59,23 @@ test('mechanisms are drawn as the app draws them: bonds of 40, nothing on top of
   }
 });
 
+test('the mechanism is drawn as the textbook draws it (figure 7.6): δ+ on the H and δ− on X, slow then fast step', () => {
+  for (const { answer: { doc }, style, given, alkene } of all) {
+    const partial = (/** @type {string} */ el) => doc.marks.find((m) => m.kind === 'partial' && M.findAtom(doc, m.atom)?.element === el && M.neighbors(doc, m.atom).some((n) => M.findAtom(doc, n)?.element !== 'C'))?.value;
+    assert.equal(partial('H'), 'δ+', alkene);
+    assert.ok(['Cl', 'Br', 'I'].some((x) => partial(x) === 'δ−'), alkene);
+    assert.deepEqual(doc.reactionArrows.map((r) => r.above), style === 'product' ? [''] : ['Étape lente', 'Étape rapide'], alkene);
+    assert.equal(given.marks.filter((m) => m.kind === 'partial').length, 2, alkene); // the reactants as given keep them
+  }
+});
+
+test('the δ the textbook writes are not asked of the student', () => {
+  const item = series('arrows', 3).items[0];
+  const without = structuredClone(item.answer.doc);
+  without.marks = without.marks.filter((m) => m.kind !== 'partial');
+  assert.deepEqual(checkMechanism(without, item.answer), []);
+});
+
 test('the answer says where the first mistake is, and the solution how the mechanism goes', () => {
   const item = series('progressive', 1).items[0];
   assert.deepEqual(answerMechanism(item, item.answer.doc), { verdict: 'right', title: 'Bonne réponse', lines: [], ids: [] });
@@ -70,4 +87,6 @@ test('the answer says where the first mistake is, and the solution how the mecha
   const { doc, steps } = solution(item);
   assert.equal(doc.curvedArrows.length, 3);
   assert.ok(steps[0].includes('Markovnikov') && steps[1].includes(item.product));
+  // Who gives and who takes the electrons, as the textbook labels them.
+  assert.ok(steps[0].includes('nucléophile') && steps[0].includes('électrophile') && steps[1].includes('nucléophile'));
 });
