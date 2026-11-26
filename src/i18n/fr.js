@@ -187,7 +187,8 @@ export const fr = {
       'Avertissements : octet dépassé, flèche inversée, charge non conservée, résonance mal employée.',
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
       'Mode Montage : 37 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
-      'Mode Exercice : des séries de dix alcanes, cycloalcanes ou halogénés à nommer ou à dessiner, corrigées règle par règle selon le manuel, avec la solution numérotée.',
+      'Menu Exercice, Nomenclature : des séries de dix molécules à nommer ou à dessiner, des alcanes aux cétones, corrigées règle par règle selon le manuel, avec la solution numérotée.',
+      'Menu Exercice, Mécanismes : l’addition de HX sur les alcènes à compléter (les flèches, les structures, le mécanisme complet ou le produit majeur), avec un retour précis sur chaque erreur.',
       'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
     shortcutsTitle: 'Raccourcis clavier',
@@ -362,6 +363,18 @@ export const fr = {
   // Mechanism exercises (mechanism/check.js): what is wrong, by finding; x is the halogen of H–X, name a species'.
   // A missing or misplaced arrow is told by what it does: pi (π to H), leaving (H–X to X), attack (X⁻ to C⁺).
   mechanism: {
+    title: 'Exercice de mécanisme',
+    /** @param {number} n */ seriesOf: (n) => `Série de ${n} mécanismes`,
+    levels: { progressive: 'Progressif (les quatre styles)', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur' },
+    /** @param {string} alkene @param {string} x */ reaction: (alkene, x) => `${alkene} + H${x}`,
+    prompts: {
+      arrows: 'Dessinez les flèches courbes de chaque étape, du doublet ou de la liaison vers l’atome qui reçoit les électrons.',
+      structures: 'Dessinez l’intermédiaire entre les deux flèches de réaction, puis le produit.',
+      complete: 'Dessinez le mécanisme : les flèches courbes de l’étape 1, l’intermédiaire, les flèches de l’étape 2, puis le produit.',
+      product: 'Dessinez le produit majeur après la flèche de réaction.',
+    },
+    help: 'Une flèche courbe part d’un doublet ou d’une liaison : l’outil Doublet en ajoute un sur un ion.',
+    restart: 'Recommencer',
     wrong: 'Pas tout à fait',
     /** @param {number} k */ step: (k) => `Étape ${k}`,
     /** @param {'reactants' | 'intermediate' | 'product'} s */ state: (s) => ({ reactants: 'Réactifs', intermediate: 'Intermédiaire', product: 'Produit' }[s]),
@@ -400,6 +413,8 @@ export const fr = {
   },
   // The Exercice mode: a series of molecules to name or to draw (naming/exercise.js).
   exercise: {
+    // The two exercises of the Exercice menu.
+    kinds: { naming: 'Nomenclature', mechanism: 'Mécanismes' },
     title: 'Exercice de nomenclature',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} molécules`,
     level: 'Niveau',
