@@ -272,13 +272,24 @@ function anchorRaw(doc, L, an) {
   return null;
 }
 
-/** How far the end of an arrow stays from its anchor, toward the curve. @param {any} raw @param {Vec} toward */
-function endOffset(raw, toward) {
+/**
+ * How far the end of an arrow stays from its anchor, toward the curve. On an unlabelled carbon, an arrow
+ * coming in on the side of its charge stops past the sign, which stays readable (a carbocation's +).
+ * @param {any} raw @param {Vec} toward @param {any} L
+ */
+function endOffset(raw, toward, L) {
   if (raw.kind === 'mark') return 3.5;
   if (raw.kind === 'bond') return 4;
   if (raw.kind === 'between') return 0;
   const label = raw.info.label;
-  if (!label) return 6;
+  if (!label) {
+    // The head would lie from 6 to 6 + headLen out from the carbon, toward the curve; within reach of the sign, it stops past it.
+    const sign = L.charges.get(raw.info.atom.id)?.center;
+    if (!sign) return 6;
+    const u = norm(sub(toward, raw.p)), q = sub(sign, raw.p);
+    const t = Math.min(Math.max(dot(q, u), 6), 6 + STYLE.headLen);
+    return Math.hypot(q.x - u.x * t, q.y - u.y * t) < STYLE.headHalf + 0.3 * F ? Math.hypot(q.x, q.y) + 0.5 * F : 6;
+  }
   return boxExit(norm(sub(toward, raw.p)), label.symHalfW + 3, F / 2 + 2.5);
 }
 
@@ -311,8 +322,8 @@ export function arrowGeometry(doc, L, ca) {
   const e = anchorRaw(doc, L, ca.to);
   if (!s || !e) return null;
   const [c1, c2] = controlPoints(s.p, e.p, ca.bend ?? DEFAULT_BEND);
-  const p0 = add(s.p, scale(norm(sub(c1, s.p)), endOffset(s, c1)));
-  const p3 = add(e.p, scale(norm(sub(c2, e.p)), endOffset(e, c2)));
+  const p0 = add(s.p, scale(norm(sub(c1, s.p)), endOffset(s, c1, L)));
+  const p3 = add(e.p, scale(norm(sub(c2, e.p)), endOffset(e, c2, L)));
   return { p0, c1, c2, p3, raw0: s.p, raw3: e.p };
 }
 

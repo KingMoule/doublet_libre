@@ -54,6 +54,24 @@ test('on a carbocation vertex the charge takes the largest free sector', () => {
   assert.ok(p.y < 0 && p.x > 0, 'up and to the right, away from both bonds');
 });
 
+test('an arrow landing on a carbocation over its + stops past the sign, so the + stays readable', () => {
+  const d = M.emptyDoc();
+  const c = M.addAtom(d, { x: 0, y: 0, charge: 1 });
+  M.addBond(d, c.id, M.addAtom(d, { x: -40, y: 0 }).id);
+  M.addBond(d, c.id, M.addAtom(d, { x: 20, y: 34.64 }).id);
+  const plus = layout(d).charges.get(c.id).center;
+  /** Where a straight arrow to the carbon ends, from a Br⁻ lone pair at (x, y). @param {number} x @param {number} y */
+  const tip = (x, y) => {
+    const br = M.addAtom(d, { element: 'Br', x, y, charge: -1 });
+    const ca = M.addCurvedArrow(d, { mark: M.addMark(d, br.id, 'lonePair').id }, { atom: c.id }, 2, [[0.3, 0], [0.7, 0]]);
+    return layout(d).curved.get(ca.id).p3;
+  };
+  const over = tip(6 * plus.x, 6 * plus.y);
+  assert.ok(Math.hypot(over.x, over.y) > Math.hypot(plus.x, plus.y) + 3, 'coming in over the +: beyond the sign');
+  const below = tip(-40, 70);
+  assert.ok(Math.hypot(below.x, below.y) < 8, 'coming in elsewhere: right at the carbon');
+});
+
 test('charges are written + and −, never circled', () => {
   const { markup } = renderDoc(sampleSN2());
   const charges = [...markup.matchAll(/<text class="chgt"[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
