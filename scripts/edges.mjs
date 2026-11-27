@@ -17,7 +17,8 @@ const DEBUG_PORT = 9333;
 /** Runs in the page: returns the problems found at the current size. */
 const CHECK = `(async () => {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const inScreen = (r) => r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
+  // One pixel of slack: a button scrolled into view sits right on the edge, give or take a fraction of a pixel.
+  const inScreen = (r) => r.left >= -1 && r.top >= -1 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1;
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const problems = [];
   // Each mode: drawing a mechanism, a lab set-up, then the two exercises of the Exercice menu, each with its own tools.
@@ -31,14 +32,16 @@ const CHECK = `(async () => {
       const again = document.querySelector('[data-ex="clear"]');
       again?.scrollIntoView({ block: 'nearest' });
       if (!again || !inScreen(again.getBoundingClientRect())) problems.push('bouton Recommencer inaccessible');
-      // The product to draw: the canvas leaves room after the reaction arrow, not only what is given.
-      const level = document.querySelector('#ex-level');
-      level.value = 'hx-product';
-      level.dispatchEvent(new Event('change', { bubbles: true }));
-      await wait(50);
-      const canvas = document.querySelector('#canvas').getBoundingClientRect();
-      const arrow = [...document.querySelectorAll('#canvas [data-kind="rxn"]')].at(-1).getBoundingClientRect();
-      if (canvas.right - arrow.right < 80) problems.push('pas de place pour dessiner le produit');
+      // The product to draw, for each reaction of the Réaction menu and the Style « Produit »: the canvas leaves
+      // room after the reaction arrow, not only what is given.
+      const choose = async (id, value) => { const s = document.querySelector('#' + id); s.value = value; s.dispatchEvent(new Event('change', { bubbles: true })); await wait(50); };
+      for (const reaction of ['hx', 'hydration']) {
+        await choose('ex-reaction', reaction);
+        await choose('ex-style', 'product');
+        const canvas = document.querySelector('#canvas').getBoundingClientRect();
+        const arrow = [...document.querySelectorAll('#canvas [data-kind="rxn"]')].at(-1).getBoundingClientRect();
+        if (canvas.right - arrow.right < 80) problems.push('pas de place pour dessiner le produit (' + reaction + ')');
+      }
     }
     for (const b of document.querySelectorAll('.tool:not([hidden])')) {
       b.scrollIntoView({ block: 'nearest' });
