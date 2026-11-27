@@ -86,18 +86,20 @@ Ces critères sont des listes ordonnées : une famille y ajoute des entrées et 
 
 ## Exercices de mécanisme
 
-Le menu Exercice ouvre aussi Mécanismes : des mécanismes à compléter. Preuve de concept : l'addition électrophile de HX (HCl, HBr, HI) sur les alcènes, sans réarrangement.
+Le menu Exercice ouvre aussi Mécanismes : des mécanismes à compléter, sur les alcènes, sans réarrangement (chapitre 7 du manuel) :
+- **Addition de HX** (HCl, HBr, HI), en deux étapes par le carbocation (figure 7.6) ;
+- **Hydratation acide** (H₂O, H₂SO₄), en trois étapes (figure 7.14) : alcène + H₃O⁺ → carbocation + H₂O → ion oxonium + H₂O (le solvant, une base) ⇌ alcool + H₃O⁺ régénéré.
 
-**Un numéro** est un mécanisme complet dont des parties sont cachées : les états (réactifs, intermédiaire, produit) entre des flèches de réaction, et les flèches courbes de chaque étape, chacune avec son rôle (π vers le H, H–X vers X, X⁻ vers C⁺). Le style dit ce qui est donné :
+**Un numéro** est un mécanisme complet dont des parties sont cachées : les états (réactifs, intermédiaires, produit) entre des flèches de réaction, et les flèches courbes de chaque étape, chacune avec son rôle (π vers le H d'un acide, H–Y vers Y, un nucléophile vers C⁺, l'eau qui arrache un H de l'oxonium). Le style dit ce qui est donné :
 
 | Style | Donné | Demandé |
 |---|---|---|
 | Flèches | Tous les états | Les flèches courbes de chaque étape |
-| Structures | Les réactifs et les flèches de l'étape 1 | L'intermédiaire (C⁺ et X⁻), puis le produit |
+| Structures | Les réactifs et les flèches de l'étape 1 | Chaque intermédiaire (C⁺ et X⁻ ; puis l'oxonium), puis le produit |
 | Complet | Les réactifs et les flèches de réaction | Tout |
 | Produit | Les réactifs et une flèche de réaction | Le produit majeur |
 
-**Générateur** (`src/mechanism/generate.js`) : les alcènes viennent du générateur de nomenclature, déjà dessinés et nommés ; il écarte ceux dont le H pourrait aller sur l'un ou l'autre carbone (sauf si les deux donnent le même produit) et ceux dont le carbocation se réarrangerait. Réactif : HCl, HBr ou HI. Niveaux : Progressif (3 Flèches, 3 Structures, 2 Complet, 2 Produit) ou un style seul.
+**Générateur** (`src/mechanism/generate.js`) : les alcènes viennent du générateur de nomenclature, déjà dessinés et nommés ; il écarte ceux dont le H pourrait aller sur l'un ou l'autre carbone (sauf si les deux donnent le même produit) et ceux dont le carbocation se réarrangerait. La double liaison fait face aux réactifs, à sa droite : un alcène est dessiné en miroir au besoin. H₃O⁺ est dessiné H–O⁺(H)–H avec ses H, l'eau H₂O avec ses deux doublets, l'oxonium avec ses deux H ; la dernière étape de l'hydratation porte ⇌. Le style Produit de l'hydratation est la réaction globale : alcène + H₂O, H₂SO₄ sur la flèche (figure 7.13). Un niveau est une réaction et un style : Progressif (3 Flèches, 3 Structures, 2 Complet, 2 Produit) ou un style seul.
 
 **Correction** (`src/mechanism/check.js`, pur) : tout le dessin de l'étudiant, donné et ajouté, se compare au mécanisme attendu, état par état (découpés par les flèches de réaction), sur les graphes comme en nomenclature.
 - Une flèche courbe se lit par les électrons qu'elle déplace (n'importe quel doublet d'un atome, ou une liaison) et par où ils vont. Une flèche vers un atome vaut la flèche vers la liaison qu'elle forme avec l'atome de départ (π vers le H, ou vers la liaison C–H en formation).
@@ -130,3 +132,4 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 11 | Interface revue : barre du haut, outils en groupes, panneau de l'outil et de la sélection, zoom et barre du bas sur une ligne, petites fenêtres de Doublet, Charge, δ, Flèche courbe et Flèche de réaction | `edges.mjs` sur six tailles d'écran ; scénarios au doigt, sans Maj ; reflux monté en suivant les étapes du panneau | faite |
 | 12 | Exercices de nomenclature (voir la section) : mode Exercice, d'abord alcanes, cycloalcanes et halogénés de bout en bout (graphe, nommeur, générateur, interface), puis une famille du manuel par PR, jusqu'aux cétones, et le Mélange | Par famille : molécules et noms en SMILES dans les tests, une erreur typique reconnue par règle ; une série faite dans l'app dans les deux sens | faite |
 | 13 | Exercices de mécanisme (voir la section), preuve de concept sur l'addition de HX aux alcènes : correction, puis générateur et quatre styles de numéros, puis menu Exercice et interface | Chaque erreur typique donne son retour ; chaque mécanisme généré passe sa propre correction ; un numéro de chaque style fait dans l'app | faite |
+| 14 | Hydratation acide dans les exercices de mécanisme : une correction qui ne dépend plus de HX, le générateur à deux réactions, deux menus (Réaction, Style) | Le mécanisme de la figure 7.14 juste, et chaque oubli typique (flèche de la base, + de l'oxonium, alcool anti-Markovnikov) avec son retour ; un numéro Flèches et un numéro Produit faits dans l'app | en cours |

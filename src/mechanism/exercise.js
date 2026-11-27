@@ -25,7 +25,10 @@ export function answerMechanism(item, doc) {
 
 /** The whole mechanism, and how it goes, step by step. @param {Item} item */
 export function solution(item) {
-  const { x, product, cation } = item;
-  const steps = item.style === 'product' ? [X.solution.product(x, product)] : [X.solution.first(x, X.solution.cations[cation]), X.solution.second(x, product)];
+  const { x, product, style } = item;
+  const S = X.solution, cation = S.cations[item.cation];
+  const steps = item.reaction === 'hx'
+    ? (style === 'product' ? [S.hx.product(x, product)] : [S.hx.first(x, cation), S.hx.second(x, product)])
+    : (style === 'product' ? [S.hydration.product(product)] : [S.hydration.first(cation), S.hydration.second(), S.hydration.third(product)]);
   return { doc: structuredClone(item.answer.doc), steps };
 }
