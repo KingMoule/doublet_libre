@@ -66,14 +66,14 @@ const KINDS = {
   mechanism: {
     levels: MECHANISM_LEVELS, series: mechanismSeries, link: 'mecanisme', title: MX.title, seriesOf: MX.seriesOf, clear: MX.restart,
     tools: ['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'curved', 'erase'],
-    /** @param {string} l */ levelName: (l) => /** @type {Record<string, string>} */ (MX.levels)[l],
+    /** @param {string} l */ levelName: (l) => { const [r, s] = l.split('-'); return `${/** @type {Record<string, string>} */ (MX.reactions)[r]} · ${/** @type {Record<string, string>} */ (MX.levels)[s]}`; },
     typed: () => false,
     /** @param {any} it */ start: (it) => it.given,
     /** @param {any} it @param {M.Doc} doc */ answer: (it, doc) => answerMechanism(it, doc),
     /** @param {any} it */ solution: (it) => mechanismSolution(it),
     /** @param {any} it */ tool: (it) => (it.style === 'arrows' ? 'curved' : 'chain'),
     /** @param {any} it */
-    ask: (it) => ({ prompt: /** @type {Record<string, string>} */ (MX.prompts)[it.style], target: MX.reaction(it.alkene, it.x), help: MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
+    ask: (it) => ({ prompt: /** @type {Record<string, string>} */ (MX.prompts)[it.style], target: MX.reaction(it.alkene, it.reagent), help: MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
   },
 };
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];

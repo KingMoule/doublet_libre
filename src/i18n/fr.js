@@ -370,29 +370,44 @@ export const fr = {
   mechanism: {
     title: 'Exercice de mécanisme',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} mécanismes`,
+    reactions: { hx: 'Addition de HX', hydration: 'Hydratation acide' },
     levels: { progressive: 'Progressif (les quatre styles)', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur' },
-    /** @param {string} alkene @param {string} x */ reaction: (alkene, x) => `${alkene} + H${x}`,
+    /** @param {string} alkene @param {string} reagent */ reaction: (alkene, reagent) => `${alkene} + ${reagent}`,
     prompts: {
       arrows: 'Dessinez les flèches courbes de chaque étape, du doublet ou de la liaison vers l’atome qui reçoit les électrons.',
-      structures: 'Dessinez l’intermédiaire entre les deux flèches de réaction, puis le produit.',
-      complete: 'Dessinez le mécanisme : les flèches courbes de l’étape 1, l’intermédiaire, les flèches de l’étape 2, puis le produit.',
+      structures: 'Dessinez ce qui se forme entre les flèches de réaction : chaque intermédiaire, puis le produit.',
+      complete: 'Dessinez le mécanisme : les flèches courbes de chaque étape, chaque intermédiaire, puis le produit.',
       product: 'Dessinez le produit majeur après la flèche de réaction.',
     },
-    help: 'Une flèche courbe part d’un doublet ou d’une liaison : l’outil Doublet en ajoute un sur un ion.',
-    // Over the reaction arrows, as in the textbook (figure 7.6).
-    slow: 'Étape lente', fast: 'Étape rapide',
+    help: 'Une flèche courbe part d’un doublet ou d’une liaison : l’outil Doublet en ajoute un sur un ion ou sur l’eau. Un H visé par une flèche se dessine (outil Atome).',
+    // Over the reaction arrows, as in the textbook: figure 7.6 for HX, figure 7.13 for the global hydration.
+    slow: 'Étape lente', fast: 'Étape rapide', acid: 'H₂SO₄',
+    // The reagent of an acid hydration, as the title writes it.
+    water: 'H₂O (H₂SO₄)',
     restart: 'Recommencer',
     wrong: 'Pas tout à fait',
     /** @param {number} k */ step: (k) => `Étape ${k}`,
     /** @param {number} k the state @param {number} last the product's */ state: (k, last) => (k === 0 ? 'Réactifs' : k === last ? 'Produit' : `Après l’étape ${k}`),
     solution: {
       cations: { primary: 'primaire', secondary: 'secondaire', tertiary: 'tertiaire' },
-      /** @param {string} x @param {string} cation */
-      first: (x, cation) => `Étape 1, lente : le doublet π de l’alcène (nucléophile) attaque le H de H${x} (électrophile, δ+) ; la liaison H–${x} se rompt et ses électrons partent avec le ${x}. Le H se lie au carbone de la double liaison qui porte le plus de H : il se forme le carbocation ${cation}, le plus substitué possible (Markovnikov).`,
-      /** @param {string} x @param {string} product */
-      second: (x, product) => `Étape 2, rapide : un doublet de ${x}⁻ (nucléophile) attaque le carbocation (électrophile). Produit : ${product}.`,
-      /** @param {string} x @param {string} product */
-      product: (x, product) => `Le H se lie au carbone de la double liaison qui porte le plus de H, et le ${x} au carbone le plus substitué (Markovnikov). Produit : ${product}.`,
+      hx: {
+        /** @param {string} x @param {string} cation */
+        first: (x, cation) => `Étape 1, lente : le doublet π de l’alcène (nucléophile) attaque le H de H${x} (électrophile, δ+) ; la liaison H–${x} se rompt et ses électrons partent avec le ${x}. Le H se lie au carbone de la double liaison qui porte le plus de H : il se forme le carbocation ${cation}, le plus substitué possible (Markovnikov).`,
+        /** @param {string} x @param {string} product */
+        second: (x, product) => `Étape 2, rapide : un doublet de ${x}⁻ (nucléophile) attaque le carbocation (électrophile). Produit : ${product}.`,
+        /** @param {string} x @param {string} product */
+        product: (x, product) => `Le H se lie au carbone de la double liaison qui porte le plus de H, et le ${x} au carbone le plus substitué (Markovnikov). Produit : ${product}.`,
+      },
+      // Acid hydration, as the textbook tells it (figure 7.14).
+      hydration: {
+        /** @param {string} cation */
+        first: (cation) => `Étape 1 : dans l’eau, l’acide sulfurique donne l’ion hydronium (H₂SO₄ + H₂O → HSO₄⁻ + H₃O⁺). Le doublet π de l’alcène (nucléophile) attaque un H de H₃O⁺ (électrophile) ; la liaison H–O se rompt vers l’oxygène et libère H₂O. Le H se lie au carbone de la double liaison qui porte le plus de H : il se forme le carbocation ${cation}, le plus substitué possible (Markovnikov).`,
+        second: () => 'Étape 2 : un doublet de H₂O (nucléophile) attaque le carbocation (électrophile) : il se forme un ion oxonium, dont l’oxygène à trois liaisons porte une charge +.',
+        /** @param {string} product */
+        third: (product) => `Étape 3, un équilibre acide-base : une molécule d’eau du solvant (la base) arrache un H de l’ion oxonium, et la liaison O–H se rompt vers l’oxygène. L’acide H₃O⁺ est régénéré. Produit : ${product}.`,
+        /** @param {string} product */
+        product: (product) => `En milieu acide (H₂SO₄), l’eau s’additionne : le H va sur le carbone de la double liaison qui porte le plus de H, et le groupe OH sur le carbone le plus substitué (Markovnikov). Produit : ${product}.`,
+      },
     },
     findings: {
       /** @param {{n: number}} p */ steps: ({ n }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''} : une flèche de réaction par étape.`,

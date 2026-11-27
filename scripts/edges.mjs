@@ -33,7 +33,7 @@ const CHECK = `(async () => {
       if (!again || !inScreen(again.getBoundingClientRect())) problems.push('bouton Recommencer inaccessible');
       // The product to draw: the canvas leaves room after the reaction arrow, not only what is given.
       const level = document.querySelector('#ex-level');
-      level.value = 'product';
+      level.value = 'hx-product';
       level.dispatchEvent(new Event('change', { bubbles: true }));
       await wait(50);
       const canvas = document.querySelector('#canvas').getBoundingClientRect();
