@@ -1,5 +1,6 @@
 // @ts-check
 import { fr } from '../i18n/fr.js';
+import * as M from '../model.js';
 import { checkMechanism } from './check.js';
 
 /**
@@ -17,8 +18,8 @@ export function answerMechanism(item, doc) {
   if (!f) return { verdict: 'right', title: fr.exercise.right, lines: [], ids: [] };
   const say = /** @type {Record<string, any>} */ (X.findings)[f.code];
   const text = typeof say === 'function' ? say(f.params) : say[/** @type {string} */ (f.role)](f.params);
-  const last = item.style === 'product' ? 1 : 2;
-  const where = f.code === 'steps' ? '' : f.at === 'step' ? X.step(f.step) : X.state(f.step === 0 ? 'reactants' : f.step === last ? 'product' : 'intermediate');
+  const last = M.regions(item.answer.doc).arrows.length;
+  const where = f.code === 'steps' ? '' : f.at === 'step' ? X.step(f.step) : X.state(f.step, last);
   return { verdict: 'wrong', title: X.wrong, lines: [where ? `${where} : ${text}` : text], ids: f.ids };
 }
 

@@ -20,6 +20,8 @@ const answer = propene();
 const drawn = (f) => { const d = structuredClone(answer.doc); f?.(d); return d; };
 /** What the check finds: code, role, step. @param {M.Doc} d */
 const found = (d) => checkMechanism(d, answer).map((x) => `${x.code}${x.role ? `:${x.role}` : ''}@${x.step}`);
+/** The findings themselves, with their params. @param {M.Doc} d */
+const found2 = (d) => checkMechanism(d, answer);
 const arrow = (/** @type {M.Doc} */ d, /** @type {number} */ k) => d.curvedArrows[k];
 
 test('the right mechanism has nothing to say, wherever it is drawn', () => {
@@ -90,10 +92,86 @@ test('a symmetric alkene: the H on either carbon of but-2-ène is the same answe
   assert.deepEqual(checkMechanism(student, symmetric), []);
 });
 
+/**
+ * Propène + H₃O⁺ in water, as the textbook draws ethene's (figure 7.14): π to an H of H₃O⁺ and H–O to O;
+ * H₂O to C⁺ (oxonium); the solvent's H₂O, a base, takes an H of the oxonium, O–H to O⁺ (⇌); 2-propanol and H₃O⁺.
+ */
+function hydration() {
+  const b = builder();
+  const hydronium = (/** @type {number} */ x) => {
+    const o = b.atom('O', x, 0, 1, 1);
+    const hs = [[x - 40, 0], [x + 40, 0], [x, 40]].map(([hx, hy]) => b.atom('H', hx, hy));
+    return { o, hs, bonds: hs.map((h) => b.bond(h, o)) };
+  };
+  const propene = (/** @type {number} */ x, /** @type {number} */ charge = 0) => [[x, 20], [x + 34.64, 0], [x + 69.28, 20]].map(([cx, cy], i) => b.atom('C', cx, cy, i === 1 ? charge : 0));
+  const [c1, c2, c3] = propene(0);
+  const pi = b.bond(c1, c2, 2);
+  b.bond(c2, c3);
+  const acid = hydronium(150);
+  b.step(230, 300);
+  const k = propene(330, 1);
+  b.bond(k[0], k[1]); b.bond(k[1], k[2]);
+  const water = b.atom('O', 440, 0, 0, 2);
+  b.step(480, 550);
+  const x = propene(580);
+  b.bond(x[0], x[1]); b.bond(x[1], x[2]);
+  const ox = b.atom('O', 614.64, -40, 1, 1);
+  b.bond(x[1], ox);
+  const oh = [b.atom('H', 580, -60), b.atom('H', 649.28, -60)];
+  const ohBonds = oh.map((h) => b.bond(h, ox));
+  const base = b.atom('O', 700, 0, 0, 2);
+  b.step(740, 810);
+  const p = propene(840);
+  b.bond(p[0], p[1]); b.bond(p[1], p[2]);
+  b.bond(p[1], b.atom('O', 874.64, -40, 0, 2));
+  hydronium(970);
+  b.arrow({ bond: pi }, { atom: acid.hs[0].id });
+  b.arrow({ bond: acid.bonds[0] }, { atom: acid.o.id });
+  b.arrow({ mark: water.lp[0] }, { atom: k[1].id });
+  b.arrow({ mark: base.lp[0] }, { atom: oh[1].id });
+  b.arrow({ bond: ohBonds[1] }, { atom: ox.id });
+  const doc = b.done();
+  doc.reactionArrows[2].kind = 'equilibrium';
+  const [ca1] = doc.curvedArrows;
+  return {
+    doc, ids: { c1: c1.id, c2: c2.id, acid, ox: ox.id, product: p },
+    roles: Object.fromEntries(doc.curvedArrows.map((c, i) => [c.id, ['pi', 'leaving', 'attack', 'base', 'leaving'][i]])),
+    forms: { [ca1.id]: /** @type {[string, string]} */ ([c1.id, acid.hs[0].id]) },
+  };
+}
+
+test('acid hydration (figure 7.14): three steps, any H of H₃O⁺, the solvent as the base', () => {
+  const water = hydration();
+  const check = (/** @type {(d: M.Doc) => void} */ f) => { const d = structuredClone(water.doc); f(d); return checkMechanism(d, water); };
+  assert.deepEqual(check(() => {}), []);
+  // The π bond to another H of H₃O⁺, and that H–O bond to O: the three H are the same.
+  assert.deepEqual(check((d) => { d.curvedArrows[0].to = { atom: water.ids.acid.hs[2].id }; d.curvedArrows[1].from = { bond: water.ids.acid.bonds[2] }; }), []);
+  const [noBase] = check((d) => M.removeCurvedArrow(d, d.curvedArrows[3].id));
+  assert.equal(`${noBase.code}:${noBase.role}@${noBase.step}`, 'missingArrow:base@3');
+  assert.match(fr.mechanism.findings.missingArrow.base(/** @type {any} */ (noBase.params)), /H₂O/);
+  const [noPlus] = check((d) => { /** @type {M.Atom} */ (M.findAtom(d, water.ids.ox)).charge = 0; });
+  assert.equal(`${noPlus.code}@${noPlus.step}`, 'charge@2');
+  assert.match(fr.mechanism.findings.charge(/** @type {any} */ (noPlus.params)), /oxonium/);
+  // 1-propanol: the OH on the carbon with more H.
+  const [anti] = check((d) => { const [p1, p2] = water.ids.product; const o = /** @type {M.Bond} */ (d.bonds.find((x) => x.a === p2.id && M.findAtom(d, x.b)?.element === 'O')); M.removeBond(d, o.id); M.addBond(d, p1.id, o.b); });
+  assert.equal(`${anti.code}@${anti.step}`, 'antiMarkovnikov@3');
+  assert.match(fr.mechanism.findings.antiMarkovnikov(/** @type {any} */ (anti.params)), /Le groupe OH/);
+});
+
+test('messages name the species of the mechanism: HBr and Br⁻, the bromine, the carbocation', () => {
+  const F = fr.mechanism.findings;
+  const [pi] = found2(drawn((d) => M.removeCurvedArrow(d, arrow(d, 0).id)));
+  assert.equal(F.missingArrow.pi(/** @type {any} */ (pi.params)), 'Il manque la flèche du doublet π vers le H de HBr.');
+  const [leaving] = found2(drawn((d) => M.removeCurvedArrow(d, arrow(d, 1).id)));
+  assert.match(F.missingArrow.leaving(/** @type {any} */ (leaving.params)), /liaison H–Br vers le brome/);
+  const [attack] = found2(drawn((d) => M.removeCurvedArrow(d, arrow(d, 2).id)));
+  assert.match(F.missingArrow.attack(/** @type {any} */ (attack.params)), /doublet de Br⁻ vers le carbocation/);
+});
+
 test('every finding has its message, and each arrow its own by role', () => {
   const F = /** @type {Record<string, any>} */ (fr.mechanism.findings);
   for (const code of ['steps', 'missingSpecies', 'extraSpecies', 'cationPosition', 'charge', 'antiMarkovnikov', 'otherSpecies', 'reversed', 'markovnikovArrow', 'halfArrow', 'extraArrow']) {
     assert.equal(typeof F[code], 'function', code);
   }
-  for (const code of ['missingArrow', 'wrongTarget']) for (const role of ['pi', 'leaving', 'attack']) assert.equal(typeof F[code][role], 'function', `${code}.${role}`);
+  for (const code of ['missingArrow', 'wrongTarget']) for (const role of ['pi', 'leaving', 'attack', 'base']) assert.equal(typeof F[code][role], 'function', `${code}.${role}`);
 });
