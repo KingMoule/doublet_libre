@@ -15,7 +15,7 @@ import { TEMPLATES, SETUP_TEMPLATES } from './templates.js';
 import * as A from './apparatus.js';
 import { LEVELS, series } from './naming/generate.js';
 import { answerDrawing, answerName, solution } from './naming/exercise.js';
-import { LEVELS as MECHANISM_LEVELS, series as mechanismSeries } from './mechanism/generate.js';
+import { LEVELS as MECHANISM_LEVELS, REACTIONS, STYLES, series as mechanismSeries } from './mechanism/generate.js';
 import { answerMechanism, solution as mechanismSolution } from './mechanism/exercise.js';
 
 /**
@@ -44,16 +44,23 @@ const MODE_TOOLS = {
   setup: ['select', ...Object.keys(FAMILIES), 'text', 'erase'],
 };
 /**
- * The two exercises of the Exercice menu, behind one panel. Each gives its series, its link, its tools, where
- * an item starts (typed: a name to type, the drawing given), how a drawing or a name is checked, its solution,
- * and the words that change. An item is a nomenclature one (naming/generate.js) or a mechanism one (mechanism/generate.js).
+ * The two exercises of the Exercice menu, behind one panel. Each gives its series, its link, its tools, its menus
+ * (a level read from them by join), where an item starts (typed: a name to type, the drawing given), how a
+ * drawing or a name is checked, its solution, and the words that change. An item is a nomenclature one
+ * (naming/generate.js) or a mechanism one (mechanism/generate.js).
  * @typedef {'naming' | 'mechanism'} Kind
+ * @typedef {{id: string, label: string, value: string, options: [string, string][]}} Menu
  */
 const X = fr.exercise, MX = fr.mechanism;
+/** @param {Record<string, string>} names @param {string[]} keys @returns {[string, string][]} */
+const named = (names, keys) => keys.map((k) => [k, names[k]]);
 const KINDS = {
   naming: {
     levels: LEVELS, series, link: 'exercice', title: X.title, seriesOf: X.seriesOf, clear: X.clear,
     tools: ['select', 'bond', 'chain', 'ring', 'atom', 'erase'],
+    /** One menu, the level. @param {string} level @returns {Menu[]} */
+    menus: (level) => [{ id: 'ex-level', label: X.level, value: level, options: named(X.levels, LEVELS) }],
+    /** @param {string[]} values */ join: ([level]) => level,
     /** @param {string} l */ levelName: (l) => /** @type {Record<string, string>} */ (X.levels)[l],
     /** @param {any} it */ typed: (it) => it.dir === 'name',
     /** @param {any} it */ start: (it) => (it.dir === 'name' ? it.doc : M.emptyDoc()),
@@ -66,6 +73,12 @@ const KINDS = {
   mechanism: {
     levels: MECHANISM_LEVELS, series: mechanismSeries, link: 'mecanisme', title: MX.title, seriesOf: MX.seriesOf, clear: MX.restart,
     tools: ['select', 'bond', 'chain', 'ring', 'atom', 'lonePair', 'charge', 'curved', 'erase'],
+    /** Two menus, the reaction and the style. @param {string} level @returns {Menu[]} */
+    menus: (level) => {
+      const [r, s] = level.split('-');
+      return [{ id: 'ex-reaction', label: MX.reactionMenu, value: r, options: named(MX.reactions, REACTIONS) }, { id: 'ex-style', label: MX.styleMenu, value: s, options: named(MX.levels, STYLES) }];
+    },
+    /** @param {string[]} values */ join: ([reaction, style]) => `${reaction}-${style}`,
     /** @param {string} l */ levelName: (l) => { const [r, s] = l.split('-'); return `${/** @type {Record<string, string>} */ (MX.reactions)[r]} · ${/** @type {Record<string, string>} */ (MX.levels)[s]}`; },
     typed: () => false,
     /** @param {any} it */ start: (it) => it.given,
@@ -1334,8 +1347,8 @@ export function startEditor(root) {
     const dots = `<div class="dots" aria-hidden="true">${ex.items.map((_, i) => `<i${ex.res[i] ? ` data-r="${ex.res[i]}"` : ''}${i === ex.cur ? ' class="cur"' : ''}></i>`).join('')}</div>`;
     let h = `<div class="card"><span class="card-icon"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${ex.kind === 'mechanism' ? ICONS.curved : ICONS.chain}</svg></span>
       <div><h2>${K.title}</h2><p class="muted small">${K.seriesOf(n)}</p></div></div>
-      <label for="ex-level">${X.level}</label>
-      <select id="ex-level">${K.levels.map((l) => `<option value="${l}"${l === ex.level ? ' selected' : ''}>${K.levelName(l)}</option>`).join('')}</select>`;
+      ${K.menus(ex.level).map((m) => `<label for="${m.id}">${m.label}</label>
+      <select id="${m.id}" data-menu>${m.options.map(([v, name]) => `<option value="${v}"${v === m.value ? ' selected' : ''}>${name}</option>`).join('')}</select>`).join('')}`;
     if (ex.cur >= n) {
       const good = ex.res.filter((r) => r !== 'wrong').length;
       return `${h}<h2>${X.done}</h2><p class="score">${good} / ${n}</p>${dots}
@@ -1601,7 +1614,8 @@ export function startEditor(root) {
   });
   panel.addEventListener('change', (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
-    if (el.id === 'ex-level') startSeries(el.value, newSeed());
+    // A menu of the exercise (the level; or the reaction and the style): a new series of what they say together.
+    if (el.hasAttribute('data-menu') && S.ex) startSeries(KINDS[S.ex.kind].join([...panel.querySelectorAll('[data-menu]')].map((s) => /** @type {HTMLSelectElement} */ (s).value)), newSeed());
   });
 
   panel.addEventListener('input', (e) => {
@@ -1636,10 +1650,10 @@ export function startEditor(root) {
   render();
   fit();
   setMode('mechanism');
-  // A series' link (#exercice-alkanes-4821, #mecanisme-progressive-4821) opens that series, the same for everyone,
+  // A series' link (#exercice-alkanes-4821, #mecanisme-hydration-arrows-4821) opens that series, the same for everyone,
   // on load or pasted later.
   const openLink = () => {
-    const link = /^#(exercice|mecanisme)-(\w+)-(\d+)$/.exec(location.hash);
+    const link = /^#(exercice|mecanisme)-([a-z]+(?:-[a-z]+)?)-(\d+)$/.exec(location.hash);
     const kind = /** @type {Kind} */ (link?.[1] === 'mecanisme' ? 'mechanism' : 'naming');
     if (!link || !KINDS[kind].levels.includes(link[2])) return;
     const [level, seed] = [link[2], Number(link[3])];

@@ -192,7 +192,7 @@ export const fr = {
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
       'Mode Montage : 37 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
       'Menu Exercice, Nomenclature : des séries de dix molécules à nommer ou à dessiner, des alcanes aux cétones, corrigées règle par règle selon le manuel, avec la solution numérotée.',
-      'Menu Exercice, Mécanismes : l’addition de HX sur les alcènes à compléter (les flèches, les structures, le mécanisme complet ou le produit majeur), avec un retour précis sur chaque erreur.',
+      'Menu Exercice, Mécanismes : l’addition de HX et l’hydratation acide des alcènes à compléter (les flèches, les structures, le mécanisme complet ou le produit majeur), choisies dans les menus Réaction et Style, avec un retour précis sur chaque erreur.',
       'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
     shortcutsTitle: 'Raccourcis clavier',
@@ -370,6 +370,8 @@ export const fr = {
   mechanism: {
     title: 'Exercice de mécanisme',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} mécanismes`,
+    // The two menus of the panel: the reaction, then the style.
+    reactionMenu: 'Réaction', styleMenu: 'Style',
     reactions: { hx: 'Addition de HX', hydration: 'Hydratation acide' },
     levels: { progressive: 'Progressif (les quatre styles)', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur' },
     /** @param {string} alkene @param {string} reagent */ reaction: (alkene, reagent) => `${alkene} + ${reagent}`,
