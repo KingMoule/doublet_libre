@@ -32,8 +32,6 @@ export function checkMechanism(doc, answer, steps) {
   const got = M.regions(doc), want = M.regions(answer.doc);
   const n = want.arrows.length;
   if (got.arrows.length !== n) return [{ code: 'steps', at: 'state', step: 0, ids: got.arrows.map((r) => r.id), params: { n } }];
-  // The halogen of H–X, for the messages (HBr, Br⁻).
-  const x = answer.doc.atoms.find((a) => HALOGENS.includes(a.element))?.element ?? '';
   /** @type {Finding[]} */
   const out = [];
   for (let k = 0; k <= n; k++) {
@@ -41,8 +39,11 @@ export function checkMechanism(doc, answer, steps) {
     out.push(...found);
     if (k < n && (!steps || steps.includes(k + 1))) out.push(...arrows(doc, got.states[k], answer, want.states[k], maps, k + 1));
   }
-  return out.map((f) => ({ ...f, params: { x, ...f.params } }));
+  return out;
 }
+
+/** The species an atom belongs to, by its name (HBr, Br⁻, H₂O, H₃O⁺, an alkene's). @param {Doc} doc @param {string} id */
+const speciesOf = (doc, id) => label(toGraph(doc, M.component(doc, id)));
 
 // ---------- species ----------
 
@@ -92,17 +93,26 @@ function species(doc, ids, ans, wantIds, k) {
     drawn.splice(drawn.indexOf(d), 1);
     const code = sameMolecule(skeleton(d.g), skeleton(e.g)) ? (charge(d.g) === charge(e.g) ? 'cationPosition' : 'charge')
       : formula(d.g) === formula(e.g) ? 'antiMarkovnikov' : 'otherSpecies';
-    found.push({ code, at: 'state', step: k, ids: d.ids, params: { name: label(d.g) } });
+    // What the expected species says: its charged atom (C+, O+, Br-) and the group a product carries (Br, O).
+    const charged = e.g.atoms.find((a) => a.charge);
+    const params = { name: label(d.g), charged: charged ? `${charged.el}${charged.charge > 0 ? '+' : '-'}` : '', group: e.g.atoms.find((a) => a.el !== 'C')?.el ?? '' };
+    found.push({ code, at: 'state', step: k, ids: d.ids, params });
   }
   for (const d of drawn) found.push({ code: 'extraSpecies', at: 'state', step: k, ids: d.ids, params: {} });
   return { found, maps };
 }
 
-/** How a species is called in a message: Br⁻, HBr, or its name; nothing when the namer cannot name it (a carbocation). @param {Graph} g */
+/** A lone halogen or oxygen by what it is with its H: HBr, Br⁻, H₂O, H₃O⁺, HO⁻. */
+const ALONE = /** @type {Record<string, Record<number, string>>} */ ({
+  O: { [-1]: 'HO⁻', 0: 'H₂O', 1: 'H₃O⁺' },
+  ...Object.fromEntries(HALOGENS.map((x) => [x, { [-1]: `${x}⁻`, 0: `H${x}` }])),
+});
+
+/** How a species is called in a message: HBr, Br⁻, H₂O, H₃O⁺, or its name; nothing when the namer cannot name it (a carbocation). @param {Graph} g */
 function label(g) {
   if (g.atoms.length === 1) {
     const { el, charge: c } = g.atoms[0];
-    return c < 0 ? `${el}⁻` : c > 0 ? `${el}⁺` : HALOGENS.includes(el) ? `H${el}` : el;
+    return ALONE[el]?.[c] ?? `${el}${c < 0 ? '⁻' : c > 0 ? '⁺' : ''}`;
   }
   try { return nameOf(g).name; } catch (e) { if (e instanceof NamingError) return ''; throw e; }
 }
@@ -139,33 +149,31 @@ function fits(to, e) {
 }
 
 /**
- * The drawn atoms matched to the expected ones, in every way a symmetric molecule allows (at most 200),
- * each explicit H following the atom it is bonded to.
- * @param {Doc} doc @param {Doc} ans @param {{from: string[], to: string[], isos: number[][]}[]} maps @returns {Generator<Map<string, string>>}
+ * The drawn atoms matched to the expected ones, in every way a symmetric molecule allows (at most 200).
+ * @param {{from: string[], to: string[], isos: number[][]}[]} maps @returns {Generator<Map<string, string>>}
  */
-function* mappings(doc, ans, maps) {
+function* mappings(maps) {
   let count = 0;
   /** @param {number} k @param {Map<string, string>} map @returns {Generator<Map<string, string>>} */
   function* walk(k, map) {
     if (count >= 200) return;
-    if (k === maps.length) { count++; yield withHydrogens(doc, ans, map); return; }
+    if (k === maps.length) { count++; yield map; return; }
     const { from, to, isos } = maps[k];
     for (const iso of isos) yield* walk(k + 1, new Map([...map, ...from.map((id, i) => /** @type {[string, string]} */ ([id, to[iso[i]]]))]));
   }
   yield* walk(0, new Map());
 }
 
-/** @param {Doc} doc @param {Doc} ans @param {Map<string, string>} map */
-function withHydrogens(doc, ans, map) {
-  const used = new Set();
-  for (const h of doc.atoms.filter((a) => a.element === 'H')) {
-    const [n] = M.neighbors(doc, h.id);
-    const target = n ? map.get(n) : undefined;
-    const twin = target && M.neighbors(ans, target).find((y) => M.findAtom(ans, y)?.element === 'H' && !used.has(y));
-    if (twin) { used.add(twin); map.set(h.id, twin); }
-  }
-  return map;
-}
+/**
+ * Atoms named as the expected drawing names them: an H by the atom it hangs on, so that any H of H₃O⁺ or of
+ * an oxonium is the same; any other atom by its match.
+ * @param {Doc} doc @param {(id: string) => string} match
+ */
+const naming = (doc, match) => (/** @type {string} */ a) => {
+  if (M.findAtom(doc, a)?.element !== 'H') return match(a);
+  const [n] = M.neighbors(doc, a);
+  return `H@${n ? match(n) : `?${a}`}`;
+};
 
 /**
  * The arrows of a step: each expected one is looked for among the drawn ones by the electrons it moves.
@@ -176,13 +184,16 @@ function withHydrogens(doc, ans, map) {
 function arrows(doc, ids, answer, wantIds, maps, step) {
   const from = (/** @type {Doc} */ d, /** @type {string[]} */ state) => d.curvedArrows.filter((c) => atomsOf(d, c.from).some((a) => state.includes(a)));
   const drawn = from(doc, ids), expected = from(answer.doc, wantIds);
+  const own = naming(answer.doc, (a) => a);
+  const want = expected.map((c) => {
+    const formed = answer.forms?.[c.id];
+    return { c, move: { from: end(answer.doc, c.from, own), to: formed ? { kind: /** @type {const} */ ('new'), atoms: formed.map(own).sort() } : end(answer.doc, c.to, own) } };
+  });
   /** @type {Finding[] | null} */
   let best = null;
-  for (const map of mappings(doc, answer.doc, maps)) {
-    const id = (/** @type {string} */ a) => map.get(a) ?? `?${a}`;
-    const formed = (/** @type {CurvedArrow} */ c) => answer.forms?.[c.id];
-    const want = expected.map((c) => ({ c, move: { from: end(answer.doc, c.from, (a) => a), to: formed(c) ? { kind: /** @type {const} */ ('new'), atoms: [...formed(c) ?? []].sort() } : end(answer.doc, c.to, (a) => a) } }));
-    const found = compare(drawn.map((c) => ({ c, move: { from: end(doc, c.from, id), to: end(doc, c.to, id) } })), want, answer.roles, step);
+  for (const map of mappings(maps)) {
+    const id = naming(doc, (a) => map.get(a) ?? `?${a}`);
+    const found = compare(drawn.map((c) => ({ c, move: { from: end(doc, c.from, id), to: end(doc, c.to, id) } })), want, answer.roles, step, (c) => said(answer.doc, c));
     if (!best || found.length < best.length) best = found;
     if (!best.length) break;
   }
@@ -190,16 +201,28 @@ function arrows(doc, ids, answer, wantIds, maps, step) {
 }
 
 /**
+ * What the messages say of an expected arrow: the species its electrons come from (Br⁻, H₂O), the species of
+ * the atom that receives them (HBr, H₃O⁺) and that atom's element (Br, O).
+ * @param {Doc} doc @param {CurvedArrow} c
+ */
+function said(doc, c) {
+  const from = atomsOf(doc, c.from), to = atomsOf(doc, c.to);
+  const atom = to.find((a) => !from.includes(a)) ?? to[0];
+  return { source: speciesOf(doc, from[0]), target: speciesOf(doc, atom), el: M.findAtom(doc, atom)?.element ?? '' };
+}
+
+/**
  * Drawn arrows against the expected ones: first those drawn right (a half arrow said so), then for each one
  * missing, an arrow from its electrons to the wrong place, one the other way round, or none; what is left is too many.
  * @param {{c: CurvedArrow, move: Move}[]} drawn @param {{c: CurvedArrow, move: Move}[]} expected
- * @param {Record<string, string>} roles @param {number} step @returns {Finding[]}
+ * @param {Record<string, string>} roles @param {number} step @param {(c: CurvedArrow) => Record<string, string>} params what a message says of an expected arrow
+ * @returns {Finding[]}
  */
-function compare(drawn, expected, roles, step) {
+function compare(drawn, expected, roles, step, params) {
   /** @type {Finding[]} */
   const found = [];
   const left = [...drawn];
-  const finding = (/** @type {string} */ code, /** @type {CurvedArrow} */ e, /** @type {CurvedArrow} [s] */ s) => found.push({ code, at: 'step', step, role: roles[e.id], ids: s ? [s.id] : [], params: {} });
+  const finding = (/** @type {string} */ code, /** @type {CurvedArrow} */ e, /** @type {CurvedArrow} [s] */ s) => found.push({ code, at: 'step', step, role: roles[e.id], ids: s ? [s.id] : [], params: params(e) });
   const take = (/** @type {(d: {c: CurvedArrow, move: Move}) => boolean} */ f) => { const i = left.findIndex(f); return i < 0 ? null : left.splice(i, 1)[0]; };
   const unmatched = expected.filter((e) => {
     const s = take((d) => same(d.move.from, e.move.from) && fits(d.move.to, e.move));

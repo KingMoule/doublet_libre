@@ -7,6 +7,10 @@
 const signed = (q) => (q > 0 ? `+${q}` : q < 0 ? `−${-q}` : '0');
 /** French plural: 0 and 1 take the singular. @param {number} n @param {string} one @param {string} [many] */
 const count = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
+/** In mechanism messages: an atom with its article, and the group a product carries (Markovnikov). @type {Record<string, string>} */
+const ELEMENTS = { Cl: 'le chlore', Br: 'le brome', I: 'l’iode', O: 'l’oxygène' };
+/** @type {Record<string, string>} */
+const GROUPS = { Cl: 'Le Cl', Br: 'Le Br', I: 'L’I', O: 'Le groupe OH' };
 
 export const fr = {
   appName: 'Doublet libre',
@@ -360,8 +364,9 @@ export const fr = {
       retained: 'Juste selon l’IUPAC, mais le manuel attend le nom familier (2.5.6).',
     },
   },
-  // Mechanism exercises (mechanism/check.js): what is wrong, by finding; x is the halogen of H–X, name a species'.
-  // A missing or misplaced arrow is told by what it does: pi (π to H), leaving (H–X to X), attack (X⁻ to C⁺).
+  // Mechanism exercises (mechanism/check.js): what is wrong, by finding. A missing or misplaced arrow is told by
+  // what it does: pi (π to the H of an acid), leaving (H–Y to Y), attack (a nucleophile to C⁺), base (water takes an
+  // H of an oxonium); source and target name the species (Br⁻, H₂O; HBr, H₃O⁺), el the atom receiving the electrons.
   mechanism: {
     title: 'Exercice de mécanisme',
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} mécanismes`,
@@ -379,7 +384,7 @@ export const fr = {
     restart: 'Recommencer',
     wrong: 'Pas tout à fait',
     /** @param {number} k */ step: (k) => `Étape ${k}`,
-    /** @param {'reactants' | 'intermediate' | 'product'} s */ state: (s) => ({ reactants: 'Réactifs', intermediate: 'Intermédiaire', product: 'Produit' }[s]),
+    /** @param {number} k the state @param {number} last the product's */ state: (k, last) => (k === 0 ? 'Réactifs' : k === last ? 'Produit' : `Après l’étape ${k}`),
     solution: {
       cations: { primary: 'primaire', secondary: 'secondaire', tertiary: 'tertiaire' },
       /** @param {string} x @param {string} cation */
@@ -393,19 +398,26 @@ export const fr = {
       /** @param {{n: number}} p */ steps: ({ n }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''} : une flèche de réaction par étape.`,
       /** @param {{name: string}} p */ missingSpecies: ({ name }) => `Il manque ${name || 'une espèce'} : ce qui se forme à une étape reste dessiné jusqu’à ce qu’il réagisse.`,
       extraSpecies: () => 'Une espèce de trop : chacune vient de l’étape d’avant.',
-      cationPosition: () => 'Le H se lie au carbone de la double liaison qui porte le plus de H : le carbocation le plus substitué, le plus stable, se forme (Markovnikov).',
-      /** @param {{x: string}} p */ charge: ({ x }) => `Vérifiez les charges : le carbone qui perd la liaison π porte une charge +, et l’ion ${x}⁻ une charge −.`,
-      /** @param {{name: string, x: string}} p */ antiMarkovnikov: ({ name, x }) => `${name ? `Votre produit : ${name}. ` : ''}Le ${x} se lie au carbone du carbocation, le plus substitué (Markovnikov).`,
+      /** @param {{charged: string}} p */
+      cationPosition: ({ charged }) => (charged === 'C+' ? 'Le H se lie au carbone de la double liaison qui porte le plus de H : le carbocation le plus substitué, le plus stable, se forme (Markovnikov).'
+        : 'La charge + est sur l’atome qui fait une liaison de plus que d’habitude : l’oxygène à trois liaisons de l’ion oxonium.'),
+      /** @param {{charged: string}} p */
+      charge: ({ charged }) => `Vérifiez les charges : ${{ 'C+': 'le carbone qui a perdu la liaison π porte une charge +', 'O+': 'l’oxygène à trois liaisons de l’ion oxonium porte une charge +' }[charged]
+        ?? (charged.endsWith('-') ? `l’ion ${charged.slice(0, -1)}⁻ porte une charge −` : 'cette espèce n’en porte pas')}.`,
+      /** @param {{name: string, group: string}} p */
+      antiMarkovnikov: ({ name, group }) => `${name ? `Votre produit : ${name}. ` : ''}${GROUPS[group] ?? group} se lie au carbone le plus substitué, celui du carbocation (Markovnikov).`,
       /** @param {{name: string}} p */ otherSpecies: ({ name }) => `${name ? `Votre dessin : ${name}. ` : ''}Ce n’est pas l’espèce attendue ici.`,
       missingArrow: {
-        /** @param {{x: string}} p */ pi: ({ x }) => `Il manque la flèche du doublet π vers le H de H${x}.`,
-        /** @param {{x: string}} p */ leaving: ({ x }) => `Il manque la flèche de la liaison H–${x} vers le ${x} : sans elle, le H aurait deux liaisons.`,
-        /** @param {{x: string}} p */ attack: ({ x }) => `Il manque la flèche d’un doublet de ${x}⁻ vers le carbocation.`,
+        /** @param {{target: string}} p */ pi: ({ target }) => `Il manque la flèche du doublet π vers le H de ${target}.`,
+        /** @param {{el: string}} p */ leaving: ({ el }) => `Il manque la flèche de la liaison H–${el} vers ${ELEMENTS[el] ?? el} : sans elle, le H aurait deux liaisons.`,
+        /** @param {{source: string}} p */ attack: ({ source }) => `Il manque la flèche d’un doublet de ${source} vers le carbocation.`,
+        /** @param {{source: string}} p */ base: ({ source }) => `Il manque la flèche d’un doublet de ${source} (la base, le solvant) vers un H de l’ion oxonium.`,
       },
       wrongTarget: {
-        /** @param {{x: string}} p */ pi: ({ x }) => `Le doublet π attaque le H de H${x}, pauvre en électrons (δ+), pas le ${x}.`,
-        /** @param {{x: string}} p */ leaving: ({ x }) => `Les électrons de la liaison H–${x} partent avec le ${x}, plus électronégatif.`,
-        /** @param {{x: string}} p */ attack: ({ x }) => `Le ${x}⁻ attaque le carbone qui porte la charge +.`,
+        /** @param {{target: string}} p */ pi: ({ target }) => `Le doublet π attaque un H de ${target}, pauvre en électrons (δ+).`,
+        /** @param {{el: string}} p */ leaving: ({ el }) => `Les électrons de la liaison H–${el} partent avec ${ELEMENTS[el] ?? el}, plus électronégatif.`,
+        /** @param {{source: string}} p */ attack: ({ source }) => `${source} attaque le carbone qui porte la charge +.`,
+        /** @param {{source: string}} p */ base: ({ source }) => `${source}, la base, arrache un H de l’ion oxonium : sa flèche pointe vers ce H.`,
       },
       reversed: () => 'Une flèche part des électrons (un doublet ou une liaison) et pointe vers l’atome qui les reçoit.',
       markovnikovArrow: () => 'Le H se lie au carbone de la double liaison qui porte le plus de H (Markovnikov).',
