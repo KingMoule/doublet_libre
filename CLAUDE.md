@@ -26,6 +26,7 @@ Langue : on échange en français ; le code, les identifiants et les commentaire
 - Une nouvelle pièce de verrerie se montre d'abord en image (`snapshot.mjs` : chaque pièce seule, puis dans un montage) ; la PR suit l'accord sur le dessin.
 - Une règle de dessin cite sa source IUPAC dans le test ou le commentaire (GR-x : recommandations de 2008, ST-x : stéréo 2006).
 - Une famille qui réutilise une règle existante relit son message dans le test, avec un exemple de la nouvelle famille.
+- Un nouveau mécanisme se construit d'abord à la main dans un test, d'après la figure du manuel, avant d'écrire son générateur.
 - Un tracé calculé (pièce penchée, coudée) garde son calcul en commentaire à côté, pour qu'on puisse le refaire.
 - Travailler sur une branche, puis ouvrir une PR vers `main`. Messages de commit courts, en français.
 - Partir de `main` seulement après avoir vu la PR précédente fusionnée (`gh pr view N --json state` doit dire `MERGED`). Ne pas l'enchaîner avec `&&` : `gh pr view` réussit aussi quand la PR est encore ouverte.
