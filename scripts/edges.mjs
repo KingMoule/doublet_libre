@@ -32,15 +32,28 @@ const CHECK = `(async () => {
       const again = document.querySelector('[data-ex="clear"]');
       again?.scrollIntoView({ block: 'nearest' });
       if (!again || !inScreen(again.getBoundingClientRect())) problems.push('bouton Recommencer inaccessible');
-      // The product to draw, for each reaction of the Réaction menu and the Style « Produit »: the canvas leaves
-      // room after the reaction arrow, not only what is given.
+      // Each reaction of the Réaction menu, in each of its styles that leaves something to do on the canvas or in the
+      // panel: room after the reaction arrow for the product (Produit), before it for the alkene (Substrat), and the
+      // conditions to choose, each in view and whole (Réactifs).
       const choose = async (id, value) => { const s = document.querySelector('#' + id); s.value = value; s.dispatchEvent(new Event('change', { bubbles: true })); await wait(50); };
-      for (const reaction of ['hx', 'hydration']) {
+      for (const reaction of [...document.querySelectorAll('#ex-reaction option')].map((o) => o.value)) {
         await choose('ex-reaction', reaction);
-        await choose('ex-style', 'product');
-        const canvas = document.querySelector('#canvas').getBoundingClientRect();
-        const arrow = [...document.querySelectorAll('#canvas [data-kind="rxn"]')].at(-1).getBoundingClientRect();
-        if (canvas.right - arrow.right < 80) problems.push('pas de place pour dessiner le produit (' + reaction + ')');
+        for (const style of [...document.querySelectorAll('#ex-style option')].map((o) => o.value)) {
+          if (!['product', 'substrate', 'reagents'].includes(style)) continue;
+          await choose('ex-style', style);
+          const canvas = document.querySelector('#canvas').getBoundingClientRect();
+          const arrows = [...document.querySelectorAll('#canvas [data-kind="rxn"]')].map((a) => a.getBoundingClientRect());
+          if (style === 'product' && canvas.right - arrows.at(-1).right < 80) problems.push('pas de place pour dessiner le produit (' + reaction + ')');
+          if (style === 'substrate' && arrows[0].left - canvas.left < 80) problems.push('pas de place pour dessiner le substrat (' + reaction + ')');
+          if (style === 'reagents') {
+            const picks = [...document.querySelectorAll('.panel .picks button')];
+            if (picks.length !== 4) problems.push('choix des réactifs absents (' + reaction + ')');
+            for (const b of picks) {
+              b.scrollIntoView({ block: 'nearest' });
+              if (!inScreen(b.getBoundingClientRect()) || b.scrollWidth > b.clientWidth + 1) problems.push('choix ' + b.textContent + ' inaccessible ou coupé (' + reaction + ')');
+            }
+          }
+        }
       }
     }
     for (const b of document.querySelectorAll('.tool:not([hidden])')) {

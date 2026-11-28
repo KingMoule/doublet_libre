@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as M from '../src/model.js';
 import { LEVELS, series, stylesOf } from '../src/mechanism/generate.js';
 import { checkMechanism } from '../src/mechanism/check.js';
-import { answerMechanism, solution } from '../src/mechanism/exercise.js';
+import { answerMechanism, answerReagents, solution } from '../src/mechanism/exercise.js';
 import { fr } from '../src/i18n/fr.js';
 
 /**
@@ -16,11 +16,11 @@ const plain = PLAIN.flatMap((r) => [1, 2].flatMap((s) => series(`${r}-progressiv
 /** The first item of a level that passes a test, over a few seeds. @param {string} level @param {(i: Item) => boolean} f */
 const find = (level, f) => /** @type {Item} */ ([1, 2, 3, 4, 5, 6].flatMap((s) => series(level, s, 30).items).find(f));
 
-test('a reaction without a mechanism has two styles, the product and the substrate', () => {
+test('a reaction without a mechanism has three styles: the product, the conditions, the substrate', () => {
   for (const r of PLAIN) {
-    assert.deepEqual(stylesOf(r), ['progressive', 'product', 'substrate'], r);
+    assert.deepEqual(stylesOf(r), ['progressive', 'product', 'reagents', 'substrate'], r);
     assert.ok(LEVELS.includes(`${r}-substrate`) && !LEVELS.includes(`${r}-arrows`), r);
-    assert.deepEqual(series(`${r}-progressive`, 3).items.map((i) => i.style), [...Array(5).fill('product'), ...Array(5).fill('substrate')], r);
+    assert.deepEqual(series(`${r}-progressive`, 3).items.map((i) => i.style), [...Array(4).fill('product'), ...Array(3).fill('reagents'), ...Array(3).fill('substrate')], r);
   }
   assert.deepEqual(stylesOf('hx'), ['progressive', 'arrows', 'structures', 'complete', 'product']);
 });
@@ -58,7 +58,7 @@ test('the product style hides the products, the substrate style the alkene', () 
     if (item.style === 'product') {
       const [first] = checkMechanism(item.given, item.answer);
       assert.ok(states[0].length && !states[1].length && first.code === 'missingSpecies' && first.step === 1, item.alkene);
-    } else {
+    } else if (item.style === 'substrate') {
       assert.ok(!states[0].length && states[1].length, item.alkene);
       assert.match(answerMechanism(item, item.given).lines[0], /^Réactifs : Dessinez un alcène/, item.alkene);
     }
@@ -136,4 +136,25 @@ test('the solution says what the reaction does, and for a substrate how to go ba
     else if (item.product) assert.ok(said[0].includes(item.product), item.alkene);
   }
   assert.match(solution(series('ozonolysis-substrate', 1).items[0]).steps[1], /double liaison/);
+});
+
+test('the Réactifs style asks for the conditions among four: the reaction’s, and three that give something else', () => {
+  for (const item of PLAIN.flatMap((r) => [1, 2].flatMap((s) => series(`${r}-reagents`, s).items))) {
+    const ids = item.choices?.map((c) => c.reaction) ?? [];
+    assert.equal(new Set(ids).size, 4, item.alkene);
+    assert.ok(ids.includes(item.reaction), item.alkene);
+    assert.equal(answerReagents(item, item.reaction).verdict, 'right', item.alkene);
+    for (const r of ids.filter((x) => x !== item.reaction)) assert.equal(answerReagents(item, r).verdict, 'wrong', `${item.alkene} ${r}`);
+    // The whole reaction is given, a « ? » over its arrow.
+    const { states } = M.regions(item.given);
+    assert.ok(states[0].length && states[1].length, item.alkene);
+    assert.deepEqual([item.given.reactionArrows[0].above, item.given.reactionArrows[0].below], ['?', ''], item.alkene);
+  }
+  // The right answer is not always in the same place.
+  assert.ok(new Set(series('ozonolysis-reagents', 1).items.map((i) => i.choices?.findIndex((c) => c.reaction === 'ozonolysis'))).size > 1);
+  // A wrong choice says what it would give: KMnO₄ concentrated where the dilute was used.
+  const item = find('dihydroxylation-reagents', (i) => !!i.choices?.some((c) => c.reaction === 'cleavage'));
+  assert.match(answerReagents(item, 'cleavage').lines[0], /^Avec ces conditions, on obtiendrait : .+\.$/);
+  // Each choice is written as the textbook writes the conditions.
+  assert.ok(series('hydroboration-reagents', 1).items[0].choices?.some((c) => c.text === '1) BH₃ 2) H₂O₂, OH⁻'));
 });

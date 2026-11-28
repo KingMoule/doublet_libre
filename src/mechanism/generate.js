@@ -3,7 +3,7 @@ import * as M from '../model.js';
 import { add, angleOf, fromAngle, nextBondAngle, sub } from '../geometry.js';
 import { builder } from '../templates.js';
 import { STYLE, textWidth } from '../render.js';
-import { atomsOf, label, parts } from './check.js';
+import { atomsOf, named, parts, sameSet } from './check.js';
 import { series as namingSeries } from '../naming/generate.js';
 import { toGraph } from '../naming/graph.js';
 import { outcome, addition as sides } from './reactions.js';
@@ -19,23 +19,25 @@ import { fr } from '../i18n/fr.js';
  * reaction with parts taken away, as its style says.
  * @typedef {import('./check.js').Mechanism} Mechanism
  * @typedef {'hx' | 'hydration' | 'hydroboration' | 'hydrogenation' | 'dihydroxylation' | 'epoxidation' | 'ozonolysis' | 'cleavage'} Reaction
- * @typedef {'arrows' | 'structures' | 'complete' | 'product' | 'substrate'} Style
+ * @typedef {'arrows' | 'structures' | 'complete' | 'product' | 'reagents' | 'substrate'} Style
  * @typedef {{reaction: Reaction, style: Style, alkene: string, reagent: string, x: string, product: string,
- *   cation: 'primary' | 'secondary' | 'tertiary', substrate: M.Doc, given: M.Doc, answer: Mechanism, steps: number[]}} Item
+ *   cation: 'primary' | 'secondary' | 'tertiary', substrate: M.Doc, given: M.Doc, answer: Mechanism, steps: number[],
+ *   choices?: {reaction: Reaction, text: string}[]}} Item
  *   reagent: as the title writes it (HBr, H₂O (H₂SO₄), 1) O₃ 2) Zn, H₃O⁺); x: the halogen of HX; substrate: the
- *   alkene as the nomenclature drew it; given: the drawing the student starts from; steps: the steps whose arrows are asked
+ *   alkene as the nomenclature drew it; given: the drawing the student starts from; steps: the steps whose arrows are asked; choices: the conditions to
+ *   choose from (Réactifs)
  */
 
 export const REACTIONS = /** @type {Reaction[]} */ (['hx', 'hydration', 'hydroboration', 'hydrogenation', 'dihydroxylation', 'epoxidation', 'ozonolysis', 'cleavage']);
 /** The reactions whose mechanism is learnt; the others go without one. */
 const MECHANISMS = ['hx', 'hydration'];
-export const STYLES = ['progressive', 'arrows', 'structures', 'complete', 'product', 'substrate'];
-/** The styles of a reaction: those of a mechanism, or the product and the substrate of a global reaction. @param {string} reaction */
-export const stylesOf = (reaction) => (MECHANISMS.includes(reaction) ? STYLES.slice(0, 5) : ['progressive', 'product', 'substrate']);
+export const STYLES = ['progressive', 'arrows', 'structures', 'complete', 'product', 'reagents', 'substrate'];
+/** The styles of a reaction: those of a mechanism, or the product, the conditions and the substrate of a global reaction. @param {string} reaction */
+export const stylesOf = (reaction) => (MECHANISMS.includes(reaction) ? STYLES.slice(0, 5) : ['progressive', 'product', 'reagents', 'substrate']);
 /** A level is a reaction and one of its styles: hx-progressive, hydration-arrows, ozonolysis-substrate… */
 export const LEVELS = REACTIONS.flatMap((r) => stylesOf(r).map((s) => `${r}-${s}`));
 const PROGRESSIVE = /** @type {Style[]} */ (['arrows', 'arrows', 'arrows', 'structures', 'structures', 'structures', 'complete', 'complete', 'product', 'product']);
-const PLAIN_PROGRESSIVE = /** @type {Style[]} */ ([...Array(5).fill('product'), ...Array(5).fill('substrate')]);
+const PLAIN_PROGRESSIVE = /** @type {Style[]} */ ([...Array(4).fill('product'), ...Array(3).fill('reagents'), ...Array(3).fill('substrate')]);
 const HALIDES = ['Br', 'Cl', 'Br', 'I'];
 const L = 40;
 const GAP = 30; // between a molecule and a + or a reaction arrow
@@ -235,6 +237,25 @@ function drawPlain(d, a, reaction, [above, below]) {
   return mechanism(p.done(), [], null);
 }
 
+/** Conditions over and under an arrow as a title writes them: « 1) BH₃ 2) H₂O₂, OH⁻ », « H₂, Pt ». @param {string[]} conditions */
+const written = (conditions) => conditions.filter(Boolean).join(conditions[0].startsWith('1)') ? ' ' : ', ');
+
+/**
+ * The four conditions of a Réactifs item: the reaction's, and those of three other reactions of the table that give
+ * something else on this alkene (never two ways to the same products); the right one in a place that changes with k.
+ * @param {M.Doc} d @param {Reaction} reaction @param {string} text its conditions
+ * @param {import('../naming/graph.js').Graph[]} products @param {number} k
+ */
+function choose(d, reaction, text, products, k) {
+  const gives = (/** @type {string} */ r) => { const out = outcome(d, r); return out && parts(out, out.atoms.map((t) => t.id)).map((m) => m.g); };
+  const others = REACTIONS.filter((r) => { const g = r !== reaction && gives(r); return !!g && !sameSet(g, products); });
+  const start = k % others.length;
+  const list = [...others.slice(start), ...others.slice(0, start)].slice(0, 3)
+    .map((r) => ({ reaction: r, text: written(/** @type {Record<string, string[][]>} */ (fr.mechanism.conditions)[r][0]) }));
+  list.splice(k % 4, 0, { reaction, text });
+  return list;
+}
+
 /** The drawing with its arrows' roles, and the C–H bond the π arrow forms. @param {M.Doc} doc @param {string[]} roles @param {[string, string] | null} ch */
 const mechanism = (doc, roles, ch) => ({
   doc, roles: Object.fromEntries(doc.curvedArrows.map((c, i) => [c.id, roles[i]])), forms: ch ? { [doc.curvedArrows[0].id]: ch } : {},
@@ -288,14 +309,17 @@ export function series(level, seed, count = 10) {
       const n = answer.doc.reactionArrows.length;
       const later = [...Array(n).keys()].map((k) => k + 1);
       // What each style takes away: the curved arrows, the states after the reactants, the product or the alkene.
-      const [states, keep] = /** @type {[number[], number[]]} */ ({ arrows: [[], []], structures: [later, [1]], complete: [later, []], product: [[1], []], substrate: [[0], []] }[style]);
+      const [states, keep] = /** @type {[number[], number[]]} */ ({ arrows: [[], []], structures: [later, [1]], complete: [later, []], product: [[1], []], reagents: [[], []], substrate: [[0], []] }[style]);
       const given = hide(answer.doc, states, keep);
+      // Réactifs: the whole reaction, a « ? » over its arrow.
+      if (style === 'reagents') Object.assign(given.reactionArrows[0], { above: '?', below: '' });
       const last = M.regions(answer.doc).states[n];
       // A mechanism names its organic product; a global reaction all its products, as the messages call them.
       const organic = M.component(answer.doc, /** @type {string} */ (last.find((id) => M.findAtom(answer.doc, id)?.element === 'C')));
-      const product = plain ? parts(answer.doc, last).map((m) => label(m.g)).filter(Boolean).join(' + ') : nameOf(toGraph(answer.doc, organic)).name;
-      const reagent = plain ? conditions.filter(Boolean).join(conditions[0].startsWith('1)') ? ' ' : ', ') : reaction === 'hx' ? `H${x}` : fr.mechanism.water;
-      items.push({ reaction, style, alkene: name, reagent, x, product, cation: a.cation, substrate: d, given, answer, steps: style === 'arrows' || style === 'complete' ? later : [] });
+      const product = plain ? named(answer.doc, last) : nameOf(toGraph(answer.doc, organic)).name;
+      const reagent = plain ? written(conditions) : reaction === 'hx' ? `H${x}` : fr.mechanism.water;
+      const choices = style === 'reagents' ? choose(d, reaction, reagent, parts(answer.doc, last).map((m) => m.g), seed + i) : undefined;
+      items.push({ reaction, style, alkene: name, reagent, x, product, cation: a.cation, substrate: d, given, answer, steps: style === 'arrows' || style === 'complete' ? later : [], choices });
     }
   }
   return { level, seed, items };

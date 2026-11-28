@@ -16,7 +16,7 @@ import * as A from './apparatus.js';
 import { LEVELS, series } from './naming/generate.js';
 import { answerDrawing, answerName, solution } from './naming/exercise.js';
 import { LEVELS as MECHANISM_LEVELS, REACTIONS, series as mechanismSeries, stylesOf } from './mechanism/generate.js';
-import { answerMechanism, solution as mechanismSolution } from './mechanism/exercise.js';
+import { answerMechanism, answerReagents, solution as mechanismSolution } from './mechanism/exercise.js';
 
 /**
  * Interactive editor: tools, pointer and keyboard handling, properties panel.
@@ -83,12 +83,13 @@ const KINDS = {
     /** @param {string} l */ levelName: (l) => { const [r, s] = l.split('-'); return `${/** @type {Record<string, string>} */ (MX.reactions)[r]} · ${/** @type {Record<string, string>} */ (MX.levels)[s]}`; },
     typed: () => false,
     /** @param {any} it */ start: (it) => it.given,
-    /** @param {any} it @param {M.Doc} doc */ answer: (it, doc) => answerMechanism(it, doc),
+    /** @param {any} it @param {M.Doc} doc @param {string} picked the conditions chosen (Réactifs) */ answer: (it, doc, picked) => (it.choices ? answerReagents(it, picked) : answerMechanism(it, doc)),
     /** @param {any} it */ solution: (it) => mechanismSolution(it),
     /** @param {any} it */ tool: (it) => (it.style === 'arrows' ? 'curved' : 'chain'),
     /** @param {any} it */
     // The alkene of a Substrat item is what the student finds: the title keeps it hidden.
-    ask: (it) => ({ prompt: /** @type {Record<string, string>} */ (MX.prompts)[it.style], target: MX.reaction(it.style === 'substrate' ? '?' : it.alkene, it.reagent), help: it.style === 'product' || it.style === 'substrate' ? MX.helpDraw : MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
+    ask: (it) => ({ prompt: /** @type {Record<string, string>} */ (MX.prompts)[it.style], target: it.style === 'reagents' ? MX.reaction(it.alkene, '?') : MX.reaction(it.style === 'substrate' ? '?' : it.alkene, it.reagent),
+      help: it.choices ? MX.helpPick : it.style === 'product' || it.style === 'substrate' ? MX.helpDraw : MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
   },
 };
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
@@ -327,10 +328,12 @@ export function startEditor(root) {
     const { w: cw, h: ch } = size();
     const ar = ch / cw;
     // A mechanism to complete is framed whole: the room left to draw in counts, not only what is given,
-    // with two bonds more on the right for a product drawn longer than expected.
+    // with two bonds more where the student draws (the alkene on the left in Substrat, the product on the right)
+    // for a molecule drawn longer than expected.
     const it = S.mode === 'exercise' && S.ex?.kind === 'mechanism' ? S.ex.items[S.ex.cur] : null;
     const answer = it && docBounds(it.answer.doc, layout(it.answer.doc));
-    const [own, whole] = [docBounds(S.doc, S.layout), answer && { ...answer, r: answer.r + 2 * STYLE.bond }];
+    const more = it?.style === 'substrate' ? { l: (answer?.l ?? 0) - 2 * STYLE.bond } : { r: (answer?.r ?? 0) + 2 * STYLE.bond };
+    const [own, whole] = [docBounds(S.doc, S.layout), answer && { ...answer, ...more }];
     const b = own && whole ? { l: Math.min(own.l, whole.l), t: Math.min(own.t, whole.t), r: Math.max(own.r, whole.r), b: Math.max(own.b, whole.b) } : own ?? whole;
     const minW = 420;
     if (!b) {
@@ -1048,14 +1051,16 @@ export function startEditor(root) {
     updateStatus();
   }
 
-  /** @param {string} act a button of the exercise panel */
-  function exerciseAction(act) {
+  /** @param {string} act a button of the exercise panel @param {string} [pick] the conditions it stands for (Réactifs) */
+  function exerciseAction(act, pick) {
     const ex = /** @type {NonNullable<typeof S.ex>} */ (S.ex);
     const K = KINDS[ex.kind];
     const it = ex.items[ex.cur];
+    // Touching conditions checks them at once, as Vérifier would.
+    if (act === 'pick') { ex.answers[ex.cur] = pick ?? ''; act = 'check'; }
     if (act === 'check') {
       const input = /** @type {HTMLInputElement | null} */ (panel.querySelector('#ex-answer'));
-      const a = K.answer(it, S.doc, input?.value ?? '');
+      const a = K.answer(it, S.doc, input?.value ?? ex.answers[ex.cur] ?? '');
       ex.fb = a;
       if (a.verdict !== 'empty' && !ex.res[ex.cur]) ex.res[ex.cur] = a.verdict === 'wrong' ? 'wrong' : K.typed(it) && a.lines.length ? 'remark' : 'ok';
       render();
@@ -1365,9 +1370,12 @@ export function startEditor(root) {
       ? `<p><strong class="chem">${esc(ask.target)}</strong></p><p>${ask.prompt}</p>`
       : `<p>${ask.prompt} <strong class="chem">${esc(ask.target)}</strong></p>`;
     h += `<div class="progress"><span class="count">${X.question(ex.cur + 1, n)}</span>${dots}</div>`;
+    // Conditions to choose (Réactifs): one button each, the one touched marked right or wrong.
+    const picks = /** @type {{reaction: string, text: string}[] | undefined} */ (it.choices)?.map((c) => `<button type="button" data-ex="pick" data-pick="${c.reaction}"${ex.answers[ex.cur] === c.reaction && ex.fb ? ` data-r="${ex.fb.verdict === 'wrong' ? 'wrong' : 'ok'}"` : ''}${ex.showSol ? ' disabled' : ''}><span class="chem">${esc(c.text)}</span></button>`).join('');
     h += K.typed(it)
       ? `<p>${X.nameIt}</p><label for="ex-answer">${X.answer}</label>
         <div class="row"><input id="ex-answer" class="grow" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${X.placeholder}" value="${esc(ex.answers[ex.cur] ?? '')}"><button type="button" class="primary" data-ex="check">${X.check}</button></div>`
+      : picks ? `${question}<p class="muted small">${ask.help}</p><div class="picks">${picks}</div>`
       : `${question}<p class="muted small">${ask.help}</p>
         <div class="row"><button type="button" class="primary" data-ex="check"${ex.showSol ? ' disabled' : ''}>${X.check}</button><button type="button" data-ex="clear"${ex.showSol ? ' disabled' : ''}>${K.clear}</button></div>`;
     const fb = ex.fb;
@@ -1609,7 +1617,7 @@ export function startEditor(root) {
   // The exercise panel: its buttons, Enter in the answer, the level.
   panel.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-ex]'));
-    if (b && S.ex && !(/** @type {HTMLButtonElement} */ (b).disabled)) exerciseAction(b.dataset.ex ?? '');
+    if (b && S.ex && !(/** @type {HTMLButtonElement} */ (b).disabled)) exerciseAction(b.dataset.ex ?? '', b.dataset.pick);
   });
   panel.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && /** @type {HTMLElement} */ (e.target).id === 'ex-answer') { e.preventDefault(); exerciseAction('check'); }

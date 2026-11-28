@@ -1,8 +1,7 @@
 // @ts-check
 import { fr } from '../i18n/fr.js';
 import * as M from '../model.js';
-import { sameMolecule } from '../naming/graph.js';
-import { checkMechanism, checkSubstrate, parts } from './check.js';
+import { checkMechanism, checkSubstrate, named, parts, sameSet } from './check.js';
 import { NET, outcome } from './reactions.js';
 
 /**
@@ -13,9 +12,20 @@ import { NET, outcome } from './reactions.js';
  */
 
 const X = fr.mechanism;
+/** The molecules of a drawing, as graphs. @param {M.Doc} d */
+const molecules = (d) => parts(d, d.atoms.map((a) => a.id)).map((m) => m.g);
 
-/** Whether two lists of molecules are the same, whatever their order. @param {import('../naming/graph.js').Graph[]} gs @param {import('../naming/graph.js').Graph[]} hs */
-const sameSet = (gs, hs) => { const left = [...hs]; return gs.length === hs.length && gs.every((g) => { const i = left.findIndex((h) => sameMolecule(g, h)); return i >= 0 && left.splice(i, 1).length; }); };
+/**
+ * The conditions chosen for a Réactifs item: right when the reaction turns the alkene into the products given,
+ * whichever reaction it is; otherwise what they would give.
+ * @param {Item} item @param {string} picked a reaction of the table @returns {Answer}
+ */
+export function answerReagents(item, picked) {
+  const out = outcome(item.substrate, picked);
+  const { states } = M.regions(item.answer.doc);
+  if (out && sameSet(molecules(out), parts(item.answer.doc, states[states.length - 1]).map((m) => m.g))) return { verdict: 'right', title: fr.exercise.right, lines: [], ids: [] };
+  return { verdict: 'wrong', title: X.wrong, lines: [X.findings.otherConditions({ names: out ? named(out) : '' })], ids: [] };
+}
 
 /**
  * The reaction of the table whose products the student drew instead, on the same alkene (hydration for
@@ -28,7 +38,7 @@ function otherReaction(item, doc) {
   return Object.keys(NET).find((r) => {
     if (r === item.reaction) return false;
     const out = outcome(item.substrate, r, item.x || 'Br');
-    return out && sameSet(drawn, parts(out, out.atoms.map((a) => a.id)).map((m) => m.g));
+    return out && sameSet(drawn, molecules(out));
   });
 }
 
