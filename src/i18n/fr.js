@@ -8,7 +8,7 @@ const signed = (q) => (q > 0 ? `+${q}` : q < 0 ? `−${-q}` : '0');
 /** French plural: 0 and 1 take the singular. @param {number} n @param {string} one @param {string} [many] */
 const count = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 /** In mechanism messages: an atom with its article, and the group a product carries (Markovnikov). @type {Record<string, string>} */
-const ELEMENTS = { Cl: 'le chlore', Br: 'le brome', I: 'l’iode', O: 'l’oxygène' };
+const ELEMENTS = { Cl: 'le chlore', Br: 'le brome', I: 'l’iode', O: 'l’oxygène', C: 'le carbone' };
 /** @type {Record<string, string>} */
 const GROUPS = { Cl: 'Le Cl', Br: 'Le Br', I: 'L’I', O: 'Le groupe OH' };
 
@@ -21,6 +21,8 @@ export const fr = {
   /** @type {{benzene: string, size: (n: number) => string}} */
   ringNames: { benzene: 'Benzène', size: (n) => `Cycle à ${n}` },
   bondNames: { 1: 'Simple', 2: 'Double', 3: 'Triple', wedge: 'Coin plein', hash: 'Coin haché' },
+  // The R of the Atom tool, as in RO–OR.
+  anyGroup: 'R : un groupe quelconque (touche R)',
   bondHints: { wedge: 'sort du plan', hash: 'entre dans le plan' },
   /** The two choices of the Doublet, Charge, δ and curved-arrow tools, in their option window. */
   variants: {
@@ -391,7 +393,7 @@ export const fr = {
       ozonolysis: [['1) O₃', '2) Zn, H₃O⁺']], cleavage: [['KMnO₄ conc.', 'H₃O⁺'], ['1) O₃', '2) H₂O₂, H₃O⁺']],
     },
     // A product the namer leaves out (SPEC, Exercices de nomenclature, Hors programme), said by what it is.
-    kinds: { acid: 'un acide carboxylique', oxirane: 'un oxirane', bridged: 'l’ion ponté' },
+    kinds: { acid: 'un acide carboxylique', oxirane: 'un oxirane', bridged: 'l’ion ponté', radical: 'un radical' },
     levels: { progressive: 'Progressif', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur', reagents: 'Réactifs à choisir', substrate: 'Substrat de départ' },
     /** @param {string} alkene @param {string} reagent */ reaction: (alkene, reagent) => `${alkene} + ${reagent}`,
     prompts: {
@@ -414,7 +416,14 @@ export const fr = {
     restart: 'Recommencer',
     wrong: 'Pas tout à fait',
     /** @param {number} k */ step: (k) => `Étape ${k}`,
-    /** @param {number} k the state @param {number} last the product's */ state: (k, last) => (k === 0 ? 'Réactifs' : k === last ? 'Produit' : `Après l’étape ${k}`),
+    // A state by the steps around it (model.js regions): on one line, Réactifs, Après l’étape k, Produit; on several
+    // lines (figure 7.12), each line's reactants and what its step gives.
+    /** @param {number} k the state @param {{from: number, to: number}[]} steps */
+    state: (k, steps) => {
+      const before = steps.findIndex((s) => s.to === k), next = steps.findIndex((s) => s.from === k);
+      if (steps.every((s, i) => s.from === i)) return k === 0 ? 'Réactifs' : next < 0 ? 'Produit' : `Après l’étape ${k}`;
+      return before < 0 ? `Réactifs de l’étape ${next + 1}` : `Après l’étape ${before + 1}`;
+    },
     solution: {
       cations: { primary: 'primaire', secondary: 'secondaire', tertiary: 'tertiaire' },
       hx: {
@@ -465,7 +474,12 @@ export const fr = {
       },
     },
     findings: {
-      /** @param {{n: number}} p */ steps: ({ n }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''} : une flèche de réaction par étape.`,
+      /** @param {{n: number, lines?: number}} p */
+      steps: ({ n, lines = 1 }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''}${lines > 1 ? `, sur ${lines} lignes` : ''} : une flèche de réaction par étape.`,
+      // A single electron forgotten or put on another atom (a radical, figure 7.12).
+      /** @param {{single: string}} p */
+      radical: ({ single }) => (single ? `${(ELEMENTS[single] ?? single).replace(/^le /, 'Le ').replace(/^l’/, 'L’')} porte un électron célibataire (un point) : c’est un radical.` : 'Cette espèce n’a pas d’électron célibataire.'),
+      radicalPosition: () => 'Le Br se lie au carbone de la double liaison qui porte le plus de H : l’électron célibataire reste sur le carbone le plus substitué, le radical le plus stable (anti-Markovnikov).',
       /** @param {{name: string, last?: boolean}} p */
       missingSpecies: ({ name, last }) => (last ? `Il manque ${name || 'un produit'} parmi les produits.` : `Il manque ${name || 'une espèce'} : ce qui se forme à une étape reste dessiné jusqu’à ce qu’il réagisse.`),
       extraSpecies: () => 'Une espèce de trop : chacune vient de l’étape d’avant.',
@@ -511,8 +525,19 @@ export const fr = {
         /** @param {{source: string}} p */ base: ({ source }) => `Il manque la flèche d’un doublet de ${source} (la base, le solvant) vers un H de l’ion oxonium.`,
         bridge: () => 'Il manque la flèche d’un doublet de l’halogène attaqué vers l’autre carbone de la double liaison : elle ferme le pont de l’ion ponté (figure 7.23).',
         /** @param {{source: string}} p */ open: ({ source }) => `Il manque la flèche d’un doublet de ${source} vers le carbone le plus substitué de l’ion ponté.`,
+        // Half arrows (figure 7.12): homolysis, a bond breaking, an electron to each atom; radical, the single
+        // electron of a radical toward the bond it forms; half, an electron of a bond toward that same new bond.
+        /** @param {{el: string, bond: string}} p */
+        homolysis: ({ el, bond }) => `Il manque la demi-flèche de la liaison ${bond} vers ${ELEMENTS[el] ?? el} : une liaison qui se rompt en deux radicaux laisse un électron à chaque atome.`,
+        /** @param {{source: string}} p */ radical: ({ source }) => `Il manque la demi-flèche de l’électron célibataire de ${source || 'ce radical'} vers la liaison qu’il forme.`,
+        /** @param {{bond: string}} p */ half: ({ bond }) => `Il manque la demi-flèche d’un électron de la liaison ${bond} vers la liaison en formation : chaque liaison nouvelle reçoit un électron de chaque côté.`,
       },
       wrongTarget: {
+        /** @param {{el: string, bond: string}} p */ homolysis: ({ el, bond }) => `Un électron de la liaison ${bond} reste sur ${ELEMENTS[el] ?? el}.`,
+        /** @param {{source: string, el: string, target: string}} p */
+        radical: ({ source, el, target }) => (el === 'H' ? `L’électron célibataire de ${source || 'ce radical'} forme une liaison avec le H de ${target}.`
+          : `${source} se lie au carbone de la double liaison qui porte le plus de H : il se forme le radical le plus substitué, le plus stable (anti-Markovnikov).`),
+        /** @param {{bond: string}} p */ half: ({ bond }) => `Un électron de la liaison ${bond} va vers la liaison en formation, rejoindre l’électron célibataire du radical.`,
         /** @param {{target: string, el: string}} p */
         pi: ({ target, el }) => (el === 'H' ? `Le doublet π attaque un H de ${target}, pauvre en électrons (δ+).` : `Le doublet π attaque le ${el} le plus proche de ${target}, rendu δ+ par induction.`),
         /** @param {{el: string, bond: string}} p */
@@ -524,7 +549,8 @@ export const fr = {
       },
       reversed: () => 'Une flèche part des électrons (un doublet ou une liaison) et pointe vers l’atome qui les reçoit.',
       markovnikovArrow: () => 'Le H se lie au carbone de la double liaison qui porte le plus de H (Markovnikov).',
-      halfArrow: () => 'Deux électrons se déplacent : une flèche à pointe complète, pas une demi-flèche.',
+      /** @param {{electrons: number}} p the electrons the expected arrow moves */
+      halfArrow: ({ electrons }) => (electrons === 1 ? 'Un seul électron se déplace : une demi-flèche (une seule barbe), pas une flèche à pointe complète.' : 'Deux électrons se déplacent : une flèche à pointe complète, pas une demi-flèche.'),
       extraArrow: () => 'Une flèche de trop à cette étape.',
     },
   },

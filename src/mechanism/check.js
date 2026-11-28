@@ -32,15 +32,17 @@ const HALOGENS = ['F', 'Cl', 'Br', 'I'];
  */
 export function checkMechanism(doc, answer, steps) {
   const got = M.regions(doc), want = M.regions(answer.doc);
-  const n = want.arrows.length;
-  if (got.arrows.length !== n) return [{ code: 'steps', at: 'state', step: 0, ids: got.arrows.map((r) => r.id), params: { n } }];
+  const n = want.arrows.length, lines = want.ys.length;
+  if (got.arrows.length !== n || got.ys.length !== lines) return [{ code: 'steps', at: 'state', step: 0, ids: got.arrows.map((r) => r.id), params: { n, lines } }];
   /** @type {Finding[]} */
   const out = [];
-  for (let k = 0; k <= n; k++) {
-    const { found, maps } = species(doc, got.states[k], answer.doc, want.states[k], k);
+  want.states.forEach((wanted, k) => {
+    const { found, maps } = species(doc, got.states[k], answer.doc, wanted, k);
     out.push(...found);
-    if (k < n && (!steps || steps.includes(k + 1))) out.push(...arrows(doc, got.states[k], answer, want.states[k], maps, k + 1));
-  }
+    // The arrows of the step that leaves this state, on its line.
+    const s = want.steps.findIndex((st) => st.from === k);
+    if (s >= 0 && (!steps || steps.includes(s + 1))) out.push(...arrows(doc, got.states[k], answer, wanted, maps, s + 1));
+  });
   return out;
 }
 
@@ -68,7 +70,9 @@ export function parts(doc, ids) {
 export const sameSet = (gs, hs) => { const left = [...hs]; return gs.length === hs.length && gs.every((g) => { const i = left.findIndex((h) => sameMolecule(g, h)); return i >= 0 && left.splice(i, 1).length; }); };
 const charge = (/** @type {Graph} */ g) => g.atoms.reduce((s, a) => s + a.charge, 0);
 const formula = (/** @type {Graph} */ g) => `${g.atoms.map((a) => a.el).sort().join('')}${charge(g)}`;
-const skeleton = (/** @type {Graph} */ g) => ({ ...g, atoms: g.atoms.map((a) => ({ ...a, charge: 0 })) });
+const radicals = (/** @type {Graph} */ g) => g.atoms.reduce((s, a) => s + (a.radical ?? 0), 0);
+/** The atoms and bonds alone, without charges or single electrons. @param {Graph} g */
+const skeleton = (g) => ({ ...g, atoms: g.atoms.map((a) => ({ el: a.el, charge: 0 })) });
 /** @param {Generator<number[]>} gen @param {number} n */
 const take = (gen, n) => { const out = []; for (const x of gen) { out.push(x); if (out.length >= n) break; } return out; };
 
@@ -95,11 +99,17 @@ function species(doc, ids, ans, wantIds, k) {
     const d = drawn.find((x) => sameMolecule(skeleton(x.g), skeleton(e.g))) ?? drawn.find((x) => formula(x.g) === formula(e.g)) ?? drawn[0];
     if (!d) { found.push({ code: 'missingSpecies', at: 'state', step: k, ids: [], params: { name: label(e.g) } }); continue; }
     drawn.splice(drawn.indexOf(d), 1);
-    const code = sameMolecule(skeleton(d.g), skeleton(e.g)) ? (charge(d.g) === charge(e.g) ? 'cationPosition' : 'charge')
+    // The same atoms and bonds: a charge or a single electron missing, or on the wrong atom.
+    const code = sameMolecule(skeleton(d.g), skeleton(e.g))
+      ? (charge(d.g) !== charge(e.g) ? 'charge' : radicals(d.g) !== radicals(e.g) ? 'radical' : radicals(e.g) ? 'radicalPosition' : 'cationPosition')
       : formula(d.g) === formula(e.g) ? 'isomer' : 'otherSpecies';
-    // What the expected species says: its charged atom (C+, O+, Br-) and the group a product carries (Br, O).
+    // What the expected species says: its charged atom (C+, O+, Br-), the atom of its single electron, and the
+    // group a product carries (Br, O).
     const charged = e.g.atoms.find((a) => a.charge);
-    const params = { name: label(d.g), charged: charged ? `${charged.el}${charged.charge > 0 ? '+' : '-'}` : '', group: e.g.atoms.find((a) => a.el !== 'C')?.el ?? '' };
+    const params = {
+      name: label(d.g), charged: charged ? `${charged.el}${charged.charge > 0 ? '+' : '-'}` : '',
+      single: e.g.atoms.find((a) => a.radical)?.el ?? '', group: e.g.atoms.find((a) => a.el !== 'C')?.el ?? '',
+    };
     found.push({ code, at: 'state', step: k, ids: d.ids, params });
   }
   for (const d of drawn) found.push({ code: 'extraSpecies', at: 'state', step: k, ids: d.ids, params: {} });
@@ -112,17 +122,23 @@ const ALONE = /** @type {Record<string, Record<number, string>>} */ ({
   ...Object.fromEntries(HALOGENS.map((x) => [x, { [-1]: `${x}⁻`, 0: `H${x}` }])),
 });
 
+/** Species by their formula (and • for a radical): CO₂, and those of a generic R (figure 7.12). */
+const FORMULAS = /** @type {Record<string, string>} */ ({ COO0: 'CO₂', OORR0: 'ROOR', OR0: 'ROH', 'OR0•': 'RO•' });
+
 /**
- * How a species is called in a message: HBr, Br⁻, H₂O, H₃O⁺, CO₂, or its name; what it is when the namer leaves it
- * out (an acid, an oxirane); nothing for the rest (a carbocation).
+ * How a species is called in a message: HBr, Br⁻, Br•, H₂O, H₃O⁺, CO₂, RO•, or its name; what it is when the namer
+ * leaves it out (an acid, an oxirane, a radical); nothing for the rest (a carbocation).
  * @param {Graph} g
  */
 export function label(g) {
+  const single = radicals(g) ? '•' : '';
   if (g.atoms.length === 1) {
     const { el, charge: c } = g.atoms[0];
-    return ALONE[el]?.[c] ?? `${el}${c < 0 ? '⁻' : c > 0 ? '⁺' : ''}`;
+    return single ? `${el}•` : ALONE[el]?.[c] ?? `${el}${c < 0 ? '⁻' : c > 0 ? '⁺' : ''}`;
   }
-  if (formula(g) === 'COO0') return 'CO₂';
+  if (FORMULAS[formula(g) + single]) return FORMULAS[formula(g) + single];
+  // The namer names the skeleton: a radical goes by what it is.
+  if (single) return fr.mechanism.kinds.radical;
   if (g.atoms.length === 2 && g.atoms[0].el === g.atoms[1].el && HALOGENS.includes(g.atoms[0].el) && !charge(g)) return `${g.atoms[0].el}₂`;
   try { return nameOf(g).name; } catch (e) { if (e instanceof NamingError) return fr.mechanism.kinds[/** @type {'acid'} */ (kind(g))] ?? ''; throw e; }
 }
@@ -267,23 +283,24 @@ function arrows(doc, ids, answer, wantIds, maps, step) {
 
 /**
  * What the messages say of an expected arrow: the species its electrons come from (Br⁻, H₂O), the species of
- * the atom that receives them (HBr, H₃O⁺), that atom's element (Br, O), and the bond it breaks, that atom last
- * (H–Br, Br–Br, C–Br).
+ * the atom that receives them (HBr, H₃O⁺), that atom's element (Br, O), the bond it breaks, that atom last
+ * (H–Br, Br–Br, C–Br, C=C), and how many electrons it moves.
  * @param {Doc} doc @param {CurvedArrow} c
  */
 function said(doc, c) {
   const from = atomsOf(doc, c.from), to = atomsOf(doc, c.to);
   const atom = to.find((a) => !from.includes(a)) ?? to[0];
   const el = (/** @type {string} */ id) => M.findAtom(doc, id)?.element ?? '';
-  const bond = 'bond' in c.from ? [...from.filter((a) => a !== atom), ...from.filter((a) => a === atom)].map(el).join('–') : '';
-  return { source: speciesOf(doc, from[0]), target: speciesOf(doc, atom), el: el(atom), bond };
+  const sign = 'bond' in c.from && M.findBond(doc, c.from.bond)?.order === 2 ? '=' : '–';
+  const bond = 'bond' in c.from ? [...from.filter((a) => a !== atom), ...from.filter((a) => a === atom)].map(el).join(sign) : '';
+  return { source: speciesOf(doc, from[0]), target: speciesOf(doc, atom), el: el(atom), bond, electrons: c.electrons };
 }
 
 /**
  * Drawn arrows against the expected ones: first those drawn right (a half arrow said so), then for each one
  * missing, an arrow from its electrons to the wrong place, one the other way round, or none; what is left is too many.
  * @param {{c: CurvedArrow, move: Move}[]} drawn @param {{c: CurvedArrow, move: Move}[]} expected
- * @param {Record<string, string>} roles @param {number} step @param {(c: CurvedArrow) => Record<string, string>} params what a message says of an expected arrow
+ * @param {Record<string, string>} roles @param {number} step @param {(c: CurvedArrow) => Record<string, string | number>} params what a message says of an expected arrow
  * @returns {Finding[]}
  */
 function compare(drawn, expected, roles, step, params) {

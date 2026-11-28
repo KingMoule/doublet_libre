@@ -43,6 +43,15 @@ test('a carbon with two identical bonds in a line is labelled, so they do not re
   assert.deepEqual(layout(f).atoms.get(cf.id).label.runs[0].segs.map((s) => s.text), ['H', '2', 'C']);
 });
 
+test('R, any group, is written R and carries no H: R–O• of a peroxide', () => {
+  const d = M.emptyDoc();
+  const r = M.addAtom(d, { element: 'R', x: 0, y: 0 }), o = M.addAtom(d, { element: 'O', x: 40, y: 0 });
+  M.addBond(d, r.id, o.id);
+  M.addMark(d, o.id, 'radical');
+  assert.deepEqual(layout(d).atoms.get(r.id).label.runs[0].segs.map((s) => s.text), ['R']);
+  assert.deepEqual(layout(d).atoms.get(o.id).label.runs[0].segs.map((s) => s.text), ['O']);
+});
+
 test('lone pairs sit above, below, left or right of the symbol, away from bonds (GR-5.2)', () => {
   const L = layout(sampleSN2());
   const side = (c) => (Math.abs(c.x - 240) < 1 ? (c.y < 100 ? 'top' : 'bottom') : c.x > 240 ? 'right' : 'left');

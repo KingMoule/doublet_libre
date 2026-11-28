@@ -64,17 +64,17 @@ function mixedCharges(doc) {
 
 /**
  * Around each reaction arrow, the species on its left and on its right (between neighbouring
- * arrows, by x): the total charge must match, and ↔ needs the same atoms and σ bonds.
+ * arrows on its line, model.js regions): the total charge must match, and ↔ needs the same atoms and σ bonds.
  * @param {Doc} doc
  */
 function reactionSides(doc) {
   /** @type {Warning[]} */
   const out = [];
-  const { arrows, states } = regions(doc);
+  const { arrows, states, steps } = regions(doc);
   arrows.forEach((r, i) => {
     if (r.kind === 'retro') return;
     const atoms = (/** @type {string[]} */ ids) => ids.map((id) => /** @type {import('./model.js').Atom} */ (findAtom(doc, id)));
-    const [left, right] = [atoms(states[i]), atoms(states[i + 1])];
+    const [left, right] = [atoms(states[steps[i].from]), atoms(states[steps[i].to])];
     if (!left.length || !right.length) return;
     const charge = (/** @type {typeof left} */ atoms) => atoms.reduce((s, a) => s + a.charge, 0);
     if (charge(left) !== charge(right)) out.push({ code: 'charge', ids: [r.id], params: { left: charge(left), right: charge(right) } });

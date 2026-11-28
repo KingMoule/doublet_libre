@@ -22,7 +22,7 @@ Proposition complète, avec la recherche sur ChemDraw, ChemSketch, Kekule.js et 
 
 ## Ce que l'app dessine
 
-- **Formule topologique** : carbones implicites, angles de 120°, longueur constante, hétéroatomes avec leurs H (OH, NH₂, HO– inversé).
+- **Formule topologique** : carbones implicites, angles de 120°, longueur constante, hétéroatomes avec leurs H (OH, NH₂, HO– inversé). Un carbone se marque C s'il a deux liaisons identiques en ligne (O=C=O) ou s'il est dans une molécule d'une seule liaison (H₂C=O) (GR-2.1.2). L'outil Atome a aussi **R**, un groupe quelconque, sans H (RO–OR).
 - **Doublets libres** accrochés à l'atome, en deux points au-dessus, en dessous, à gauche ou à droite du symbole.
 - **Charges formelles** « + », « − », « 2+ » en exposant en haut à droite, sans cercle ; **δ+ / δ−** accrochés à l'atome : l'outil δ pose le signe choisi, et un clic sur le même signe l'enlève.
 - **Grille hexagonale** au fond, de côté égal à la liaison : un atome, une liaison, une chaîne ou un cycle posés sur le fond s'y accrochent, et le zigzag suit ses arêtes. Glisser reste libre (pas de 15°).
@@ -127,6 +127,8 @@ Une égalité entre deux carbones différents n'est écartée que si la réactio
 **Correction** (`src/mechanism/check.js`, pur) : tout le dessin de l'étudiant, donné et ajouté, se compare au mécanisme attendu, état par état (découpés par les flèches de réaction), sur les graphes comme en nomenclature.
 - Une flèche courbe se lit par les électrons qu'elle déplace (n'importe quel doublet d'un atome, ou une liaison) et par où ils vont. Une flèche vers un atome vaut la flèche vers la liaison qu'elle forme avec l'atome de départ (π vers le H, ou vers la liaison C–H en formation).
 - Une molécule symétrique s'apparie de toutes les façons possibles (but-2-ène) ; on garde celle qui laisse le moins à dire.
+- Un mécanisme peut s'écrire sur plusieurs lignes, une équation par ligne (figure 7.12). Des flèches de réaction à moins de deux liaisons et demie de hauteur l'une de l'autre sont sur la même ligne, et un atome appartient à la ligne la plus proche. Les avertissements de charge pèsent aussi chaque flèche sur sa ligne.
+- Un électron célibataire fait partie de l'espèce : un radical sans son point, ou avec le point sur un autre atome, a son retour. Une demi-flèche se lit comme une flèche, et la correction dit quand il en faut une (un électron) ou une flèche complète (deux).
 - Le premier écart est montré, avec son étape, et entouré sur le dessin.
 
 **Interface** : deux menus dans le panneau, Réaction et Style (la nomenclature garde son menu Niveau). Le menu Style ne montre que les styles de la réaction ; un style qu'elle n'a pas revient à Progressif. En Réactifs, les quatre conditions sont des boutons : celui touché se marque juste ou faux, et le retour s'affiche dessous ; outils de la nomenclature plus Doublet, Charge et Flèche courbe ; Recommencer remet ce qui est donné ; la vue encadre tout le mécanisme attendu, la place à dessiner comprise, et deux liaisons de plus du côté où l'on dessine ; ce que dit le retour est entouré sur le dessin ; lien `#mecanisme-<réaction>-<style>-<graine>` (`#mecanisme-hydration-arrows-4821`).
