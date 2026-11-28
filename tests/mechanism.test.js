@@ -173,5 +173,5 @@ test('every finding has its message, and each arrow its own by role', () => {
   for (const code of ['steps', 'missingSpecies', 'extraSpecies', 'cationPosition', 'charge', 'isomer', 'otherReaction', 'otherSpecies', 'noAlkene', 'undecided', 'otherAlkene', 'reversed', 'markovnikovArrow', 'halfArrow', 'extraArrow']) {
     assert.equal(typeof F[code], 'function', code);
   }
-  for (const code of ['missingArrow', 'wrongTarget']) for (const role of ['pi', 'leaving', 'attack', 'base']) assert.equal(typeof F[code][role], 'function', `${code}.${role}`);
+  for (const code of ['missingArrow', 'wrongTarget']) for (const role of ['pi', 'leaving', 'attack', 'base', 'bridge', 'open']) assert.equal(typeof F[code][role], 'function', `${code}.${role}`);
 });
