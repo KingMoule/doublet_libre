@@ -4,6 +4,8 @@ import * as M from '../src/model.js';
 import { builder } from '../src/templates.js';
 import { checkMechanism } from '../src/mechanism/check.js';
 import { fr } from '../src/i18n/fr.js';
+import { series } from '../src/mechanism/generate.js';
+import { answerMechanism, solution } from '../src/mechanism/exercise.js';
 
 /**
  * The bromination of 2-méthylpropène as the textbook draws it (figure 7.24, after figure 7.23 for éthène). Step 1:
@@ -97,4 +99,47 @@ test('the bromonium ion and Br₂ have their names; the + of the bridge is the b
   // HX keeps its words: the π bond toward the H, H–Br toward Br.
   assert.equal(F.missingArrow.pi({ target: 'HBr', el: 'H' }), 'Il manque la flèche du doublet π vers le H de HBr.');
   assert.equal(F.missingArrow.leaving({ el: 'Br', bond: 'H–Br' }), 'Il manque la flèche de la liaison H–Br vers le brome : sans elle, le H aurait deux liaisons.');
+});
+
+// ---------- the generator ----------
+
+const items = [1, 2, 3].flatMap((s) => series('halogenation-progressive', s).items);
+
+test('each generated addition of X₂ passes its own check, drawn as figure 7.23 draws it', () => {
+  for (const item of items) {
+    assert.deepEqual(checkMechanism(item.answer.doc, item.answer), [], item.alkene);
+    assert.match(item.reagent, /^(Br|Cl)₂$/, item.alkene);
+    assert.match(item.product, /di(bromo|chloro)/, item.alkene);
+    if (item.style === 'product') continue;
+    const { doc, roles } = item.answer;
+    assert.deepEqual(Object.values(roles), ['pi', 'leaving', 'bridge', 'open', 'leaving'], item.alkene);
+    // The bridge: X⁺ in a ring of three, with two lone pairs.
+    const plus = /** @type {M.Atom} */ (doc.atoms.find((a) => a.element === item.x && a.charge === 1));
+    assert.ok(plus && M.neighbors(doc, plus.id).length === 2, item.alkene);
+    assert.equal(doc.marks.filter((m) => m.atom === plus.id && m.kind === 'lonePair').length, 2, item.alkene);
+    // X–X polarised by induction: δ+ on the nearer X, δ− on the farther, drawn but not asked.
+    assert.deepEqual(doc.marks.filter((m) => m.kind === 'partial').map((m) => m.value), ['δ+', 'δ−'], item.alkene);
+  }
+});
+
+test('X₂ items are drawn as the app draws them: bonds of 40, nothing on top of anything', () => {
+  for (const { answer: { doc }, alkene } of items) {
+    const at = (/** @type {string} */ id) => /** @type {M.Atom} */ (M.findAtom(doc, id));
+    for (const b of doc.bonds) assert.ok(Math.abs(Math.hypot(at(b.a).x - at(b.b).x, at(b.a).y - at(b.b).y) - 40) < 0.5, alkene);
+    for (const [i, p] of doc.atoms.entries()) for (const q of doc.atoms.slice(i + 1)) assert.ok(Math.hypot(p.x - q.x, p.y - q.y) > 30, alkene);
+  }
+});
+
+test('each style of X₂ asks what it should; the answer and the solution tell the bridge and the anti addition', () => {
+  for (const item of items) {
+    const [first] = checkMechanism(item.given, item.answer, item.steps);
+    const said = `${first.code}${first.role ? `:${first.role}` : ''}@${first.step}`;
+    assert.equal(said, { arrows: 'missingArrow:pi@1', structures: 'missingSpecies@1', complete: 'missingArrow:pi@1', product: 'missingSpecies@1' }[item.style], `${item.style} ${item.alkene}`);
+    if (item.style === 'structures') assert.equal(item.given.curvedArrows.length, 3, item.alkene);
+  }
+  const item = /** @type {import('../src/mechanism/generate.js').Item} */ (items.find((i) => i.style === 'arrows'));
+  assert.match(answerMechanism(item, item.given).lines[0], /^Étape 1 : Il manque la flèche du doublet π vers le (Br|Cl) le plus proche de (Br|Cl)₂ \(δ\+\)\.$/);
+  const steps = solution(item).steps;
+  assert.equal(steps.length, 2);
+  assert.ok(steps[0].includes('ponté') && steps[1].includes('anti') && steps[1].includes(item.product));
 });

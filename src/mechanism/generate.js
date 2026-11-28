@@ -6,19 +6,19 @@ import { STYLE, textWidth } from '../render.js';
 import { atomsOf, named, parts, sameSet } from './check.js';
 import { series as namingSeries } from '../naming/generate.js';
 import { toGraph } from '../naming/graph.js';
-import { outcome, addition as sides } from './reactions.js';
+import { apex, outcome, addition as sides } from './reactions.js';
 import { nameOf } from '../naming/namer.js';
 import { fr } from '../i18n/fr.js';
 
 /**
- * Mechanism exercises (SPEC, Exercices de mécanisme) on the alkenes of the textbook's chapter 7. Two
- * electrophilic additions through the most substituted carbocation (Markovnikov) have their mechanism drawn:
- * HX in two steps, acid hydration in three. The other reactions are drawn as their global reaction, from the
+ * Mechanism exercises (SPEC, Exercices de mécanisme) on the alkenes of the textbook's chapter 7. Three
+ * electrophilic additions have their mechanism drawn: HX in two steps and acid hydration in three, through the most
+ * substituted carbocation (Markovnikov); X₂ in two, through the bridged ion. The other reactions are drawn as their global reaction, from the
  * table of reactions.js. The alkenes come from the nomenclature generator, already drawn and named; those the
  * textbook would not decide, and those of more than 8 carbons, are left out. An item is the whole mechanism or
  * reaction with parts taken away, as its style says.
  * @typedef {import('./check.js').Mechanism} Mechanism
- * @typedef {'hx' | 'hydration' | 'hydroboration' | 'hydrogenation' | 'dihydroxylation' | 'epoxidation' | 'ozonolysis' | 'cleavage'} Reaction
+ * @typedef {'hx' | 'hydration' | 'halogenation' | 'hydroboration' | 'hydrogenation' | 'dihydroxylation' | 'epoxidation' | 'ozonolysis' | 'cleavage'} Reaction
  * @typedef {'arrows' | 'structures' | 'complete' | 'product' | 'reagents' | 'substrate'} Style
  * @typedef {{reaction: Reaction, style: Style, alkene: string, reagent: string, x: string, product: string,
  *   cation: 'primary' | 'secondary' | 'tertiary', substrate: M.Doc, given: M.Doc, answer: Mechanism, steps: number[],
@@ -28,9 +28,9 @@ import { fr } from '../i18n/fr.js';
  *   choose from (Réactifs)
  */
 
-export const REACTIONS = /** @type {Reaction[]} */ (['hx', 'hydration', 'hydroboration', 'hydrogenation', 'dihydroxylation', 'epoxidation', 'ozonolysis', 'cleavage']);
+export const REACTIONS = /** @type {Reaction[]} */ (['hx', 'hydration', 'halogenation', 'hydroboration', 'hydrogenation', 'dihydroxylation', 'epoxidation', 'ozonolysis', 'cleavage']);
 /** The reactions whose mechanism is learnt; the others go without one. */
-const MECHANISMS = ['hx', 'hydration'];
+const MECHANISMS = ['hx', 'hydration', 'halogenation'];
 export const STYLES = ['progressive', 'arrows', 'structures', 'complete', 'product', 'reagents', 'substrate'];
 /** The styles of a reaction: those of a mechanism, or the product, the conditions and the substrate of a global reaction. @param {string} reaction */
 export const stylesOf = (reaction) => (MECHANISMS.includes(reaction) ? STYLES.slice(0, 5) : ['progressive', 'product', 'reagents', 'substrate']);
@@ -39,6 +39,9 @@ export const LEVELS = REACTIONS.flatMap((r) => stylesOf(r).map((s) => `${r}-${s}
 const PROGRESSIVE = /** @type {Style[]} */ (['arrows', 'arrows', 'arrows', 'structures', 'structures', 'structures', 'complete', 'complete', 'product', 'product']);
 const PLAIN_PROGRESSIVE = /** @type {Style[]} */ ([...Array(4).fill('product'), ...Array(3).fill('reagents'), ...Array(3).fill('substrate')]);
 const HALIDES = ['Br', 'Cl', 'Br', 'I'];
+const HALOGENS = ['Br', 'Cl']; // X₂ (figure 7.22): F₂ too violent, I₂ does not add
+// The lone pairs of a neutral atom of a product, as a mechanism draws them.
+const PAIRS = /** @type {Record<string, number>} */ ({ O: 2, F: 3, Cl: 3, Br: 3, I: 3 });
 const L = 40;
 const GAP = 30; // between a molecule and a + or a reaction arrow
 const ARROW = 70;
@@ -48,8 +51,8 @@ const beyond = (p, others) => add(p, fromAngle(nextBondAngle(others.map((o) => a
 
 /**
  * What an electrophile does to an alkene (reactions.js), or null when the textbook would not decide, with where
- * the group goes on the carbon that becomes C⁺ (x) and, for an oxonium, where its two H go (hs, null without
- * room). Also left out: a group on top of another atom.
+ * the group goes on the carbon that becomes C⁺ (x), for an oxonium where its two H go (hs, null without room),
+ * and where the bridge of a bromonium ion goes (top). Also left out: a group on top of another atom.
  * @param {M.Doc} d @param {Reaction} reaction
  */
 function addition(d, reaction) {
@@ -57,10 +60,18 @@ function addition(d, reaction) {
   if (!a) return null;
   const free = (/** @type {{x: number, y: number}} */ pt) => d.atoms.every((t) => Math.hypot(t.x - pt.x, t.y - pt.y) >= 0.75 * L);
   const x = beyond(a.c, M.neighbors(d, a.c.id).map((n) => /** @type {M.Atom} */ (M.findAtom(d, n))));
+  const top = apex(d, a.h, a.c);
   // A global reaction checks its own products (drawPlain).
   if (MECHANISMS.includes(reaction) && !free(x)) return null;
+  if (reaction === 'halogenation' && !free(top)) return null;
   const h1 = beyond(x, [a.c]), h2 = beyond(x, [a.c, h1]);
-  return { ...a, x, hs: free(h1) && free(h2) ? [h1, h2] : null };
+  return { ...a, x, top, hs: free(h1) && free(h2) ? [h1, h2] : null };
+}
+
+/** Whether two atoms of a molecule stand on top of each other (closer than 3/4 of a bond). @param {M.Doc} out */
+function crowded(out) {
+  const of = new Map(parts(out, out.atoms.map((t) => t.id)).flatMap((m, k) => m.ids.map((id) => [id, k])));
+  return out.atoms.some((p, i) => out.atoms.slice(i + 1).some((q) => of.get(p.id) === of.get(q.id) && Math.hypot(p.x - q.x, p.y - q.y) < 0.75 * L));
 }
 /** @typedef {NonNullable<ReturnType<typeof addition>>} Addition */
 
@@ -85,18 +96,18 @@ function pen(d, a) {
   return {
     b,
     /**
-     * The alkene at the current place: as it is, as the carbocation, or single-bonded with a group on that carbon
-     * (X; the OH of an alcohol; the O⁺ of an oxonium with its two H drawn).
-     * @param {{cation?: boolean, group?: {el: string, charge: number, pairs: number, hs?: boolean}}} [o]
+     * The alkene at the current place: as it is, as the carbocation, single-bonded with a group on that carbon
+     * (X; the OH of an alcohol; the O⁺ of an oxonium with its two H drawn), or bridged by X⁺ (a bromonium ion).
+     * @param {{cation?: boolean, group?: {el: string, charge: number, pairs: number, hs?: boolean}, bridge?: string}} [o]
      */
-    alkene({ cation = false, group } = {}) {
-      const at = turn(a.x), hs = group?.hs && a.hs ? a.hs.map(turn) : [];
-      const pts = [...d.atoms.map(turn), ...(group ? [at, ...hs] : [])];
+    alkene({ cation = false, group, bridge } = {}) {
+      const at = turn(a.x), hs = group?.hs && a.hs ? a.hs.map(turn) : [], top = turn(a.top);
+      const pts = [...d.atoms.map(turn), ...(group ? [at, ...hs] : []), ...(bridge ? [top] : [])];
       const shift = left - Math.min(...pts.map((p) => p.x));
       /** @param {{x: number, y: number}} p */
       const place = (p) => put(p.x + shift, p.y - midY);
       const ids = new Map(d.atoms.map((t) => [t.id, b.atom(t.element, ...place(turn(t)), cation && t.id === a.c.id ? 1 : 0)]));
-      const bonds = new Map(d.bonds.map((bd) => [bd.id, b.bond(/** @type {{id: string}} */ (ids.get(bd.a)), /** @type {{id: string}} */ (ids.get(bd.b)), cation || group ? 1 : bd.order)]));
+      const bonds = new Map(d.bonds.map((bd) => [bd.id, b.bond(/** @type {{id: string}} */ (ids.get(bd.a)), /** @type {{id: string}} */ (ids.get(bd.b)), cation || group || bridge ? 1 : bd.order)]));
       const atom = (/** @type {string} */ id) => /** @type {{id: string}} */ (ids.get(id));
       /** @type {{g: {id: string}, hs: {h: {id: string}, bond: string, x: number}[]} | null} */
       let on = null;
@@ -105,14 +116,24 @@ function pen(d, a) {
         b.bond(atom(a.c.id), g);
         on = { g, hs: hs.map((p) => { const h = b.atom('H', ...place(p)); return { h, bond: b.bond(h, g), x: p.x + shift }; }) };
       }
+      // The bridge: X⁺ with two lone pairs; the bond to the more substituted carbon is the one that opens.
+      /** @type {{g: {id: string}, opens: string} | null} */
+      let ring = null;
+      if (bridge) {
+        const g = b.atom(bridge, ...place(top), 1, 2);
+        b.bond(atom(a.h.id), g);
+        ring = { g, opens: b.bond(atom(a.c.id), g) };
+      }
       left = Math.max(...pts.map((p) => p.x)) + shift;
-      return { atom: (/** @type {string} */ id) => atom(id).id, bonds, on };
+      return { atom: (/** @type {string} */ id) => atom(id).id, bonds, on, ring };
     },
     plus() { left += GAP; b.plus(left); left += GAP; },
     /** H–X with its three lone pairs. @param {string} x */
     hx(x) { const h = b.atom('H', ...put(left)); const hal = b.atom(x, ...put(left + L), 0, 3); left += L; return { h, x: hal, bond: b.bond(h, hal) }; },
     /** X⁻ with its four lone pairs. @param {string} x */
     halide(x) { return b.atom(x, ...put(left), -1, 4); },
+    /** X–X, each X with its three lone pairs; the nearer faces the alkene. @param {string} x */
+    x2(x) { const near = b.atom(x, ...put(left), 0, 3); const far = b.atom(x, ...put(left + L), 0, 3); left += L; return { near, far, bond: b.bond(near, far) }; },
     /** H₃O⁺ as the textbook draws it, H–O⁺(H)–H with a lone pair; the H on the left faces the alkene. */
     hydronium() {
       const h = b.atom('H', ...put(left));
@@ -125,15 +146,16 @@ function pen(d, a) {
     water() { left += 12; return b.atom('O', ...put(left), 0, 2); },
     /**
      * Any molecule of a drawing (the ids of its atoms) at the current place, turned as the alkene is: a product
-     * drawn where reactions.js put it. A lone O is H₂O, whose label reaches left.
-     * @param {M.Doc} src @param {string[]} ids
+     * drawn where reactions.js put it, with the lone pairs of its O and X as a mechanism draws them (pairs). A lone
+     * O is H₂O, whose label reaches left.
+     * @param {M.Doc} src @param {string[]} ids @param {boolean} [pairs]
      */
-    molecule(src, ids) {
+    molecule(src, ids, pairs = false) {
       const atoms = ids.map((id) => /** @type {M.Atom} */ (M.findAtom(src, id)));
       if (atoms.length === 1 && atoms[0].element === 'O') left += 12;
       const pts = atoms.map(turn);
       const shift = left - Math.min(...pts.map((p) => p.x));
-      const made = new Map(atoms.map((t, i) => [t.id, b.atom(t.element, ...put(pts[i].x + shift, pts[i].y - midY), t.charge)]));
+      const made = new Map(atoms.map((t, i) => [t.id, b.atom(t.element, ...put(pts[i].x + shift, pts[i].y - midY), t.charge, pairs && !t.charge ? PAIRS[t.element] ?? 0 : 0)]));
       for (const bd of src.bonds) { const p = made.get(bd.a), q = made.get(bd.b); if (p && q) b.bond(p, q, bd.order); }
       left = Math.max(...pts.map((p) => p.x)) + shift;
     },
@@ -218,6 +240,43 @@ function drawHydration(d, a, short) {
 }
 
 /**
+ * X₂ as the textbook draws it (figures 7.23 and 7.24): alkene + X–X, polarised by induction (δ+ on the nearer X),
+ * → bromonium (or chloronium) ion + X⁻, → vicinal dihalide; five curved arrows (π to the nearer X; X–X to the
+ * farther; a lone pair of the nearer X closing the bridge on the other carbon, either one; X⁻ opening it on the
+ * more substituted carbon; that C–X⁺ bond to X⁺). Short: the reactants, CH₂Cl₂ over the arrow (figure 7.25), the
+ * product. Null when the product would stand on itself.
+ * @param {M.Doc} d @param {Addition} a @param {string} x @param {boolean} short @returns {Mechanism | null}
+ */
+function drawHalogen(d, a, x, short) {
+  const out = /** @type {M.Doc} */ (outcome(d, 'halogenation', x));
+  if (crowded(out)) return null;
+  const p = pen(d, a);
+  const alkene = p.alkene();
+  p.plus();
+  const x2 = p.x2(x);
+  p.step(short ? fr.mechanism.conditions.halogenation[0][1] : '');
+  if (!short) {
+    const ion = p.alkene({ bridge: x });
+    p.plus();
+    const halide = p.halide(x);
+    p.step();
+    const ring = /** @type {{g: {id: string}, opens: string}} */ (ion.ring);
+    p.b.arrow({ bond: /** @type {string} */ (alkene.bonds.get(a.pi.id)) }, { atom: x2.near.id });
+    p.b.arrow({ bond: x2.bond }, { atom: x2.far.id });
+    p.b.arrow({ mark: x2.near.lp[0] }, { atom: alkene.atom(a.c.id) });
+    p.b.arrow({ mark: halide.lp[0] }, { atom: ion.atom(a.c.id) });
+    p.b.arrow({ bond: ring.opens }, { atom: ring.g.id });
+  }
+  p.molecule(out, out.atoms.map((t) => t.id), true);
+  const doc = p.done();
+  // The dipole induced in X–X (figure 7.23), below as for H–X; drawn, not asked.
+  M.addMark(doc, x2.near.id, 'partial', { value: 'δ+', angle: 225 });
+  M.addMark(doc, x2.far.id, 'partial', { value: 'δ−', angle: 315 });
+  if (short) return mechanism(doc, [], null);
+  return mechanism(doc, ['pi', 'leaving', 'bridge', 'open', 'leaving'], null, { 2: [alkene.atom(a.h.id)] });
+}
+
+/**
  * A reaction whose mechanism the course leaves out, as its global reaction: the alkene, the conditions over and
  * under the arrow as the textbook writes them, the products that reactions.js makes, left to right with + between.
  * Null when two atoms of a product would stand on top of each other.
@@ -226,9 +285,8 @@ function drawHydration(d, a, short) {
  */
 function drawPlain(d, a, reaction, [above, below]) {
   const out = /** @type {M.Doc} */ (outcome(d, reaction));
+  if (crowded(out)) return null;
   const molecules = parts(out, out.atoms.map((t) => t.id)).map((m) => m.ids);
-  const of = new Map(molecules.flatMap((ids, k) => ids.map((id) => [id, k])));
-  if (out.atoms.some((p, i) => out.atoms.slice(i + 1).some((q) => of.get(p.id) === of.get(q.id) && Math.hypot(p.x - q.x, p.y - q.y) < 0.75 * L))) return null;
   const p = pen(d, a);
   p.alkene();
   p.step(above, 'forward', below);
@@ -256,9 +314,14 @@ function choose(d, reaction, text, products, k) {
   return list;
 }
 
-/** The drawing with its arrows' roles, and the C–H bond the π arrow forms. @param {M.Doc} doc @param {string[]} roles @param {[string, string] | null} ch */
-const mechanism = (doc, roles, ch) => ({
+/**
+ * The drawing with its arrows' roles, the C–H bond the π arrow forms, and the other atoms an arrow may go to
+ * (by the arrow's place).
+ * @param {M.Doc} doc @param {string[]} roles @param {[string, string] | null} ch @param {Record<number, string[]>} [either]
+ */
+const mechanism = (doc, roles, ch, either = {}) => ({
   doc, roles: Object.fromEntries(doc.curvedArrows.map((c, i) => [c.id, roles[i]])), forms: ch ? { [doc.curvedArrows[0].id]: ch } : {},
+  either: Object.fromEntries(Object.entries(either).map(([i, ids]) => [doc.curvedArrows[Number(i)].id, ids])),
 });
 
 /**
@@ -296,14 +359,17 @@ export function series(level, seed, count = 10) {
     for (const { doc: d, name } of namingSeries('alkenes', seed * 53 + chunk, 10).items) {
       if (items.length >= count || seen.has(name) || d.atoms.filter((t) => t.element === 'C').length > 8) continue;
       const a = addition(d, reaction);
-      // An oxonium needs room for its two H.
-      if (!a || (reaction === 'hydration' && !a.hs)) continue;
+      // An oxonium needs room for its two H. X⁻ opens the bridge on the more substituted carbon: two carbons
+      // with as many H, but different, would leave it to chance (as hydroboration's tie says).
+      if (!a || (reaction === 'hydration' && !a.hs) || (reaction === 'halogenation' && !sides(d, 'hydroboration'))) continue;
       const i = items.length;
       const style = chosen !== 'progressive' ? /** @type {Style} */ (chosen) : plain ? PLAIN_PROGRESSIVE[i % 10] : PROGRESSIVE[i % 10];
-      const x = reaction === 'hx' ? HALIDES[(seed + i) % HALIDES.length] : '';
+      const x = reaction === 'hx' ? HALIDES[(seed + i) % HALIDES.length] : reaction === 'halogenation' ? HALOGENS[(seed + i) % 2] : '';
       const ways = /** @type {Record<string, string[][]>} */ (fr.mechanism.conditions)[reaction] ?? [];
       const conditions = ways[(seed + i) % (ways.length || 1)];
-      const answer = plain ? drawPlain(d, a, reaction, conditions) : reaction === 'hx' ? drawHX(d, a, x, style === 'product') : drawHydration(d, a, style === 'product');
+      const short = style === 'product';
+      const answer = plain ? drawPlain(d, a, reaction, conditions) : reaction === 'hx' ? drawHX(d, a, x, short)
+        : reaction === 'hydration' ? drawHydration(d, a, short) : drawHalogen(d, a, x, short);
       if (!answer) continue;
       seen.add(name);
       const n = answer.doc.reactionArrows.length;
@@ -317,7 +383,7 @@ export function series(level, seed, count = 10) {
       // A mechanism names its organic product; a global reaction all its products, as the messages call them.
       const organic = M.component(answer.doc, /** @type {string} */ (last.find((id) => M.findAtom(answer.doc, id)?.element === 'C')));
       const product = plain ? named(answer.doc, last) : nameOf(toGraph(answer.doc, organic)).name;
-      const reagent = plain ? written(conditions) : reaction === 'hx' ? `H${x}` : fr.mechanism.water;
+      const reagent = plain ? written(conditions) : reaction === 'hx' ? `H${x}` : reaction === 'halogenation' ? `${x}₂` : fr.mechanism.water;
       const choices = style === 'reagents' ? choose(d, reaction, reagent, parts(answer.doc, last).map((m) => m.g), seed + i) : undefined;
       items.push({ reaction, style, alkene: name, reagent, x, product, cation: a.cation, substrate: d, given, answer, steps: style === 'arrows' || style === 'complete' ? later : [], choices });
     }

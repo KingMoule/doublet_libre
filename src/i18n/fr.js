@@ -192,7 +192,7 @@ export const fr = {
       'Fichier : enregistrer, ouvrir, exporter en PNG ou en SVG, copier l’image.',
       'Mode Montage : 37 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
       'Menu Exercice, Nomenclature : des séries de dix molécules à nommer ou à dessiner, des alcanes aux cétones, corrigées règle par règle selon le manuel, avec la solution numérotée.',
-      'Menu Exercice, Mécanismes : l’addition de HX et l’hydratation acide des alcènes à compléter (les flèches, les structures, le mécanisme complet ou le produit majeur), choisies dans les menus Réaction et Style, avec un retour précis sur chaque erreur.',
+      'Menu Exercice, Mécanismes : l’addition de HX, l’hydratation acide et l’addition de X₂ (par l’ion ponté) des alcènes à compléter (les flèches, les structures, le mécanisme complet ou le produit majeur), choisies dans les menus Réaction et Style, avec un retour précis sur chaque erreur.',
       'Mécanismes, réactions sans mécanisme : hydroboration, hydrogénation, oxydations douce et forte, ozonolyse, époxydation. Dessinez le produit, choisissez les conditions, ou retrouvez l’alcène de départ ; le retour dit ce que donnerait votre réponse.',
       'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
@@ -374,19 +374,19 @@ export const fr = {
     // The two menus of the panel: the reaction, then the style.
     reactionMenu: 'Réaction', styleMenu: 'Style',
     reactions: {
-      hx: 'Addition de HX', hydration: 'Hydratation acide', hydroboration: 'Hydroboration-oxydation', hydrogenation: 'Hydrogénation catalytique',
+      hx: 'Addition de HX', hydration: 'Hydratation acide', halogenation: 'Addition de X₂', hydroboration: 'Hydroboration-oxydation', hydrogenation: 'Hydrogénation catalytique',
       dihydroxylation: 'Oxydation douce (KMnO₄ dilué)', epoxidation: 'Époxydation', ozonolysis: 'Ozonolyse réductrice', cleavage: 'Oxydation forte (coupure)',
     },
     // Of a reaction, as a sentence names it: « le produit de l’hydratation acide ».
     of: {
-      hx: 'de l’addition de HX', hydration: 'de l’hydratation acide', hydroboration: 'de l’hydroboration-oxydation', hydrogenation: 'de l’hydrogénation',
+      hx: 'de l’addition de HX', hydration: 'de l’hydratation acide', halogenation: 'de l’addition de X₂', hydroboration: 'de l’hydroboration-oxydation', hydrogenation: 'de l’hydrogénation',
       dihydroxylation: 'de l’oxydation douce', epoxidation: 'de l’époxydation', ozonolysis: 'de l’ozonolyse réductrice', cleavage: 'de l’oxydation forte',
     },
     // Over and under the arrow of a global reaction, as the textbook writes them (figures 7.15, 7.19, 7.26, 7.28,
     // 7.30, 7.31); a reaction with two ways to run it has both, the series takes turns.
     conditions: {
-      // HX and the acid hydration, as a choice of the Réactifs style.
-      hx: [['HBr', '']], hydration: [['H₂O', 'H₂SO₄']],
+      // HX and the acid hydration, as a choice of the Réactifs style; X₂ in its inert solvent (figure 7.25).
+      hx: [['HBr', '']], hydration: [['H₂O', 'H₂SO₄']], halogenation: [['Br₂', 'CH₂Cl₂']],
       hydroboration: [['1) BH₃', '2) H₂O₂, OH⁻']], hydrogenation: [['H₂', 'Pt']], dihydroxylation: [['KMnO₄', 'H₂O, OH⁻']], epoxidation: [['MCPBA', '']],
       ozonolysis: [['1) O₃', '2) Zn, H₃O⁺']], cleavage: [['KMnO₄ conc.', 'H₃O⁺'], ['1) O₃', '2) H₂O₂, H₃O⁺']],
     },
@@ -435,6 +435,15 @@ export const fr = {
         /** @param {string} product */
         product: (product) => `En milieu acide (H₂SO₄), l’eau s’additionne : le H va sur le carbone de la double liaison qui porte le plus de H, et le groupe OH sur le carbone le plus substitué (Markovnikov). Produit : ${product}.`,
       },
+      // X₂, as figures 7.23 and 7.24 tell it.
+      halogenation: {
+        /** @param {string} x */
+        first: (x) => `Étape 1 : à l’approche de l’alcène, la liaison ${x}–${x} se polarise (dipôle induit). Le doublet π (nucléophile) attaque le ${x} le plus proche (δ+, électrophile), et la liaison ${x}–${x} se rompt vers l’autre ${x}, qui part en ${x}⁻. Un doublet du ${x} attaqué se lie à l’autre carbone : il se forme l’ion ${x === 'Br' ? 'bromonium' : 'chloronium'}, un ion ponté où tous les atomes respectent l’octet, plus stable qu’un carbocation.`,
+        /** @param {string} x @param {string} product */
+        second: (x, product) => `Étape 2 : un doublet de ${x}⁻ (nucléophile) attaque le carbone le plus substitué de l’ion ponté (électrophile), du côté opposé au pont ; la liaison C–${x} du pont se rompt vers le ${x}. Les deux ${x} s’additionnent de part et d’autre de la double liaison (addition anti). Produit : ${product}.`,
+        /** @param {string} x @param {string} product */
+        product: (x, product) => `Un ${x} se lie à chaque carbone de la double liaison, par un ion ponté, de part et d’autre (addition anti). Produit : ${product}.`,
+      },
       // The global reactions, one sentence each, then the products (empty when none can be named).
       /** @param {string} product */
       hydroboration: (product) => `BH₃ s’additionne sur la double liaison, puis H₂O₂ en milieu basique remplace le bore par un groupe OH : le groupe OH va sur le carbone de la double liaison qui porte le plus de H, et le H sur le plus substitué (anti-Markovnikov).${product ? ` Produit : ${product}.` : ''}`,
@@ -471,6 +480,7 @@ export const fr = {
       // The same atoms bonded otherwise: said by the rule of the reaction.
       /** @param {{name: string, group: string, reaction: string}} p */
       isomer: ({ name, group, reaction }) => `${name ? `Votre produit : ${name}. ` : ''}${({
+        halogenation: `Un ${group} se lie à chacun des deux carbones de la double liaison.`,
         hydroboration: 'Le groupe OH se lie au carbone de la double liaison qui porte le plus de H (anti-Markovnikov).',
         dihydroxylation: 'Un groupe OH se lie à chacun des deux carbones de la double liaison.',
         epoxidation: 'L’oxygène se lie aux deux carbones de la double liaison.',

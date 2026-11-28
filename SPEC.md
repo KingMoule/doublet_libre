@@ -89,6 +89,11 @@ Ces critères sont des listes ordonnées : une famille y ajoute des entrées et 
 Le menu Exercice ouvre aussi Mécanismes : des mécanismes à compléter, sur les alcènes, sans réarrangement (chapitre 7 du manuel) :
 - **Addition de HX** (HCl, HBr, HI), en deux étapes par le carbocation (figure 7.6) ;
 - **Hydratation acide** (H₂O, H₂SO₄), en trois étapes (figure 7.14) : alcène + H₃O⁺ → carbocation + H₂O → ion oxonium + H₂O (le solvant, une base) ⇌ alcool + H₃O⁺ régénéré.
+- **Addition de X₂** (Br₂, Cl₂ ; CH₂Cl₂), en deux étapes par l'ion ponté (figures 7.23 et 7.24) :
+  - alcène + X–X, polarisé par induction → ion bromonium ou chloronium (un cycle de trois, X⁺) + X⁻ ;
+  - X⁻ ouvre le pont sur le carbone le plus substitué → dihalogénure vicinal (addition anti).
+  
+  Le pont se ferme sur l'un ou l'autre carbone : la flèche π fait la liaison avec l'autre.
 
 Les réactions dont le cours ne demande pas le mécanisme se font en **réaction globale**. Le manuel écrit leurs conditions sur la flèche :
 - **hydroboration-oxydation**, « 1) BH₃ 2) H₂O₂, OH⁻ », anti-Markovnikov (figure 7.15) ;
@@ -165,3 +170,4 @@ Chaque phase se termine par une vérification qu'on peut lancer.
 | 13 | Exercices de mécanisme (voir la section), preuve de concept sur l'addition de HX aux alcènes : correction, puis générateur et quatre styles de numéros, puis menu Exercice et interface | Chaque erreur typique donne son retour ; chaque mécanisme généré passe sa propre correction ; un numéro de chaque style fait dans l'app | faite |
 | 14 | Hydratation acide dans les exercices de mécanisme : une correction qui ne dépend plus de HX, le générateur à deux réactions, deux menus (Réaction, Style) | Le mécanisme de la figure 7.14 juste, et chaque oubli typique (flèche de la base, + de l'oxonium, alcool anti-Markovnikov) avec son retour ; un numéro Flèches et un numéro Produit faits dans l’app | faite |
 | 15 | Réactions des alcènes sans mécanisme (hydroboration, hydrogénation, oxydations douce et forte, ozonolyse, époxydation) : table du résultat net, styles Produit, Réactifs et Substrat | Chaque produit construit d'après sa figure ; un mauvais produit, un mauvais alcène et de mauvaises conditions avec leur retour, dans l'app ; `edges.mjs` vérifie la place de chaque style | faite |
+| 16 | Addition de X₂ par l'ion ponté : la correction connaît le pont (se fermant sur l'un ou l'autre carbone), son ouverture sur le carbone le plus substitué, et dit chaque flèche par la liaison qu'elle rompt | Les figures 7.23 et 7.24 construites à la main ; chaque mécanisme généré passe sa propre correction ; un numéro Flèches fait dans l'app, avec le pont fermé sur l'autre carbone et Cl⁻ sur le mauvais | faite |
