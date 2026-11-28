@@ -66,6 +66,17 @@ test('the total charge must be the same on both sides of a reaction arrow', () =
   assert.deepEqual(w.params, { left: -1, right: 0 });
 });
 
+test('a mechanism on two lines: each arrow is weighed on its own line', () => {
+  // Water on the first line, bromide on the second, one under the other: each line keeps its charge.
+  const d = M.emptyDoc();
+  for (const [y, el, charge] of [[0, 'O', 0], [200, 'Br', -1]]) {
+    M.addAtom(d, { element: el, x: 0, y, charge });
+    M.addReactionArrow(d, { x1: 40, y1: y, x2: 110, y2: y, kind: 'forward', above: '', below: '' });
+    M.addAtom(d, { element: el, x: 150, y, charge });
+  }
+  assert.ok(!codes(d).includes('charge'));
+});
+
 test('↔ links only resonance forms: same atoms, same σ bonds', () => {
   const d = sampleSN2();
   d.reactionArrows[0].kind = 'resonance';

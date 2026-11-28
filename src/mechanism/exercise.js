@@ -46,14 +46,14 @@ function otherReaction(item, doc) {
 export function answerMechanism(item, doc) {
   const [f] = item.style === 'substrate' ? checkSubstrate(doc, item.answer, (d) => outcome(d, item.reaction)) : checkMechanism(doc, item.answer, item.steps);
   if (!f) return { verdict: 'right', title: fr.exercise.right, lines: [], ids: [] };
-  const last = M.regions(item.answer.doc).arrows.length;
-  const product = f.at === 'state' && f.step === last;
+  const { states, steps } = M.regions(item.answer.doc);
+  const product = f.at === 'state' && f.step === states.length - 1;
   // A wrong product that another reaction gives: that reaction is named, rather than what is wrong with it.
   const other = product && item.style === 'product' && f.code !== 'steps' ? otherReaction(item, doc) : undefined;
   const params = { ...f.params, reaction: item.reaction, last: product };
   const say = /** @type {Record<string, any>} */ (X.findings)[other ? 'otherReaction' : f.code];
   const text = other ? say({ ...params, other }) : typeof say === 'function' ? say(params) : say[/** @type {string} */ (f.role)](params);
-  const where = f.code === 'steps' ? '' : f.at === 'step' ? X.step(f.step) : X.state(f.step, last);
+  const where = f.code === 'steps' ? '' : f.at === 'step' ? X.step(f.step) : X.state(f.step, steps);
   return { verdict: 'wrong', title: X.wrong, lines: [where ? `${where} : ${text}` : text], ids: f.ids };
 }
 

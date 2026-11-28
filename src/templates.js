@@ -15,28 +15,35 @@ import { fr } from './i18n/fr.js';
 /** Draws a mechanism step by step; curved arrows are added last, with their default bend (also for mechanism/). */
 export function builder() {
   const d = emptyDoc();
-  /** @type {[Anchor, Anchor, number | undefined][]} */
+  /** @type {[Anchor, Anchor, number | undefined, 1 | 2][]} */
   const arrows = [];
   return {
-    /** @param {string} element @param {number} x @param {number} y @param {number} [charge] @param {number} [pairs] */
-    atom(element, x, y, charge = 0, pairs = 0) {
+    /**
+     * @param {string} element @param {number} x @param {number} y @param {number} [charge] @param {number} [pairs]
+     * @param {number} [radicals] single electrons (a radical)
+     */
+    atom(element, x, y, charge = 0, pairs = 0, radicals = 0) {
       const id = addAtom(d, { element, x, y, charge }).id;
       const lp = Array.from({ length: pairs }, () => addMark(d, id, 'lonePair').id);
-      return { id, lp };
+      const rad = Array.from({ length: radicals }, () => addMark(d, id, 'radical').id);
+      return { id, lp, rad };
     },
     /** @param {{id: string}} a @param {{id: string}} b @param {1 | 2 | 3} [order] */
     bond: (a, b, order = 1) => addBond(d, a.id, b.id, order).id,
     /** @param {number} x @param {number} y */
     plus: (x, y = 0) => { addText(d, { x, y, text: '+' }); },
-    /** @param {number} x1 @param {number} x2 @param {string} [above] @param {string} [below] */
-    step: (x1, x2, above = '', below = '') => { addReactionArrow(d, { x1, y1: 0, x2, y2: 0, kind: 'forward', above, below }); },
-    /** @param {Anchor} from @param {Anchor} to @param {1 | -1} [side] force the arc to the left (1) or right (−1) of travel */
-    arrow: (from, to, side) => { arrows.push([from, to, side]); },
+    /** @param {number} x1 @param {number} x2 @param {string} [above] @param {string} [below] @param {number} [y] its line */
+    step: (x1, x2, above = '', below = '', y = 0) => { addReactionArrow(d, { x1, y1: y, x2, y2: y, kind: 'forward', above, below }); },
+    /**
+     * @param {Anchor} from @param {Anchor} to @param {1 | -1} [side] force the arc to the left (1) or right (−1) of travel
+     * @param {1 | 2} [electrons] 1: a half arrow (a single electron)
+     */
+    arrow: (from, to, side, electrons = 2) => { arrows.push([from, to, side, electrons]); },
     done() {
-      for (const [from, to, side] of arrows) {
+      for (const [from, to, side, electrons] of arrows) {
         const bend = defaultBend(d, from, to);
         if (side) for (const p of bend) p[1] = Math.abs(p[1]) * side;
-        addCurvedArrow(d, from, to, 2, bend);
+        addCurvedArrow(d, from, to, electrons, bend);
       }
       return d;
     },

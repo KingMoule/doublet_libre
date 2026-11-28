@@ -92,7 +92,8 @@ const KINDS = {
       help: it.choices ? MX.helpPick : it.style === 'product' || it.style === 'substrate' ? MX.helpDraw : MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
   },
 };
-const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
+// R: any group, as in RO–OR (figure 7.12); it carries no implicit H.
+const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H', 'R'];
 /** Text icon, shrunk to fit long labels such as CO₂H. */
 const TEXT_ICON = (/** @type {string} */ t) => `<text x="11" y="15.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="${Math.min(13, 34 / t.length).toFixed(1)}" fill="currentColor">${t}</text>`;
 /** @param {string} g a key of GROUPS */
@@ -1110,7 +1111,7 @@ export function startEditor(root) {
       choose: (v) => { S.bond = v; }, icon: () => BOND_ICON(S.bond),
     },
     atom: {
-      choices: ELEMENTS, label: (v) => v, title: (v) => v, current: () => S.element,
+      choices: ELEMENTS, label: (v) => v, title: (v) => (v === 'R' ? fr.anyGroup : v), current: () => S.element,
       choose: (v) => { S.element = v; }, icon: () => TEXT_ICON(S.element),
     },
     ring: {

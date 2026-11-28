@@ -3,7 +3,7 @@
  * Molecules as graphs: which atoms are bonded, and how. Coordinates play no part, so a molecule drawn
  * turned, mirrored or elsewhere on the page is the same graph. Hydrogens stay implicit. A benzene ring
  * is the same graph whichever Kekulé form is drawn, and a nitro group whether drawn with its charges or not.
- * @typedef {{el: string, charge: number}} GAtom
+ * @typedef {{el: string, charge: number, radical?: number}} GAtom radical: its single electrons, when it has any
  * @typedef {{a: number, b: number, order: number}} GBond order 1, 2 or 3; 1.5 in an aromatic ring
  * @typedef {{atoms: GAtom[], bonds: GBond[], ids?: string[], kind?: string}} Graph ids: the document atom of each atom;
  *   kind: the principal group to name it by ('al', 'one', 'ol'), for a wrong name that takes another one
@@ -53,15 +53,16 @@ function normalize(g) {
 
 /**
  * The graph of a document's molecules (or of the atoms whose ids are given), explicit H left out.
- * Lone pairs, wedges and coordinates are not part of it.
+ * Lone pairs, wedges and coordinates are not part of it; a single electron is (a radical).
  * @param {import('../model.js').Doc} doc @param {Iterable<string>} [ids] @returns {Graph}
  */
 export function toGraph(doc, ids) {
   const only = ids ? new Set(ids) : null;
   const atoms = doc.atoms.filter((a) => a.element !== 'H' && (!only || only.has(a.id)));
   const index = new Map(atoms.map((a, i) => [a.id, i]));
+  const radicals = (/** @type {string} */ id) => doc.marks.filter((m) => m.atom === id && m.kind === 'radical').length;
   /** @type {Graph} */
-  const g = { atoms: atoms.map((a) => ({ el: a.element, charge: a.charge ?? 0 })), bonds: [], ids: atoms.map((a) => a.id) };
+  const g = { atoms: atoms.map((a) => ({ el: a.element, charge: a.charge ?? 0, ...(radicals(a.id) ? { radical: radicals(a.id) } : {}) })), bonds: [], ids: atoms.map((a) => a.id) };
   for (const b of doc.bonds) {
     const a = index.get(b.a), c = index.get(b.b);
     if (a !== undefined && c !== undefined) g.bonds.push({ a, b: c, order: b.order });
@@ -114,7 +115,7 @@ export function fromSmiles(s) {
 export const sameMolecule = (g1, g2) => !isomorphisms(g1, g2).next().done;
 
 /**
- * Every one-to-one match of two graphs' atoms keeping elements, charges and bonds: map[i] is the atom of
+ * Every one-to-one match of two graphs' atoms keeping elements, charges, single electrons and bonds: map[i] is the atom of
  * g2 for atom i of g1. A symmetric molecule has several (but-2-ène: its two halves swapped). The
  * molecules of an exercise are small, so a plain search is enough.
  * @param {Graph} g1 @param {Graph} g2 @returns {Generator<number[]>}
@@ -124,7 +125,7 @@ export function* isomorphisms(g1, g2) {
   if (n !== g2.atoms.length || g1.bonds.length !== g2.bonds.length) return;
   const a1 = adjacency(g1), a2 = adjacency(g2);
   const sig = (/** @type {Graph} */ g, /** @type {Map<number, number>[]} */ adj, /** @type {number} */ i) =>
-    `${g.atoms[i].el}${g.atoms[i].charge}:${[...adj[i].values()].sort().join(',')}`;
+    `${g.atoms[i].el}${g.atoms[i].charge}${'•'.repeat(g.atoms[i].radical ?? 0)}:${[...adj[i].values()].sort().join(',')}`;
   const s1 = g1.atoms.map((_, i) => sig(g1, a1, i)), s2 = g2.atoms.map((_, i) => sig(g2, a2, i));
   if ([...s1].sort().join(' ') !== [...s2].sort().join(' ')) return;
   // Match atoms in breadth-first order, so each new atom has a matched neighbour to agree with.

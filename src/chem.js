@@ -19,7 +19,7 @@ export const ELEMENTS = {
 
 /** Keys typed while hovering an atom, as in ChemDraw. */
 export const ELEMENT_KEYS = /** @type {Record<string, string>} */ ({
-  c: 'C', n: 'N', o: 'O', s: 'S', f: 'F', p: 'P', h: 'H', b: 'Br', l: 'Cl', i: 'I',
+  c: 'C', n: 'N', o: 'O', s: 'S', f: 'F', p: 'P', h: 'H', b: 'Br', l: 'Cl', i: 'I', r: 'R',
 });
 
 /** Elements written with their hydrogens first when alone: H2O, H2S, HBr. */

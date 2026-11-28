@@ -115,18 +115,44 @@ export function component(doc, atomId) {
 }
 
 /**
- * The states of a reaction, left to right: the atoms between neighbouring reaction arrows, by x.
- * n arrows give n + 1 states; an atom under an arrow belongs to none.
- * @param {Doc} doc @returns {{arrows: ReactionArrow[], states: string[][]}}
+ * The states of a reaction: the atoms between neighbouring reaction arrows, left to right, on each line of a
+ * mechanism written on several lines (figure 7.12 of the textbook), the lines top to bottom. Arrows less than
+ * LINE apart in height share a line; an atom belongs to the line nearest it, and to no state under an arrow.
+ * n arrows on m lines give n + m states. steps[i]: the states arrow i goes from and to; line[k]: the line of
+ * state k; ys: the height of each line.
+ * @param {Doc} doc
+ * @returns {{arrows: ReactionArrow[], states: string[][], steps: {from: number, to: number}[], line: number[], ys: number[]}}
  */
 export function regions(doc) {
-  const arrows = [...doc.reactionArrows].sort((p, q) => Math.min(p.x1, p.x2) - Math.min(q.x1, q.x2));
-  const edges = [-Infinity, ...arrows.flatMap((r) => [Math.min(r.x1, r.x2), Math.max(r.x1, r.x2)]), Infinity];
-  /** @type {string[][]} */
-  const states = [];
-  for (let k = 0; k <= arrows.length; k++) states.push(doc.atoms.filter((a) => a.x > edges[2 * k] && a.x < edges[2 * k + 1]).map((a) => a.id));
-  return { arrows, states };
+  const yOf = (/** @type {ReactionArrow} */ r) => (r.y1 + r.y2) / 2;
+  /** @type {ReactionArrow[][]} */
+  const rows = [];
+  for (const r of [...doc.reactionArrows].sort((p, q) => yOf(p) - yOf(q))) {
+    const last = rows[rows.length - 1];
+    if (last && yOf(r) - yOf(last[0]) < LINE) last.push(r); else rows.push([r]);
+  }
+  if (!rows.length) rows.push([]);
+  const ys = rows.map((row) => (row.length ? row.reduce((s, r) => s + yOf(r), 0) / row.length : 0));
+  const nearest = (/** @type {number} */ y) => ys.reduce((best, v, i) => (Math.abs(v - y) < Math.abs(ys[best] - y) ? i : best), 0);
+  /** @type {ReactionArrow[]} */ const arrows = [];
+  /** @type {string[][]} */ const states = [];
+  /** @type {{from: number, to: number}[]} */ const steps = [];
+  /** @type {number[]} */ const line = [];
+  rows.forEach((row, j) => {
+    row.sort((p, q) => Math.min(p.x1, p.x2) - Math.min(q.x1, q.x2));
+    const first = states.length;
+    const edges = [-Infinity, ...row.flatMap((r) => [Math.min(r.x1, r.x2), Math.max(r.x1, r.x2)]), Infinity];
+    const mine = doc.atoms.filter((a) => nearest(a.y) === j);
+    for (let k = 0; k <= row.length; k++) {
+      states.push(mine.filter((a) => a.x > edges[2 * k] && a.x < edges[2 * k + 1]).map((a) => a.id));
+      line.push(j);
+    }
+    row.forEach((r, k) => { arrows.push(r); steps.push({ from: first + k, to: first + k + 1 }); });
+  });
+  return { arrows, states, steps, line, ys };
 }
+/** Reaction arrows closer than this in height are on the same line: two and a half bonds. */
+const LINE = 100;
 
 /**
  * The atom whose midpoint with atomId lies within tol of p: the partner of a bond that an
