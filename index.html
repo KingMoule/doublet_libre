@@ -223,6 +223,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .panel [data-r="remark"] { --r: var(--warn); --r-bg: var(--warn-bg); }
 .panel [data-r="wrong"] { --r: var(--danger); --r-bg: var(--bg); }
 .panel .dots i[data-r] { background: var(--r); }
+/* Conditions to choose (Réactifs): one per line, the one touched in its result's colour. */
+.panel .picks { display: grid; gap: 4px; }
+.panel .picks button { text-align: left; padding: 0.4rem 0.65rem; }
+.panel .picks button[data-r] { border-color: var(--r); background: var(--r-bg); color: var(--r); font-weight: 600; }
 .panel .fb { display: grid; gap: 0.25rem; padding: 0.55rem 0.75rem; border-left: 3px solid var(--r); border-radius: 0 6px 6px 0; background: var(--r-bg); font-size: 0.88rem; }
 .panel .fb b { color: var(--r); font-weight: 600; }
 .panel .score { margin: 0; font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }

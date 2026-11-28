@@ -63,6 +63,8 @@ export function parts(doc, ids) {
   return out;
 }
 
+/** Whether two lists of molecules are the same, whatever their order. @param {Graph[]} gs @param {Graph[]} hs */
+export const sameSet = (gs, hs) => { const left = [...hs]; return gs.length === hs.length && gs.every((g) => { const i = left.findIndex((h) => sameMolecule(g, h)); return i >= 0 && left.splice(i, 1).length; }); };
 const charge = (/** @type {Graph} */ g) => g.atoms.reduce((s, a) => s + a.charge, 0);
 const formula = (/** @type {Graph} */ g) => `${g.atoms.map((a) => a.el).sort().join('')}${charge(g)}`;
 const skeleton = (/** @type {Graph} */ g) => ({ ...g, atoms: g.atoms.map((a) => ({ ...a, charge: 0 })) });
@@ -124,6 +126,16 @@ export function label(g) {
 }
 
 /**
+ * The molecules of a drawing as a message names them, CO₂ and H₂O last: « un acide carboxylique + CO₂ + H₂O ».
+ * @param {Doc} doc @param {string[]} [ids] the atoms to name, all by default
+ */
+export function named(doc, ids = doc.atoms.map((a) => a.id)) {
+  const all = parts(doc, ids).map((p) => label(p.g)).filter(Boolean);
+  const small = (/** @type {string} */ n) => n === 'CO₂' || n === 'H₂O';
+  return [...all.filter((n) => !small(n)), ...all.filter(small)].join(' + ');
+}
+
+/**
  * What a molecule the namer leaves out is: an acid (a C with =O and an OH), an oxirane (an O bonded to two bonded C).
  * @param {Graph} g
  */
@@ -158,10 +170,8 @@ export function checkSubstrate(doc, answer, made) {
   const out = made(alkene);
   if (!out) return [{ code: 'undecided', at: 'state', step: 0, ids, params: {} }];
   const gave = parts(out, out.atoms.map((a) => a.id)).map((p) => p.g);
-  const expected = parts(answer.doc, want.states[want.arrows.length]).map((p) => p.g);
-  if (gave.length === expected.length && expected.every((e) => { const i = gave.findIndex((g) => sameMolecule(g, e)); return i >= 0 && gave.splice(i, 1).length; })) return [];
-  const names = parts(out, out.atoms.map((a) => a.id)).map((p) => label(p.g)).filter(Boolean).join(' + ');
-  return [{ code: 'otherAlkene', at: 'state', step: 0, ids, params: { names } }];
+  if (sameSet(gave, parts(answer.doc, want.states[want.arrows.length]).map((p) => p.g))) return [];
+  return [{ code: 'otherAlkene', at: 'state', step: 0, ids, params: { names: named(out) } }];
 }
 
 // ---------- curved arrows ----------

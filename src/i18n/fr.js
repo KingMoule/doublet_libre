@@ -193,6 +193,7 @@ export const fr = {
       'Mode Montage : 37 pièces de verrerie qui s’emboîtent aux rodages, pour dessiner reflux, distillation, filtration, extraction et titrage.',
       'Menu Exercice, Nomenclature : des séries de dix molécules à nommer ou à dessiner, des alcanes aux cétones, corrigées règle par règle selon le manuel, avec la solution numérotée.',
       'Menu Exercice, Mécanismes : l’addition de HX et l’hydratation acide des alcènes à compléter (les flèches, les structures, le mécanisme complet ou le produit majeur), choisies dans les menus Réaction et Style, avec un retour précis sur chaque erreur.',
+      'Mécanismes, réactions sans mécanisme : hydroboration, hydrogénation, oxydations douce et forte, ozonolyse, époxydation. Dessinez le produit, choisissez les conditions, ou retrouvez l’alcène de départ ; le retour dit ce que donnerait votre réponse.',
       'Interface revue : ce panneau explique chaque outil ; boutons de zoom ; Copier l’image en haut à droite. Doublet, Charge, δ, Flèche courbe et Flèche de réaction ont leur petite fenêtre. L’outil δ pose le signe choisi, et un second clic l’enlève.',
     ],
     shortcutsTitle: 'Raccourcis clavier',
@@ -384,23 +385,28 @@ export const fr = {
     // Over and under the arrow of a global reaction, as the textbook writes them (figures 7.15, 7.19, 7.26, 7.28,
     // 7.30, 7.31); a reaction with two ways to run it has both, the series takes turns.
     conditions: {
+      // HX and the acid hydration, as a choice of the Réactifs style.
+      hx: [['HBr', '']], hydration: [['H₂O', 'H₂SO₄']],
       hydroboration: [['1) BH₃', '2) H₂O₂, OH⁻']], hydrogenation: [['H₂', 'Pt']], dihydroxylation: [['KMnO₄', 'H₂O, OH⁻']], epoxidation: [['MCPBA', '']],
       ozonolysis: [['1) O₃', '2) Zn, H₃O⁺']], cleavage: [['KMnO₄ conc.', 'H₃O⁺'], ['1) O₃', '2) H₂O₂, H₃O⁺']],
     },
     // A product the namer leaves out (SPEC, Exercices de nomenclature, Hors programme), said by what it is.
     kinds: { acid: 'un acide carboxylique', oxirane: 'un oxirane' },
-    levels: { progressive: 'Progressif', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur', substrate: 'Substrat de départ' },
+    levels: { progressive: 'Progressif', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur', reagents: 'Réactifs à choisir', substrate: 'Substrat de départ' },
     /** @param {string} alkene @param {string} reagent */ reaction: (alkene, reagent) => `${alkene} + ${reagent}`,
     prompts: {
       arrows: 'Dessinez les flèches courbes de chaque étape, du doublet ou de la liaison vers l’atome qui reçoit les électrons.',
       structures: 'Dessinez ce qui se forme entre les flèches de réaction : chaque intermédiaire, puis le produit.',
       complete: 'Dessinez le mécanisme : les flèches courbes de chaque étape, chaque intermédiaire, puis le produit.',
       product: 'Dessinez le ou les produits majeurs après la flèche de réaction.',
+      reagents: 'Choisissez les conditions qui transforment cet alcène en ce produit.',
       substrate: 'Dessinez l’alcène de départ avant la flèche de réaction.',
     },
     help: 'Une flèche courbe part d’un doublet ou d’une liaison : l’outil Doublet en ajoute un sur un ion ou sur l’eau. Un H visé par une flèche se dessine (outil Atome).',
     // The Produit and Substrat styles, where nothing moves electrons.
     helpDraw: 'Dessinez avec les outils Chaîne, Cycle, Liaison et Atome ; deux produits se dessinent côte à côte, un + entre eux n’est pas nécessaire.',
+    // The Réactifs style: four conditions to touch.
+    helpPick: 'Touchez les conditions de votre choix : le retour dit ce qu’elles donneraient.',
     // Over the reaction arrows, as in the textbook: figure 7.6 for HX, figure 7.13 for the global hydration.
     slow: 'Étape lente', fast: 'Étape rapide', acid: 'H₂SO₄',
     // The reagent of an acid hydration, as the title writes it.
@@ -477,6 +483,9 @@ export const fr = {
       undecided: () => 'Cet alcène donnerait deux produits en quantités semblables : ses deux carbones portent autant de H.',
       /** @param {{names: string}} p */
       otherAlkene: ({ names }) => (names ? `Votre alcène donnerait : ${names}.` : 'Votre alcène ne donnerait pas ces produits.'),
+      // The Réactifs style: what the conditions chosen would give.
+      /** @param {{names: string}} p */
+      otherConditions: ({ names }) => (names ? `Avec ces conditions, on obtiendrait : ${names}.` : 'Ces conditions ne donneraient pas ce produit.'),
       /** @param {{name: string}} p */ otherSpecies: ({ name }) => `${name ? `Votre dessin : ${name}. ` : ''}Ce n’est pas l’espèce attendue ici.`,
       missingArrow: {
         /** @param {{target: string}} p */ pi: ({ target }) => `Il manque la flèche du doublet π vers le H de ${target}.`,
