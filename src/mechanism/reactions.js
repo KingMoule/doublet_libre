@@ -17,6 +17,7 @@ import { sameMolecule, toGraph } from '../naming/graph.js';
 export const NET = /** @type {Record<string, Net>} */ ({
   hx: { add: ['H', 'X'], cation: true }, // figure 7.6
   hydration: { add: ['H', 'OH'], cation: true }, // figure 7.14
+  halogenation: { add: ['X', 'X'] }, // figure 7.22: through the bridged ion, no carbocation to rearrange
   hydroboration: { add: ['OH', 'H'] }, // figure 7.15: anti-Markovnikov
   hydrogenation: { add: ['H', 'H'] }, // figure 7.19
   dihydroxylation: { add: ['OH', 'OH'] }, // figure 7.26: KMnO₄ dilute, a vicinal diol
@@ -71,6 +72,22 @@ function hang(d, at, el, order = 1) {
   M.addBond(d, at, M.addAtom(d, { element: el, ...add(a, fromAngle(dir, L)) }).id, order);
 }
 
+/**
+ * Where the atom bridging two bonded carbons goes (the O of an oxirane, the Br⁺ of a bromonium ion): the top of an
+ * equilateral triangle on their bond, on the side away from their other bonds (outside a ring), or with more room.
+ * @param {M.Doc} d @param {M.Atom} h @param {M.Atom} c
+ */
+export function apex(d, h, c) {
+  const u = sub(c, h), m = mid(h, c);
+  const tops = [1, -1].map((s) => add(m, scale({ x: -u.y * s, y: u.x * s }, Math.sqrt(3) / 2)));
+  const others = [...M.neighbors(d, h.id), ...M.neighbors(d, c.id)].filter((id) => id !== h.id && id !== c.id).map((id) => /** @type {M.Atom} */ (M.findAtom(d, id)));
+  // The side of each top: + where the other bonds go, − away from them.
+  const side = (/** @type {{x: number, y: number}} */ p) => others.reduce((s, o) => s + (o.x - m.x) * (p.x - m.x) + (o.y - m.y) * (p.y - m.y), 0);
+  const room = (/** @type {{x: number, y: number}} */ p) => Math.min(...d.atoms.map((a) => Math.hypot(a.x - p.x, a.y - p.y)));
+  if (Math.abs(side(tops[0])) > 1e-6) return side(tops[0]) < side(tops[1]) ? tops[0] : tops[1];
+  return room(tops[0]) >= room(tops[1]) ? tops[0] : tops[1];
+}
+
 /** What a reaction makes of the alkene, h taking the first group. @param {M.Doc} d @param {Net} net @param {M.Atom} h @param {M.Atom} c @param {string} [x] */
 function made(d, net, h, c, x = 'Br') {
   const e = structuredClone(d);
@@ -79,12 +96,8 @@ function made(d, net, h, c, x = 'Br') {
     M.setBondOrder(e, pi.id, 1);
     net.add.forEach((g, i) => { if (g !== 'H') hang(e, [h, c][i].id, g === 'X' ? x : 'O'); });
   } else if ('bridge' in net) {
-    // The O of the oxirane at the top of an equilateral triangle on the C–C bond, on the side with more room.
     M.setBondOrder(e, pi.id, 1);
-    const u = sub(c, h), m = mid(h, c);
-    const tops = [1, -1].map((s) => add(m, scale({ x: -u.y * s, y: u.x * s }, Math.sqrt(3) / 2)));
-    const room = (/** @type {{x: number, y: number}} */ p) => Math.min(...e.atoms.map((a) => Math.hypot(a.x - p.x, a.y - p.y)));
-    const o = M.addAtom(e, { element: 'O', ...(room(tops[0]) >= room(tops[1]) ? tops[0] : tops[1]) });
+    const o = M.addAtom(e, { element: 'O', ...apex(d, h, c) });
     M.addBond(e, h.id, o.id);
     M.addBond(e, c.id, o.id);
   } else {

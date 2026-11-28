@@ -62,11 +62,11 @@ export function solution(item) {
   const { x, product, style, reaction } = item;
   const S = X.solution, cation = S.cations[item.cation];
   const net = NET[reaction];
-  const steps = reaction === 'hx'
-    ? (style === 'product' ? [S.hx.product(x, product)] : [S.hx.first(x, cation), S.hx.second(x, product)])
-    : reaction === 'hydration'
-      ? (style === 'product' ? [S.hydration.product(product)] : [S.hydration.first(cation), S.hydration.second(), S.hydration.third(product)])
-      : [/** @type {Record<string, any>} */ (S)[reaction](product),
-        ...(style === 'substrate' ? [S.back[reaction === 'hydrogenation' ? 'any' : 'cut' in net ? 'cut' : 'add'](item.alkene)] : [])];
+  const short = style === 'product';
+  const steps = reaction === 'hx' ? (short ? [S.hx.product(x, product)] : [S.hx.first(x, cation), S.hx.second(x, product)])
+    : reaction === 'hydration' ? (short ? [S.hydration.product(product)] : [S.hydration.first(cation), S.hydration.second(), S.hydration.third(product)])
+      : reaction === 'halogenation' ? (short ? [S.halogenation.product(x, product)] : [S.halogenation.first(x), S.halogenation.second(x, product)])
+        : [/** @type {Record<string, any>} */ (S)[reaction](product),
+          ...(style === 'substrate' ? [S.back[reaction === 'hydrogenation' ? 'any' : 'cut' in net ? 'cut' : 'add'](item.alkene)] : [])];
   return { doc: structuredClone(item.answer.doc), steps };
 }
