@@ -88,11 +88,16 @@ function chooseHSide(bondAngles, element) {
 }
 
 /**
- * Carbons are not labelled once bonded (GR-2.1.2); every other atom is, with its hydrogens.
+ * Carbons are not labelled once bonded (GR-2.1.2), except one with two identical bonds in a line (O=C=O), which
+ * would read as one long bond, and those of a molecule of one bond (H₂C=O, as ethene); every other atom is, with
+ * its hydrogens.
  * @param {Doc} doc @param {import('./model.js').Atom} atom @param {number[]} bondAngles
  */
 function atomLabel(doc, atom, bondAngles) {
-  if (atom.element === 'C' && bondAngles.length > 0) return null;
+  const own = bondsOf(doc, atom.id);
+  const straight = own.length === 2 && own[0].order === own[1].order && angleDiff(bondAngles[0], bondAngles[1]) > 175;
+  const lone = own.length === 1 && bondsOf(doc, otherEnd(own[0], atom.id)).length === 1;
+  if (atom.element === 'C' && bondAngles.length > 0 && !straight && !lone) return null;
   const h = hydrogenCount(doc, atom);
   const side = h === 0 ? 'right' : atom.hSide ?? chooseHSide(bondAngles, atom.element);
   const symW = textWidth(atom.element, F);

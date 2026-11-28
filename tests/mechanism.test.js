@@ -56,7 +56,7 @@ test('a wrong species: the + on the other carbon, a charge left out, the anti-Ma
   const first = (/** @type {M.Doc} */ d) => found(d)[0];
   assert.equal(first(drawn((d) => { /** @type {M.Atom} */ (M.findAtom(d, 'a7')).charge = 0; /** @type {M.Atom} */ (M.findAtom(d, 'a6')).charge = 1; })), 'cationPosition@1');
   assert.equal(first(drawn((d) => { /** @type {M.Atom} */ (M.findAtom(d, 'a7')).charge = 0; })), 'charge@1');
-  assert.equal(first(drawn((d) => { M.removeBond(d, /** @type {M.Bond} */ (M.bondBetween(d, 'a10', 'a13')).id); M.addBond(d, 'a11', 'a13'); })), 'antiMarkovnikov@2');
+  assert.equal(first(drawn((d) => { M.removeBond(d, /** @type {M.Bond} */ (M.bondBetween(d, 'a10', 'a13')).id); M.addBond(d, 'a11', 'a13'); })), 'isomer@2');
   assert.equal(first(drawn((d) => M.removeAtom(d, 'a9'))), 'missingSpecies@1');
 });
 
@@ -154,8 +154,8 @@ test('acid hydration (figure 7.14): three steps, any H of H₃O⁺, the solvent 
   assert.match(fr.mechanism.findings.charge(/** @type {any} */ (noPlus.params)), /oxonium/);
   // 1-propanol: the OH on the carbon with more H.
   const [anti] = check((d) => { const [p1, p2] = water.ids.product; const o = /** @type {M.Bond} */ (d.bonds.find((x) => x.a === p2.id && M.findAtom(d, x.b)?.element === 'O')); M.removeBond(d, o.id); M.addBond(d, p1.id, o.b); });
-  assert.equal(`${anti.code}@${anti.step}`, 'antiMarkovnikov@3');
-  assert.match(fr.mechanism.findings.antiMarkovnikov(/** @type {any} */ (anti.params)), /Le groupe OH/);
+  assert.equal(`${anti.code}@${anti.step}`, 'isomer@3');
+  assert.match(fr.mechanism.findings.isomer({ .../** @type {any} */ (anti.params), reaction: 'hydration' }), /Le groupe OH/);
 });
 
 test('messages name the species of the mechanism: HBr and Br⁻, the bromine, the carbocation', () => {
@@ -170,7 +170,7 @@ test('messages name the species of the mechanism: HBr and Br⁻, the bromine, th
 
 test('every finding has its message, and each arrow its own by role', () => {
   const F = /** @type {Record<string, any>} */ (fr.mechanism.findings);
-  for (const code of ['steps', 'missingSpecies', 'extraSpecies', 'cationPosition', 'charge', 'antiMarkovnikov', 'otherSpecies', 'reversed', 'markovnikovArrow', 'halfArrow', 'extraArrow']) {
+  for (const code of ['steps', 'missingSpecies', 'extraSpecies', 'cationPosition', 'charge', 'isomer', 'otherReaction', 'otherSpecies', 'noAlkene', 'undecided', 'otherAlkene', 'reversed', 'markovnikovArrow', 'halfArrow', 'extraArrow']) {
     assert.equal(typeof F[code], 'function', code);
   }
   for (const code of ['missingArrow', 'wrongTarget']) for (const role of ['pi', 'leaving', 'attack', 'base']) assert.equal(typeof F[code][role], 'function', `${code}.${role}`);

@@ -24,6 +24,25 @@ test('labels: carbons hidden, HO flipped when the bond leaves to the right (GR-2
   assert.equal(layout(w).atoms.get('a1').label.side, 'left', 'water written H2O');
 });
 
+test('a carbon with two identical bonds in a line is labelled, so they do not read as one bond (GR-2.1.2)', () => {
+  // CO₂ drawn straight: O=C=O.
+  const d = M.emptyDoc();
+  const [o1, c, o2] = [-40, 0, 40].map((x, i) => M.addAtom(d, { element: i === 1 ? 'C' : 'O', x, y: 0 }));
+  M.addBond(d, o1.id, c.id, 2);
+  M.addBond(d, c.id, o2.id, 2);
+  assert.equal(layout(d).atoms.get(c.id).label.runs[0].segs[0].text, 'C');
+  // The sp carbons of an alkyne have a triple and a single bond: they stay implicit, as in the textbook.
+  const y = M.emptyDoc();
+  const ids = [-40, 0, 40, 80].map((x) => M.addAtom(y, { x, y: 0 }).id);
+  ids.slice(1).forEach((id, k) => M.addBond(y, ids[k], id, k === 1 ? 3 : 1));
+  for (const id of ids.slice(1, 3)) assert.equal(layout(y).atoms.get(id).label, null);
+  // A molecule of one bond writes its carbons, with their H: méthanal H₂C=O, as the ozonolysis gives it.
+  const f = M.emptyDoc();
+  const [cf, of] = [0, 40].map((x, i) => M.addAtom(f, { element: i ? 'O' : 'C', x, y: 0 }));
+  M.addBond(f, cf.id, of.id, 2);
+  assert.deepEqual(layout(f).atoms.get(cf.id).label.runs[0].segs.map((s) => s.text), ['H', '2', 'C']);
+});
+
 test('lone pairs sit above, below, left or right of the symbol, away from bonds (GR-5.2)', () => {
   const L = layout(sampleSN2());
   const side = (c) => (Math.abs(c.x - 240) < 1 ? (c.y < 100 ? 'top' : 'bottom') : c.x > 240 ? 'right' : 'left');

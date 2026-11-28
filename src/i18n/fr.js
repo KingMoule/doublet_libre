@@ -372,16 +372,35 @@ export const fr = {
     /** @param {number} n */ seriesOf: (n) => `Série de ${n} mécanismes`,
     // The two menus of the panel: the reaction, then the style.
     reactionMenu: 'Réaction', styleMenu: 'Style',
-    reactions: { hx: 'Addition de HX', hydration: 'Hydratation acide' },
-    levels: { progressive: 'Progressif (les quatre styles)', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur' },
+    reactions: {
+      hx: 'Addition de HX', hydration: 'Hydratation acide', hydroboration: 'Hydroboration-oxydation', hydrogenation: 'Hydrogénation catalytique',
+      dihydroxylation: 'Oxydation douce (KMnO₄ dilué)', epoxidation: 'Époxydation', ozonolysis: 'Ozonolyse réductrice', cleavage: 'Oxydation forte (coupure)',
+    },
+    // Of a reaction, as a sentence names it: « le produit de l’hydratation acide ».
+    of: {
+      hx: 'de l’addition de HX', hydration: 'de l’hydratation acide', hydroboration: 'de l’hydroboration-oxydation', hydrogenation: 'de l’hydrogénation',
+      dihydroxylation: 'de l’oxydation douce', epoxidation: 'de l’époxydation', ozonolysis: 'de l’ozonolyse réductrice', cleavage: 'de l’oxydation forte',
+    },
+    // Over and under the arrow of a global reaction, as the textbook writes them (figures 7.15, 7.19, 7.26, 7.28,
+    // 7.30, 7.31); a reaction with two ways to run it has both, the series takes turns.
+    conditions: {
+      hydroboration: [['1) BH₃', '2) H₂O₂, OH⁻']], hydrogenation: [['H₂', 'Pt']], dihydroxylation: [['KMnO₄', 'H₂O, OH⁻']], epoxidation: [['MCPBA', '']],
+      ozonolysis: [['1) O₃', '2) Zn, H₃O⁺']], cleavage: [['KMnO₄ conc.', 'H₃O⁺'], ['1) O₃', '2) H₂O₂, H₃O⁺']],
+    },
+    // A product the namer leaves out (SPEC, Exercices de nomenclature, Hors programme), said by what it is.
+    kinds: { acid: 'un acide carboxylique', oxirane: 'un oxirane' },
+    levels: { progressive: 'Progressif', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur', substrate: 'Substrat de départ' },
     /** @param {string} alkene @param {string} reagent */ reaction: (alkene, reagent) => `${alkene} + ${reagent}`,
     prompts: {
       arrows: 'Dessinez les flèches courbes de chaque étape, du doublet ou de la liaison vers l’atome qui reçoit les électrons.',
       structures: 'Dessinez ce qui se forme entre les flèches de réaction : chaque intermédiaire, puis le produit.',
       complete: 'Dessinez le mécanisme : les flèches courbes de chaque étape, chaque intermédiaire, puis le produit.',
-      product: 'Dessinez le produit majeur après la flèche de réaction.',
+      product: 'Dessinez le ou les produits majeurs après la flèche de réaction.',
+      substrate: 'Dessinez l’alcène de départ avant la flèche de réaction.',
     },
     help: 'Une flèche courbe part d’un doublet ou d’une liaison : l’outil Doublet en ajoute un sur un ion ou sur l’eau. Un H visé par une flèche se dessine (outil Atome).',
+    // The Produit and Substrat styles, where nothing moves electrons.
+    helpDraw: 'Dessinez avec les outils Chaîne, Cycle, Liaison et Atome ; deux produits se dessinent côte à côte, un + entre eux n’est pas nécessaire.',
     // Over the reaction arrows, as in the textbook: figure 7.6 for HX, figure 7.13 for the global hydration.
     slow: 'Étape lente', fast: 'Étape rapide', acid: 'H₂SO₄',
     // The reagent of an acid hydration, as the title writes it.
@@ -410,10 +429,30 @@ export const fr = {
         /** @param {string} product */
         product: (product) => `En milieu acide (H₂SO₄), l’eau s’additionne : le H va sur le carbone de la double liaison qui porte le plus de H, et le groupe OH sur le carbone le plus substitué (Markovnikov). Produit : ${product}.`,
       },
+      // The global reactions, one sentence each, then the products (empty when none can be named).
+      /** @param {string} product */
+      hydroboration: (product) => `BH₃ s’additionne sur la double liaison, puis H₂O₂ en milieu basique remplace le bore par un groupe OH : le groupe OH va sur le carbone de la double liaison qui porte le plus de H, et le H sur le plus substitué (anti-Markovnikov).${product ? ` Produit : ${product}.` : ''}`,
+      /** @param {string} product */
+      hydrogenation: (product) => `Le catalyseur (Pt, Pd ou Ni) fixe un H sur chaque carbone de la double liaison : l’alcène devient un alcane.${product ? ` Produit : ${product}.` : ''}`,
+      /** @param {string} product */
+      dihydroxylation: (product) => `Le permanganate dilué, en milieu basique et à froid, ajoute un groupe OH sur chaque carbone de la double liaison : un diol vicinal (oxydation douce).${product ? ` Produit : ${product}.` : ''}`,
+      /** @param {string} product */
+      epoxidation: (product) => `Le peracide (MCPBA) donne un de ses oxygènes aux deux carbones de la double liaison, liés à lui en un cycle de trois atomes : ${product || 'un oxirane'} (un époxyde).`,
+      /** @param {string} product */
+      ozonolysis: (product) => `L’ozone coupe la double liaison, puis le zinc en milieu acide, un réducteur, laisse un C=O sur chacun de ses deux carbones : les aldéhydes restent des aldéhydes (ozonolyse réductrice).${product ? ` Produits : ${product}.` : ''}`,
+      /** @param {string} product */
+      cleavage: (product) => `La double liaison se coupe et chacun de ses deux carbones reçoit un C=O ; dans ce milieu oxydant, un aldéhyde va jusqu’à l’acide carboxylique, et un CH₂ jusqu’à CO₂ et H₂O (oxydation forte, ou ozonolyse oxydante).${product ? ` Produits : ${product}.` : ''}`,
+      // Back from the products to the alkene (Substrat): by what the reaction does.
+      back: {
+        /** @param {string} alkene */ add: (alkene) => `Pour remonter au substrat, on enlève ce que la réaction a ajouté et on remet la double liaison entre les deux carbones qui le portent. Substrat : ${alkene}.`,
+        /** @param {string} alkene */ cut: (alkene) => `Pour remonter au substrat, on enlève les oxygènes des C=O et on relie leurs deux carbones par une double liaison (manuel, p. 342). Substrat : ${alkene}.`,
+        /** @param {string} alkene */ any: (alkene) => `Plusieurs alcènes donnent cet alcane : une double liaison entre deux carbones voisins du squelette, n’importe où, est juste. Par exemple : ${alkene}.`,
+      },
     },
     findings: {
       /** @param {{n: number}} p */ steps: ({ n }) => `Ce mécanisme compte ${n} étape${n > 1 ? 's' : ''} : une flèche de réaction par étape.`,
-      /** @param {{name: string}} p */ missingSpecies: ({ name }) => `Il manque ${name || 'une espèce'} : ce qui se forme à une étape reste dessiné jusqu’à ce qu’il réagisse.`,
+      /** @param {{name: string, last?: boolean}} p */
+      missingSpecies: ({ name, last }) => (last ? `Il manque ${name || 'un produit'} parmi les produits.` : `Il manque ${name || 'une espèce'} : ce qui se forme à une étape reste dessiné jusqu’à ce qu’il réagisse.`),
       extraSpecies: () => 'Une espèce de trop : chacune vient de l’étape d’avant.',
       /** @param {{charged: string}} p */
       cationPosition: ({ charged }) => (charged === 'C+' ? 'Le H se lie au carbone de la double liaison qui porte le plus de H : le carbocation le plus substitué, le plus stable, se forme (Markovnikov).'
@@ -421,8 +460,23 @@ export const fr = {
       /** @param {{charged: string}} p */
       charge: ({ charged }) => `Vérifiez les charges : ${{ 'C+': 'le carbone qui a perdu la liaison π porte une charge +', 'O+': 'l’oxygène à trois liaisons de l’ion oxonium porte une charge +' }[charged]
         ?? (charged.endsWith('-') ? `l’ion ${charged.slice(0, -1)}⁻ porte une charge −` : 'cette espèce n’en porte pas')}.`,
-      /** @param {{name: string, group: string}} p */
-      antiMarkovnikov: ({ name, group }) => `${name ? `Votre produit : ${name}. ` : ''}${GROUPS[group] ?? group} se lie au carbone le plus substitué, celui du carbocation (Markovnikov).`,
+      // The same atoms bonded otherwise: said by the rule of the reaction.
+      /** @param {{name: string, group: string, reaction: string}} p */
+      isomer: ({ name, group, reaction }) => `${name ? `Votre produit : ${name}. ` : ''}${({
+        hydroboration: 'Le groupe OH se lie au carbone de la double liaison qui porte le plus de H (anti-Markovnikov).',
+        dihydroxylation: 'Un groupe OH se lie à chacun des deux carbones de la double liaison.',
+        epoxidation: 'L’oxygène se lie aux deux carbones de la double liaison.',
+        hydrogenation: 'Un H se lie à chaque carbone de la double liaison : le squelette ne change pas.',
+        ozonolysis: 'La double liaison se coupe : chacun de ses deux carbones reçoit un C=O.',
+        cleavage: 'La double liaison se coupe : chacun de ses deux carbones reçoit un C=O.',
+      })[reaction] ?? `${GROUPS[group] ?? group} se lie au carbone le plus substitué, celui du carbocation (Markovnikov).`}`,
+      /** @param {{name: string, other: string, reaction: string}} p */
+      otherReaction: ({ name, other, reaction }) => `${name ? `Votre produit : ${name}. ` : ''}C’est le produit ${fr.mechanism.of[other]}, pas celui ${fr.mechanism.of[reaction]}.`,
+      // The Substrat style: what is drawn before the arrow.
+      noAlkene: () => 'Dessinez un alcène, une seule molécule avec une seule double liaison C=C, avant la flèche de réaction.',
+      undecided: () => 'Cet alcène donnerait deux produits en quantités semblables : ses deux carbones portent autant de H.',
+      /** @param {{names: string}} p */
+      otherAlkene: ({ names }) => (names ? `Votre alcène donnerait : ${names}.` : 'Votre alcène ne donnerait pas ces produits.'),
       /** @param {{name: string}} p */ otherSpecies: ({ name }) => `${name ? `Votre dessin : ${name}. ` : ''}Ce n’est pas l’espèce attendue ici.`,
       missingArrow: {
         /** @param {{target: string}} p */ pi: ({ target }) => `Il manque la flèche du doublet π vers le H de ${target}.`,

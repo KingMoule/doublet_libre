@@ -87,7 +87,8 @@ test('only a carbocation rearranges: those alkenes are left out of HX and hydrat
   assert.deepEqual(names('C=CC(C)C', 'hydroboration'), ['3-méthylbutan-1-ol']);
 });
 
-test('the exercises leave out two C=C, a C≡C, more than 8 carbons', () => {
-  for (const s of ['C=CC=CC', 'C=CCC#C', 'C=CCCCCCCC']) for (const r of Object.keys(NET)) assert.equal(addition(alkene(s), r), null, `${s} ${r}`);
+test('an alkene has one C=C and no C≡C; its size is the generator’s business, not the reaction’s', () => {
+  for (const s of ['C=CC=CC', 'C=CCC#C', 'CCC']) for (const r of Object.keys(NET)) assert.equal(addition(alkene(s), r), null, `${s} ${r}`);
+  assert.deepEqual(names('C=CCCCCCCC', 'hydrogenation'), ['nonane']);
   assert.equal(addition(alkene('C=CC'), 'hx')?.cation, 'secondary');
 });
