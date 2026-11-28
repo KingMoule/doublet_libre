@@ -12,14 +12,15 @@ import { fr } from '../i18n/fr.js';
  * @typedef {import('../model.js').Doc} Doc
  * @typedef {import('../model.js').CurvedArrow} CurvedArrow
  * @typedef {import('../naming/graph.js').Graph} Graph
- * @typedef {{doc: Doc, roles: Record<string, string>, forms?: Record<string, [string, string]>}} Mechanism
+ * @typedef {{doc: Doc, roles: Record<string, string>, forms?: Record<string, [string, string]>, either?: Record<string, string[]>}} Mechanism
  *   roles: what each expected curved arrow does (pi, leaving, attack); forms: the bond an arrow drawn to an atom
- *   forms, where it matters (π drawn to the H, as in the textbooks, forms the C–H bond on the carbon with more H)
+ *   forms, where it matters (π drawn to the H, as in the textbooks, forms the C–H bond on the carbon with more H);
+ *   either: other atoms an arrow may go to as well (the bridge of a bromonium ion closes on either carbon)
  * @typedef {{code: string, at: 'state' | 'step', step: number, role?: string, ids: string[], params: Record<string, string | number>}} Finding
  *   at, step: a species' state (0: the reactants) or an arrow's step (1: the first); ids: what to outline
  * @typedef {{kind: 'pair' | 'bond' | 'atom' | 'new', atoms: string[]}} End where an arrow starts or ends, in the expected
  *   drawing's atoms: a lone pair on an atom, a bond, an atom, or a bond being formed
- * @typedef {{from: End, to: End}} Move
+ * @typedef {{from: End, to: End, also?: End[]}} Move also: other ends as right as `to`
  */
 
 const HALOGENS = ['F', 'Cl', 'Br', 'I'];
@@ -122,6 +123,7 @@ export function label(g) {
     return ALONE[el]?.[c] ?? `${el}${c < 0 ? '⁻' : c > 0 ? '⁺' : ''}`;
   }
   if (formula(g) === 'COO0') return 'CO₂';
+  if (g.atoms.length === 2 && g.atoms[0].el === g.atoms[1].el && HALOGENS.includes(g.atoms[0].el) && !charge(g)) return `${g.atoms[0].el}₂`;
   try { return nameOf(g).name; } catch (e) { if (e instanceof NamingError) return fr.mechanism.kinds[/** @type {'acid'} */ (kind(g))] ?? ''; throw e; }
 }
 
@@ -136,7 +138,8 @@ export function named(doc, ids = doc.atoms.map((a) => a.id)) {
 }
 
 /**
- * What a molecule the namer leaves out is: an acid (a C with =O and an OH), an oxirane (an O bonded to two bonded C).
+ * What a molecule the namer leaves out is: an acid (a C with =O and an OH), an oxirane (an O bonded to two bonded C),
+ * a bridged ion (Br⁺ in its place).
  * @param {Graph} g
  */
 function kind(g) {
@@ -144,10 +147,13 @@ function kind(g) {
   const other = (/** @type {{a: number, b: number}} */ b, /** @type {number} */ i) => (b.a === i ? b.b : b.a);
   const isO = (/** @type {number} */ i) => g.atoms[i].el === 'O';
   if (g.atoms.some((a, i) => a.el === 'C' && bonds(i).some((b) => b.order === 2 && isO(other(b, i))) && bonds(i).some((b) => b.order === 1 && isO(other(b, i)) && bonds(other(b, i)).length === 1))) return 'acid';
-  if (g.atoms.some((a, i) => {
+  // An O, or a halogen with its + (a bromonium ion), bonded to two carbons bonded together: a ring of three.
+  const ring = (/** @type {(a: {el: string, charge: number}) => boolean} */ f) => g.atoms.some((a, i) => {
     const cs = bonds(i).map((b) => other(b, i));
-    return a.el === 'O' && cs.length === 2 && g.bonds.some((b) => [b.a, b.b].sort().join() === [...cs].sort().join());
-  })) return 'oxirane';
+    return f(a) && cs.length === 2 && g.bonds.some((b) => [b.a, b.b].sort().join() === [...cs].sort().join());
+  });
+  if (ring((a) => a.el === 'O' && !a.charge)) return 'oxirane';
+  if (ring((a) => HALOGENS.includes(a.el) && a.charge === 1)) return 'bridged';
   return '';
 }
 
@@ -197,6 +203,7 @@ const same = (/** @type {End} */ p, /** @type {End} */ q) => p.kind === q.kind &
  * @param {End} to @param {Move} e
  */
 function fits(to, e) {
+  if (e.also?.some((t) => fits(to, { from: e.from, to: t }))) return true;
   if (same(to, e.to)) return true;
   const formed = to.kind === 'new' ? to : e.to.kind === 'new' ? e.to : null;
   const atom = to.kind === 'atom' ? to : e.to.kind === 'atom' ? e.to : null;
@@ -244,7 +251,8 @@ function arrows(doc, ids, answer, wantIds, maps, step) {
   const own = naming(answer.doc, (a) => a);
   const want = expected.map((c) => {
     const formed = answer.forms?.[c.id];
-    return { c, move: { from: end(answer.doc, c.from, own), to: formed ? { kind: /** @type {const} */ ('new'), atoms: formed.map(own).sort() } : end(answer.doc, c.to, own) } };
+    const also = answer.either?.[c.id]?.map((a) => ({ kind: /** @type {const} */ ('atom'), atoms: [own(a)] }));
+    return { c, move: { from: end(answer.doc, c.from, own), to: formed ? { kind: /** @type {const} */ ('new'), atoms: formed.map(own).sort() } : end(answer.doc, c.to, own), also } };
   });
   /** @type {Finding[] | null} */
   let best = null;
@@ -259,13 +267,16 @@ function arrows(doc, ids, answer, wantIds, maps, step) {
 
 /**
  * What the messages say of an expected arrow: the species its electrons come from (Br⁻, H₂O), the species of
- * the atom that receives them (HBr, H₃O⁺) and that atom's element (Br, O).
+ * the atom that receives them (HBr, H₃O⁺), that atom's element (Br, O), and the bond it breaks, that atom last
+ * (H–Br, Br–Br, C–Br).
  * @param {Doc} doc @param {CurvedArrow} c
  */
 function said(doc, c) {
   const from = atomsOf(doc, c.from), to = atomsOf(doc, c.to);
   const atom = to.find((a) => !from.includes(a)) ?? to[0];
-  return { source: speciesOf(doc, from[0]), target: speciesOf(doc, atom), el: M.findAtom(doc, atom)?.element ?? '' };
+  const el = (/** @type {string} */ id) => M.findAtom(doc, id)?.element ?? '';
+  const bond = 'bond' in c.from ? [...from.filter((a) => a !== atom), ...from.filter((a) => a === atom)].map(el).join('–') : '';
+  return { source: speciesOf(doc, from[0]), target: speciesOf(doc, atom), el: el(atom), bond };
 }
 
 /**

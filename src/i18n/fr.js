@@ -391,7 +391,7 @@ export const fr = {
       ozonolysis: [['1) O₃', '2) Zn, H₃O⁺']], cleavage: [['KMnO₄ conc.', 'H₃O⁺'], ['1) O₃', '2) H₂O₂, H₃O⁺']],
     },
     // A product the namer leaves out (SPEC, Exercices de nomenclature, Hors programme), said by what it is.
-    kinds: { acid: 'un acide carboxylique', oxirane: 'un oxirane' },
+    kinds: { acid: 'un acide carboxylique', oxirane: 'un oxirane', bridged: 'l’ion ponté' },
     levels: { progressive: 'Progressif', arrows: 'Flèches à compléter', structures: 'Structures à compléter', complete: 'Mécanisme complet', product: 'Produit majeur', reagents: 'Réactifs à choisir', substrate: 'Substrat de départ' },
     /** @param {string} alkene @param {string} reagent */ reaction: (alkene, reagent) => `${alkene} + ${reagent}`,
     prompts: {
@@ -462,10 +462,12 @@ export const fr = {
       extraSpecies: () => 'Une espèce de trop : chacune vient de l’étape d’avant.',
       /** @param {{charged: string}} p */
       cationPosition: ({ charged }) => (charged === 'C+' ? 'Le H se lie au carbone de la double liaison qui porte le plus de H : le carbocation le plus substitué, le plus stable, se forme (Markovnikov).'
-        : 'La charge + est sur l’atome qui fait une liaison de plus que d’habitude : l’oxygène à trois liaisons de l’ion oxonium.'),
+        : charged === 'O+' ? 'La charge + est sur l’atome qui fait une liaison de plus que d’habitude : l’oxygène à trois liaisons de l’ion oxonium.'
+          : `La charge + est sur ${ELEMENTS[charged.slice(0, -1)] ?? charged} du pont, qui fait deux liaisons au lieu d’une.`),
       /** @param {{charged: string}} p */
       charge: ({ charged }) => `Vérifiez les charges : ${{ 'C+': 'le carbone qui a perdu la liaison π porte une charge +', 'O+': 'l’oxygène à trois liaisons de l’ion oxonium porte une charge +' }[charged]
-        ?? (charged.endsWith('-') ? `l’ion ${charged.slice(0, -1)}⁻ porte une charge −` : 'cette espèce n’en porte pas')}.`,
+        ?? (charged.endsWith('-') ? `l’ion ${charged.slice(0, -1)}⁻ porte une charge −`
+          : charged.endsWith('+') ? `${ELEMENTS[charged.slice(0, -1)] ?? charged} du pont, à deux liaisons, porte une charge +` : 'cette espèce n’en porte pas')}.`,
       // The same atoms bonded otherwise: said by the rule of the reaction.
       /** @param {{name: string, group: string, reaction: string}} p */
       isomer: ({ name, group, reaction }) => `${name ? `Votre produit : ${name}. ` : ''}${({
@@ -487,17 +489,28 @@ export const fr = {
       /** @param {{names: string}} p */
       otherConditions: ({ names }) => (names ? `Avec ces conditions, on obtiendrait : ${names}.` : 'Ces conditions ne donneraient pas ce produit.'),
       /** @param {{name: string}} p */ otherSpecies: ({ name }) => `${name ? `Votre dessin : ${name}. ` : ''}Ce n’est pas l’espèce attendue ici.`,
+      // pi: to the H of an acid, or to the nearer atom of X₂ (δ+ by induction, figure 7.23); leaving: a bond toward
+      // one of its atoms, the bond written that atom last (H–Br, Br–Br, C–Br); bridge: a lone pair of the halogen
+      // closing the ring of a bromonium ion; open: X⁻ opening it on the more substituted carbon (figure 7.24).
       missingArrow: {
-        /** @param {{target: string}} p */ pi: ({ target }) => `Il manque la flèche du doublet π vers le H de ${target}.`,
-        /** @param {{el: string}} p */ leaving: ({ el }) => `Il manque la flèche de la liaison H–${el} vers ${ELEMENTS[el] ?? el} : sans elle, le H aurait deux liaisons.`,
+        /** @param {{target: string, el: string}} p */
+        pi: ({ target, el }) => (el === 'H' ? `Il manque la flèche du doublet π vers le H de ${target}.` : `Il manque la flèche du doublet π vers le ${el} le plus proche de ${target} (δ+).`),
+        /** @param {{el: string, bond: string}} p */
+        leaving: ({ el, bond }) => { const [first] = bond.split('–'); return `Il manque la flèche de la liaison ${bond} vers ${ELEMENTS[el] ?? el} : sans elle, le ${first} aurait ${first === 'C' ? 'cinq' : 'deux'} liaisons.`; },
         /** @param {{source: string}} p */ attack: ({ source }) => `Il manque la flèche d’un doublet de ${source} vers le carbocation.`,
         /** @param {{source: string}} p */ base: ({ source }) => `Il manque la flèche d’un doublet de ${source} (la base, le solvant) vers un H de l’ion oxonium.`,
+        bridge: () => 'Il manque la flèche d’un doublet de l’halogène attaqué vers l’autre carbone de la double liaison : elle ferme le pont de l’ion ponté (figure 7.23).',
+        /** @param {{source: string}} p */ open: ({ source }) => `Il manque la flèche d’un doublet de ${source} vers le carbone le plus substitué de l’ion ponté.`,
       },
       wrongTarget: {
-        /** @param {{target: string}} p */ pi: ({ target }) => `Le doublet π attaque un H de ${target}, pauvre en électrons (δ+).`,
-        /** @param {{el: string}} p */ leaving: ({ el }) => `Les électrons de la liaison H–${el} partent avec ${ELEMENTS[el] ?? el}, plus électronégatif.`,
+        /** @param {{target: string, el: string}} p */
+        pi: ({ target, el }) => (el === 'H' ? `Le doublet π attaque un H de ${target}, pauvre en électrons (δ+).` : `Le doublet π attaque le ${el} le plus proche de ${target}, rendu δ+ par induction.`),
+        /** @param {{el: string, bond: string}} p */
+        leaving: ({ el, bond }) => { const [first, second] = bond.split('–'); return first === second ? `Les électrons de la liaison ${bond} partent avec le ${el} le plus éloigné (δ−).` : `Les électrons de la liaison ${bond} partent avec ${ELEMENTS[el] ?? el}, plus électronégatif.`; },
         /** @param {{source: string}} p */ attack: ({ source }) => `${source} attaque le carbone qui porte la charge +.`,
         /** @param {{source: string}} p */ base: ({ source }) => `${source}, la base, arrache un H de l’ion oxonium : sa flèche pointe vers ce H.`,
+        bridge: () => 'Un doublet de l’halogène attaqué se lie à l’autre carbone de la double liaison, pour fermer le pont.',
+        /** @param {{source: string}} p */ open: ({ source }) => `${source} attaque le carbone le plus substitué de l’ion ponté, du côté opposé au pont (figure 7.24).`,
       },
       reversed: () => 'Une flèche part des électrons (un doublet ou une liaison) et pointe vers l’atome qui les reçoit.',
       markovnikovArrow: () => 'Le H se lie au carbone de la double liaison qui porte le plus de H (Markovnikov).',
