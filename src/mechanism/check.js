@@ -2,6 +2,7 @@
 import * as M from '../model.js';
 import { isomorphisms, sameMolecule, toGraph } from '../naming/graph.js';
 import { NamingError, nameOf } from '../naming/namer.js';
+import { fr } from '../i18n/fr.js';
 
 /**
  * Checks a drawn mechanism against the expected one (SPEC, Exercices de mécanisme). Both are drawings:
@@ -48,7 +49,7 @@ const speciesOf = (doc, id) => label(toGraph(doc, M.component(doc, id)));
 // ---------- species ----------
 
 /** The molecules and ions of a state: its atoms grouped by bonds, each as a graph (H left out). @param {Doc} doc @param {string[]} ids */
-function parts(doc, ids) {
+export function parts(doc, ids) {
   const left = new Set(ids);
   /** @type {{ids: string[], g: Graph}[]} */
   const out = [];
@@ -92,7 +93,7 @@ function species(doc, ids, ans, wantIds, k) {
     if (!d) { found.push({ code: 'missingSpecies', at: 'state', step: k, ids: [], params: { name: label(e.g) } }); continue; }
     drawn.splice(drawn.indexOf(d), 1);
     const code = sameMolecule(skeleton(d.g), skeleton(e.g)) ? (charge(d.g) === charge(e.g) ? 'cationPosition' : 'charge')
-      : formula(d.g) === formula(e.g) ? 'antiMarkovnikov' : 'otherSpecies';
+      : formula(d.g) === formula(e.g) ? 'isomer' : 'otherSpecies';
     // What the expected species says: its charged atom (C+, O+, Br-) and the group a product carries (Br, O).
     const charged = e.g.atoms.find((a) => a.charge);
     const params = { name: label(d.g), charged: charged ? `${charged.el}${charged.charge > 0 ? '+' : '-'}` : '', group: e.g.atoms.find((a) => a.el !== 'C')?.el ?? '' };
@@ -108,13 +109,59 @@ const ALONE = /** @type {Record<string, Record<number, string>>} */ ({
   ...Object.fromEntries(HALOGENS.map((x) => [x, { [-1]: `${x}⁻`, 0: `H${x}` }])),
 });
 
-/** How a species is called in a message: HBr, Br⁻, H₂O, H₃O⁺, or its name; nothing when the namer cannot name it (a carbocation). @param {Graph} g */
-function label(g) {
+/**
+ * How a species is called in a message: HBr, Br⁻, H₂O, H₃O⁺, CO₂, or its name; what it is when the namer leaves it
+ * out (an acid, an oxirane); nothing for the rest (a carbocation).
+ * @param {Graph} g
+ */
+export function label(g) {
   if (g.atoms.length === 1) {
     const { el, charge: c } = g.atoms[0];
     return ALONE[el]?.[c] ?? `${el}${c < 0 ? '⁻' : c > 0 ? '⁺' : ''}`;
   }
-  try { return nameOf(g).name; } catch (e) { if (e instanceof NamingError) return ''; throw e; }
+  if (formula(g) === 'COO0') return 'CO₂';
+  try { return nameOf(g).name; } catch (e) { if (e instanceof NamingError) return fr.mechanism.kinds[/** @type {'acid'} */ (kind(g))] ?? ''; throw e; }
+}
+
+/**
+ * What a molecule the namer leaves out is: an acid (a C with =O and an OH), an oxirane (an O bonded to two bonded C).
+ * @param {Graph} g
+ */
+function kind(g) {
+  const bonds = (/** @type {number} */ i) => g.bonds.filter((b) => b.a === i || b.b === i);
+  const other = (/** @type {{a: number, b: number}} */ b, /** @type {number} */ i) => (b.a === i ? b.b : b.a);
+  const isO = (/** @type {number} */ i) => g.atoms[i].el === 'O';
+  if (g.atoms.some((a, i) => a.el === 'C' && bonds(i).some((b) => b.order === 2 && isO(other(b, i))) && bonds(i).some((b) => b.order === 1 && isO(other(b, i)) && bonds(other(b, i)).length === 1))) return 'acid';
+  if (g.atoms.some((a, i) => {
+    const cs = bonds(i).map((b) => other(b, i));
+    return a.el === 'O' && cs.length === 2 && g.bonds.some((b) => [b.a, b.b].sort().join() === [...cs].sort().join());
+  })) return 'oxirane';
+  return '';
+}
+
+/**
+ * A start drawn for products (the Substrat style): one alkene before the reaction arrow, which the reaction turns
+ * into the products after it, whichever alkene it is. made: the reaction applied to a drawing, null when the
+ * textbook would not decide (reactions.js outcome).
+ * @param {Doc} doc @param {Mechanism} answer @param {(d: Doc) => Doc | null} made @returns {Finding[]}
+ */
+export function checkSubstrate(doc, answer, made) {
+  const got = M.regions(doc), want = M.regions(answer.doc);
+  if (got.arrows.length !== want.arrows.length) return [{ code: 'steps', at: 'state', step: 0, ids: got.arrows.map((r) => r.id), params: { n: want.arrows.length } }];
+  const drawn = parts(doc, got.states[0]);
+  const ids = drawn.flatMap((d) => d.ids);
+  const pis = drawn[0]?.g.bonds.filter((b) => b.order > 1 && drawn[0].g.atoms[b.a].el === 'C' && drawn[0].g.atoms[b.b].el === 'C') ?? [];
+  if (drawn.length !== 1 || pis.length !== 1 || pis[0].order !== 2) return [{ code: 'noAlkene', at: 'state', step: 0, ids, params: {} }];
+  const alkene = structuredClone(doc);
+  alkene.atoms = alkene.atoms.filter((a) => ids.includes(a.id) || (a.element === 'H' && M.neighbors(doc, a.id).some((n) => ids.includes(n))));
+  alkene.bonds = alkene.bonds.filter((b) => alkene.atoms.some((a) => a.id === b.a) && alkene.atoms.some((a) => a.id === b.b));
+  const out = made(alkene);
+  if (!out) return [{ code: 'undecided', at: 'state', step: 0, ids, params: {} }];
+  const gave = parts(out, out.atoms.map((a) => a.id)).map((p) => p.g);
+  const expected = parts(answer.doc, want.states[want.arrows.length]).map((p) => p.g);
+  if (gave.length === expected.length && expected.every((e) => { const i = gave.findIndex((g) => sameMolecule(g, e)); return i >= 0 && gave.splice(i, 1).length; })) return [];
+  const names = parts(out, out.atoms.map((a) => a.id)).map((p) => label(p.g)).filter(Boolean).join(' + ');
+  return [{ code: 'otherAlkene', at: 'state', step: 0, ids, params: { names } }];
 }
 
 // ---------- curved arrows ----------

@@ -2,32 +2,40 @@
 import * as M from '../model.js';
 import { add, angleOf, fromAngle, nextBondAngle, sub } from '../geometry.js';
 import { builder } from '../templates.js';
-import { atomsOf } from './check.js';
+import { STYLE, textWidth } from '../render.js';
+import { atomsOf, label, parts } from './check.js';
 import { series as namingSeries } from '../naming/generate.js';
 import { toGraph } from '../naming/graph.js';
-import { addition as sides } from './reactions.js';
+import { outcome, addition as sides } from './reactions.js';
 import { nameOf } from '../naming/namer.js';
 import { fr } from '../i18n/fr.js';
 
 /**
- * Mechanism exercises (SPEC, Exercices de mécanisme): electrophilic additions to an alkene through the most
- * substituted carbocation (Markovnikov): HX in two steps, acid hydration in three. The alkenes come from the
- * nomenclature generator, already drawn and named; those whose H could go either way, or whose carbocation
- * would rearrange, are left out. An item is the whole mechanism with parts taken away, as its style says.
+ * Mechanism exercises (SPEC, Exercices de mécanisme) on the alkenes of the textbook's chapter 7. Two
+ * electrophilic additions through the most substituted carbocation (Markovnikov) have their mechanism drawn:
+ * HX in two steps, acid hydration in three. The other reactions are drawn as their global reaction, from the
+ * table of reactions.js. The alkenes come from the nomenclature generator, already drawn and named; those the
+ * textbook would not decide, and those of more than 8 carbons, are left out. An item is the whole mechanism or
+ * reaction with parts taken away, as its style says.
  * @typedef {import('./check.js').Mechanism} Mechanism
- * @typedef {'hx' | 'hydration'} Reaction
- * @typedef {'arrows' | 'structures' | 'complete' | 'product'} Style
+ * @typedef {'hx' | 'hydration' | 'hydroboration' | 'hydrogenation' | 'dihydroxylation' | 'epoxidation' | 'ozonolysis' | 'cleavage'} Reaction
+ * @typedef {'arrows' | 'structures' | 'complete' | 'product' | 'substrate'} Style
  * @typedef {{reaction: Reaction, style: Style, alkene: string, reagent: string, x: string, product: string,
- *   cation: 'primary' | 'secondary' | 'tertiary', given: M.Doc, answer: Mechanism, steps: number[]}} Item
- *   reagent: as the title writes it (HBr, H₂O (H₂SO₄)); x: the halogen of HX; given: the drawing the student
- *   starts from; steps: the steps whose arrows are asked
+ *   cation: 'primary' | 'secondary' | 'tertiary', substrate: M.Doc, given: M.Doc, answer: Mechanism, steps: number[]}} Item
+ *   reagent: as the title writes it (HBr, H₂O (H₂SO₄), 1) O₃ 2) Zn, H₃O⁺); x: the halogen of HX; substrate: the
+ *   alkene as the nomenclature drew it; given: the drawing the student starts from; steps: the steps whose arrows are asked
  */
 
-export const REACTIONS = /** @type {Reaction[]} */ (['hx', 'hydration']);
-export const STYLES = ['progressive', 'arrows', 'structures', 'complete', 'product'];
-/** A level is a reaction and a style: hx-progressive, hydration-arrows… */
-export const LEVELS = REACTIONS.flatMap((r) => STYLES.map((s) => `${r}-${s}`));
+export const REACTIONS = /** @type {Reaction[]} */ (['hx', 'hydration', 'hydroboration', 'hydrogenation', 'dihydroxylation', 'epoxidation', 'ozonolysis', 'cleavage']);
+/** The reactions whose mechanism is learnt; the others go without one. */
+const MECHANISMS = ['hx', 'hydration'];
+export const STYLES = ['progressive', 'arrows', 'structures', 'complete', 'product', 'substrate'];
+/** The styles of a reaction: those of a mechanism, or the product and the substrate of a global reaction. @param {string} reaction */
+export const stylesOf = (reaction) => (MECHANISMS.includes(reaction) ? STYLES.slice(0, 5) : ['progressive', 'product', 'substrate']);
+/** A level is a reaction and one of its styles: hx-progressive, hydration-arrows, ozonolysis-substrate… */
+export const LEVELS = REACTIONS.flatMap((r) => stylesOf(r).map((s) => `${r}-${s}`));
 const PROGRESSIVE = /** @type {Style[]} */ (['arrows', 'arrows', 'arrows', 'structures', 'structures', 'structures', 'complete', 'complete', 'product', 'product']);
+const PLAIN_PROGRESSIVE = /** @type {Style[]} */ ([...Array(5).fill('product'), ...Array(5).fill('substrate')]);
 const HALIDES = ['Br', 'Cl', 'Br', 'I'];
 const L = 40;
 const GAP = 30; // between a molecule and a + or a reaction arrow
@@ -47,7 +55,8 @@ function addition(d, reaction) {
   if (!a) return null;
   const free = (/** @type {{x: number, y: number}} */ pt) => d.atoms.every((t) => Math.hypot(t.x - pt.x, t.y - pt.y) >= 0.75 * L);
   const x = beyond(a.c, M.neighbors(d, a.c.id).map((n) => /** @type {M.Atom} */ (M.findAtom(d, n))));
-  if (!free(x)) return null;
+  // A global reaction checks its own products (drawPlain).
+  if (MECHANISMS.includes(reaction) && !free(x)) return null;
   const h1 = beyond(x, [a.c]), h2 = beyond(x, [a.c, h1]);
   return { ...a, x, hs: free(h1) && free(h2) ? [h1, h2] : null };
 }
@@ -112,8 +121,26 @@ function pen(d, a) {
     },
     /** H₂O, its H implicit, with its two lone pairs; its label H₂O reaches left of the O, so it stands a little further. */
     water() { left += 12; return b.atom('O', ...put(left), 0, 2); },
-    /** A reaction arrow, with what is written over it. @param {string} [above] @param {M.ReactionArrow['kind']} [kind] */
-    step(above = '', kind = 'forward') { left += GAP; b.step(left, left + ARROW, above); kinds.push(kind); left += ARROW + GAP; },
+    /**
+     * Any molecule of a drawing (the ids of its atoms) at the current place, turned as the alkene is: a product
+     * drawn where reactions.js put it. A lone O is H₂O, whose label reaches left.
+     * @param {M.Doc} src @param {string[]} ids
+     */
+    molecule(src, ids) {
+      const atoms = ids.map((id) => /** @type {M.Atom} */ (M.findAtom(src, id)));
+      if (atoms.length === 1 && atoms[0].element === 'O') left += 12;
+      const pts = atoms.map(turn);
+      const shift = left - Math.min(...pts.map((p) => p.x));
+      const made = new Map(atoms.map((t, i) => [t.id, b.atom(t.element, ...put(pts[i].x + shift, pts[i].y - midY), t.charge)]));
+      for (const bd of src.bonds) { const p = made.get(bd.a), q = made.get(bd.b); if (p && q) b.bond(p, q, bd.order); }
+      left = Math.max(...pts.map((p) => p.x)) + shift;
+    },
+    /** A reaction arrow, long enough for what is written over and under it. @param {string} [above] @param {M.ReactionArrow['kind']} [kind] @param {string} [below] */
+    step(above = '', kind = 'forward', below = '') {
+      const long = Math.max(ARROW, ...[above, below].map((t) => textWidth(t, STYLE.small) + 16));
+      left += GAP; b.step(left, left + long, above, below); kinds.push(kind); left += long + GAP;
+    },
+    turn,
     done() { const doc = b.done(); doc.reactionArrows.forEach((r, i) => { r.kind = kinds[i]; }); return doc; },
   };
 }
@@ -188,6 +215,26 @@ function drawHydration(d, a, short) {
   return mechanism(p.done(), [], null);
 }
 
+/**
+ * A reaction whose mechanism the course leaves out, as its global reaction: the alkene, the conditions over and
+ * under the arrow as the textbook writes them, the products that reactions.js makes, left to right with + between.
+ * Null when two atoms of a product would stand on top of each other.
+ * @param {M.Doc} d @param {Addition} a @param {Reaction} reaction @param {string[]} conditions over and under
+ * @returns {Mechanism | null}
+ */
+function drawPlain(d, a, reaction, [above, below]) {
+  const out = /** @type {M.Doc} */ (outcome(d, reaction));
+  const molecules = parts(out, out.atoms.map((t) => t.id)).map((m) => m.ids);
+  const of = new Map(molecules.flatMap((ids, k) => ids.map((id) => [id, k])));
+  if (out.atoms.some((p, i) => out.atoms.slice(i + 1).some((q) => of.get(p.id) === of.get(q.id) && Math.hypot(p.x - q.x, p.y - q.y) < 0.75 * L))) return null;
+  const p = pen(d, a);
+  p.alkene();
+  p.step(above, 'forward', below);
+  const leftmost = (/** @type {string[]} */ ids) => Math.min(...ids.map((id) => p.turn(/** @type {M.Atom} */ (M.findAtom(out, id))).x));
+  molecules.sort((u, v) => leftmost(u) - leftmost(v)).forEach((ids, k) => { if (k) p.plus(); p.molecule(out, ids); });
+  return mechanism(p.done(), [], null);
+}
+
 /** The drawing with its arrows' roles, and the C–H bond the π arrow forms. @param {M.Doc} doc @param {string[]} roles @param {[string, string] | null} ch */
 const mechanism = (doc, roles, ch) => ({
   doc, roles: Object.fromEntries(doc.curvedArrows.map((c, i) => [c.id, roles[i]])), forms: ch ? { [doc.curvedArrows[0].id]: ch } : {},
@@ -219,30 +266,36 @@ function hide(doc, states, keep) {
  */
 export function series(level, seed, count = 10) {
   const [reaction, chosen] = /** @type {[Reaction, string]} */ (level.split('-'));
+  const plain = !MECHANISMS.includes(reaction);
   /** @type {Item[]} */
   const items = [];
   const seen = new Set();
   for (let chunk = 0; items.length < count; chunk++) {
     if (chunk > 50) throw new Error(`mechanism: no ${level} after ${chunk} chunks`);
     for (const { doc: d, name } of namingSeries('alkenes', seed * 53 + chunk, 10).items) {
-      const a = items.length < count && !seen.has(name) ? addition(d, reaction) : null;
+      if (items.length >= count || seen.has(name) || d.atoms.filter((t) => t.element === 'C').length > 8) continue;
+      const a = addition(d, reaction);
       // An oxonium needs room for its two H.
       if (!a || (reaction === 'hydration' && !a.hs)) continue;
-      seen.add(name);
       const i = items.length;
-      const style = chosen === 'progressive' ? PROGRESSIVE[i % PROGRESSIVE.length] : /** @type {Style} */ (chosen);
+      const style = chosen !== 'progressive' ? /** @type {Style} */ (chosen) : plain ? PLAIN_PROGRESSIVE[i % 10] : PROGRESSIVE[i % 10];
       const x = reaction === 'hx' ? HALIDES[(seed + i) % HALIDES.length] : '';
-      const answer = reaction === 'hx' ? drawHX(d, a, x, style === 'product') : drawHydration(d, a, style === 'product');
+      const ways = /** @type {Record<string, string[][]>} */ (fr.mechanism.conditions)[reaction] ?? [];
+      const conditions = ways[(seed + i) % (ways.length || 1)];
+      const answer = plain ? drawPlain(d, a, reaction, conditions) : reaction === 'hx' ? drawHX(d, a, x, style === 'product') : drawHydration(d, a, style === 'product');
+      if (!answer) continue;
+      seen.add(name);
       const n = answer.doc.reactionArrows.length;
       const later = [...Array(n).keys()].map((k) => k + 1);
-      // What each style takes away: the curved arrows, the states after the reactants, or the product.
-      const [states, keep] = /** @type {[number[], number[]]} */ ({ arrows: [[], []], structures: [later, [1]], complete: [later, []], product: [[1], []] }[style]);
+      // What each style takes away: the curved arrows, the states after the reactants, the product or the alkene.
+      const [states, keep] = /** @type {[number[], number[]]} */ ({ arrows: [[], []], structures: [later, [1]], complete: [later, []], product: [[1], []], substrate: [[0], []] }[style]);
       const given = hide(answer.doc, states, keep);
       const last = M.regions(answer.doc).states[n];
+      // A mechanism names its organic product; a global reaction all its products, as the messages call them.
       const organic = M.component(answer.doc, /** @type {string} */ (last.find((id) => M.findAtom(answer.doc, id)?.element === 'C')));
-      const product = nameOf(toGraph(answer.doc, organic)).name;
-      const reagent = reaction === 'hx' ? `H${x}` : fr.mechanism.water;
-      items.push({ reaction, style, alkene: name, reagent, x, product, cation: a.cation, given, answer, steps: style === 'arrows' || style === 'complete' ? later : [] });
+      const product = plain ? parts(answer.doc, last).map((m) => label(m.g)).filter(Boolean).join(' + ') : nameOf(toGraph(answer.doc, organic)).name;
+      const reagent = plain ? conditions.filter(Boolean).join(conditions[0].startsWith('1)') ? ' ' : ', ') : reaction === 'hx' ? `H${x}` : fr.mechanism.water;
+      items.push({ reaction, style, alkene: name, reagent, x, product, cation: a.cation, substrate: d, given, answer, steps: style === 'arrows' || style === 'complete' ? later : [] });
     }
   }
   return { level, seed, items };

@@ -1,7 +1,9 @@
 // @ts-check
 import { fr } from '../i18n/fr.js';
 import * as M from '../model.js';
-import { checkMechanism } from './check.js';
+import { sameMolecule } from '../naming/graph.js';
+import { checkMechanism, checkSubstrate, parts } from './check.js';
+import { NET, outcome } from './reactions.js';
 
 /**
  * What a mechanism exercise shows: the verdict on a drawing, with the first thing wrong and what to
@@ -12,23 +14,49 @@ import { checkMechanism } from './check.js';
 
 const X = fr.mechanism;
 
-/** The drawing against the expected mechanism: right, or the first thing wrong, said where it is. @param {Item} item @param {import('../model.js').Doc} doc @returns {Answer} */
+/** Whether two lists of molecules are the same, whatever their order. @param {import('../naming/graph.js').Graph[]} gs @param {import('../naming/graph.js').Graph[]} hs */
+const sameSet = (gs, hs) => { const left = [...hs]; return gs.length === hs.length && gs.every((g) => { const i = left.findIndex((h) => sameMolecule(g, h)); return i >= 0 && left.splice(i, 1).length; }); };
+
+/**
+ * The reaction of the table whose products the student drew instead, on the same alkene (hydration for
+ * hydroboration, KMnO₄ dilute for concentrated…), if there is one.
+ * @param {Item} item @param {M.Doc} doc
+ */
+function otherReaction(item, doc) {
+  const { states } = M.regions(doc);
+  const drawn = parts(doc, states[states.length - 1]).map((m) => m.g);
+  return Object.keys(NET).find((r) => {
+    if (r === item.reaction) return false;
+    const out = outcome(item.substrate, r, item.x || 'Br');
+    return out && sameSet(drawn, parts(out, out.atoms.map((a) => a.id)).map((m) => m.g));
+  });
+}
+
+/** The drawing against the expected mechanism: right, or the first thing wrong, said where it is. @param {Item} item @param {M.Doc} doc @returns {Answer} */
 export function answerMechanism(item, doc) {
-  const [f] = checkMechanism(doc, item.answer, item.steps);
+  const [f] = item.style === 'substrate' ? checkSubstrate(doc, item.answer, (d) => outcome(d, item.reaction)) : checkMechanism(doc, item.answer, item.steps);
   if (!f) return { verdict: 'right', title: fr.exercise.right, lines: [], ids: [] };
-  const say = /** @type {Record<string, any>} */ (X.findings)[f.code];
-  const text = typeof say === 'function' ? say(f.params) : say[/** @type {string} */ (f.role)](f.params);
   const last = M.regions(item.answer.doc).arrows.length;
+  const product = f.at === 'state' && f.step === last;
+  // A wrong product that another reaction gives: that reaction is named, rather than what is wrong with it.
+  const other = product && item.style === 'product' && f.code !== 'steps' ? otherReaction(item, doc) : undefined;
+  const params = { ...f.params, reaction: item.reaction, last: product };
+  const say = /** @type {Record<string, any>} */ (X.findings)[other ? 'otherReaction' : f.code];
+  const text = other ? say({ ...params, other }) : typeof say === 'function' ? say(params) : say[/** @type {string} */ (f.role)](params);
   const where = f.code === 'steps' ? '' : f.at === 'step' ? X.step(f.step) : X.state(f.step, last);
   return { verdict: 'wrong', title: X.wrong, lines: [where ? `${where} : ${text}` : text], ids: f.ids };
 }
 
-/** The whole mechanism, and how it goes, step by step. @param {Item} item */
+/** The whole mechanism, and how it goes, step by step; a global reaction in a sentence, and the way back to its alkene. @param {Item} item */
 export function solution(item) {
-  const { x, product, style } = item;
+  const { x, product, style, reaction } = item;
   const S = X.solution, cation = S.cations[item.cation];
-  const steps = item.reaction === 'hx'
+  const net = NET[reaction];
+  const steps = reaction === 'hx'
     ? (style === 'product' ? [S.hx.product(x, product)] : [S.hx.first(x, cation), S.hx.second(x, product)])
-    : (style === 'product' ? [S.hydration.product(product)] : [S.hydration.first(cation), S.hydration.second(), S.hydration.third(product)]);
+    : reaction === 'hydration'
+      ? (style === 'product' ? [S.hydration.product(product)] : [S.hydration.first(cation), S.hydration.second(), S.hydration.third(product)])
+      : [/** @type {Record<string, any>} */ (S)[reaction](product),
+        ...(style === 'substrate' ? [S.back[reaction === 'hydrogenation' ? 'any' : 'cut' in net ? 'cut' : 'add'](item.alkene)] : [])];
   return { doc: structuredClone(item.answer.doc), steps };
 }

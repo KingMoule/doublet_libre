@@ -30,8 +30,8 @@ const L = 40;
 const carbons = (d, id) => M.neighbors(d, id).filter((n) => M.findAtom(d, n)?.element === 'C');
 
 /**
- * Which carbon of an alkene's double bond takes what, or null when the exercises leave the alkene out: two C=C
- * or a C≡C, more than 8 carbons; two different carbons with as many H when the reaction puts two different groups
+ * Which carbon of an alkene's double bond takes what, or null when the textbook would not decide: two C=C or a
+ * C≡C; two different carbons with as many H when the reaction puts two different groups
  * on them and both ways give different products (but-2-ène and cyclohexène are decided); through a carbocation, a
  * secondary one next to a carbon with three carbons or more (it would rearrange by a hydride or methyl shift).
  * h: the carbon with more H (Markovnikov's), c: the other, cation: what c would be as a carbocation.
@@ -39,7 +39,7 @@ const carbons = (d, id) => M.neighbors(d, id).filter((n) => M.findAtom(d, n)?.el
  */
 export function addition(d, reaction) {
   const pis = d.bonds.filter((b) => b.order === 2);
-  if (pis.length !== 1 || d.bonds.some((b) => b.order === 3) || d.atoms.filter((a) => a.element === 'C').length > 8) return null;
+  if (pis.length !== 1 || d.bonds.some((b) => b.order === 3)) return null;
   const [p, q] = [pis[0].a, pis[0].b].map((id) => /** @type {M.Atom} */ (M.findAtom(d, id)));
   if (p.element !== 'C' || q.element !== 'C') return null;
   const [h, c] = M.hydrogenCount(d, p) >= M.hydrogenCount(d, q) ? [p, q] : [q, p];
@@ -95,7 +95,7 @@ function made(d, net, h, c, x = 'Br') {
     [h, c].forEach((t, i) => {
       if (net.cut === 'acid' && hs[i] === 2) {
         for (const s of [1, -1]) M.addBond(e, t.id, M.addAtom(e, { element: 'O', x: t.x + s * L, y: t.y }).id, 2);
-        M.addAtom(e, { element: 'O', x: t.x, y: t.y + 2 * L });
+        M.addAtom(e, { element: 'O', x: t.x + 3 * L, y: t.y });
         return;
       }
       hang(e, t.id, 'O', 2);

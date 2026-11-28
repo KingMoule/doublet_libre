@@ -15,7 +15,7 @@ import { TEMPLATES, SETUP_TEMPLATES } from './templates.js';
 import * as A from './apparatus.js';
 import { LEVELS, series } from './naming/generate.js';
 import { answerDrawing, answerName, solution } from './naming/exercise.js';
-import { LEVELS as MECHANISM_LEVELS, REACTIONS, STYLES, series as mechanismSeries } from './mechanism/generate.js';
+import { LEVELS as MECHANISM_LEVELS, REACTIONS, series as mechanismSeries, stylesOf } from './mechanism/generate.js';
 import { answerMechanism, solution as mechanismSolution } from './mechanism/exercise.js';
 
 /**
@@ -76,9 +76,10 @@ const KINDS = {
     /** Two menus, the reaction and the style. @param {string} level @returns {Menu[]} */
     menus: (level) => {
       const [r, s] = level.split('-');
-      return [{ id: 'ex-reaction', label: MX.reactionMenu, value: r, options: named(MX.reactions, REACTIONS) }, { id: 'ex-style', label: MX.styleMenu, value: s, options: named(MX.levels, STYLES) }];
+      return [{ id: 'ex-reaction', label: MX.reactionMenu, value: r, options: named(MX.reactions, REACTIONS) }, { id: 'ex-style', label: MX.styleMenu, value: s, options: named(MX.levels, stylesOf(r)) }];
     },
-    /** @param {string[]} values */ join: ([reaction, style]) => `${reaction}-${style}`,
+    // A style the reaction has not (Flèches for an ozonolysis) goes back to its first, Progressif.
+    /** @param {string[]} values */ join: ([reaction, style]) => `${reaction}-${stylesOf(reaction).includes(style) ? style : 'progressive'}`,
     /** @param {string} l */ levelName: (l) => { const [r, s] = l.split('-'); return `${/** @type {Record<string, string>} */ (MX.reactions)[r]} · ${/** @type {Record<string, string>} */ (MX.levels)[s]}`; },
     typed: () => false,
     /** @param {any} it */ start: (it) => it.given,
@@ -86,7 +87,8 @@ const KINDS = {
     /** @param {any} it */ solution: (it) => mechanismSolution(it),
     /** @param {any} it */ tool: (it) => (it.style === 'arrows' ? 'curved' : 'chain'),
     /** @param {any} it */
-    ask: (it) => ({ prompt: /** @type {Record<string, string>} */ (MX.prompts)[it.style], target: MX.reaction(it.alkene, it.reagent), help: MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
+    // The alkene of a Substrat item is what the student finds: the title keeps it hidden.
+    ask: (it) => ({ prompt: /** @type {Record<string, string>} */ (MX.prompts)[it.style], target: MX.reaction(it.style === 'substrate' ? '?' : it.alkene, it.reagent), help: it.style === 'product' || it.style === 'substrate' ? MX.helpDraw : MX.help, how: /** @type {Record<string, string>} */ (MX.levels)[it.style] }),
   },
 };
 const ELEMENTS = ['C', 'N', 'O', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'H'];
