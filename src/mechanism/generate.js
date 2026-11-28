@@ -4,7 +4,8 @@ import { add, angleOf, fromAngle, nextBondAngle, sub } from '../geometry.js';
 import { builder } from '../templates.js';
 import { atomsOf } from './check.js';
 import { series as namingSeries } from '../naming/generate.js';
-import { sameMolecule, toGraph } from '../naming/graph.js';
+import { toGraph } from '../naming/graph.js';
+import { addition as sides } from './reactions.js';
 import { nameOf } from '../naming/namer.js';
 import { fr } from '../i18n/fr.js';
 
@@ -32,37 +33,23 @@ const L = 40;
 const GAP = 30; // between a molecule and a + or a reaction arrow
 const ARROW = 70;
 
-/** The carbon atoms bonded to an atom. @param {M.Doc} d @param {string} id */
-const carbons = (d, id) => M.neighbors(d, id).filter((n) => M.findAtom(d, n)?.element === 'C');
 /** One more bond out of a point, in the free direction among the given ones. @param {{x: number, y: number}} p @param {{x: number, y: number}[]} others */
 const beyond = (p, others) => add(p, fromAngle(nextBondAngle(others.map((o) => angleOf(sub(o, p)))), L));
 
 /**
- * What an electrophile does to an alkene, or null when the textbook would not decide: the carbon that takes
- * the H (the one with more H, Markovnikov), the one that becomes C⁺, where the group goes on it (x) and, for an
- * oxonium, where its two H go (hs, null without room). Left out: two C=C or a C≡C, a tie between two different
- * carbons, a secondary carbocation next to a carbon with three carbons or more (it would rearrange by a hydride
- * or methyl shift), more than 8 carbons, a group on top of another atom.
- * @param {M.Doc} d
+ * What an electrophile does to an alkene (reactions.js), or null when the textbook would not decide, with where
+ * the group goes on the carbon that becomes C⁺ (x) and, for an oxonium, where its two H go (hs, null without
+ * room). Also left out: a group on top of another atom.
+ * @param {M.Doc} d @param {Reaction} reaction
  */
-function addition(d) {
-  const pis = d.bonds.filter((b) => b.order === 2);
-  if (pis.length !== 1 || d.bonds.some((b) => b.order === 3) || d.atoms.filter((a) => a.element === 'C').length > 8) return null;
-  const [p, q] = [pis[0].a, pis[0].b].map((id) => /** @type {M.Atom} */ (M.findAtom(d, id)));
-  const [h, c] = M.hydrogenCount(d, p) >= M.hydrogenCount(d, q) ? [p, q] : [q, p];
-  const at = (/** @type {M.Atom} */ a) => beyond(a, M.neighbors(d, a.id).map((n) => /** @type {M.Atom} */ (M.findAtom(d, n))));
-  if (M.hydrogenCount(d, p) === M.hydrogenCount(d, q)) {
-    // A tie is decided only when both ways give the same product (but-2-ène, cyclohexène).
-    const product = (/** @type {M.Atom} */ onX) => { const e = structuredClone(d); M.setBondOrder(e, pis[0].id, 1); M.addBond(e, onX.id, M.addAtom(e, { element: 'Br', ...at(onX) }).id); return toGraph(e); };
-    if (!sameMolecule(product(p), product(q))) return null;
-  }
-  const n = carbons(d, c.id).length;
-  if (n === 2 && carbons(d, c.id).some((id) => id !== h.id && carbons(d, id).length >= 3)) return null;
-  const free = (/** @type {{x: number, y: number}} */ pt) => d.atoms.every((a) => Math.hypot(a.x - pt.x, a.y - pt.y) >= 0.75 * L);
-  const x = at(c);
+function addition(d, reaction) {
+  const a = sides(d, reaction);
+  if (!a) return null;
+  const free = (/** @type {{x: number, y: number}} */ pt) => d.atoms.every((t) => Math.hypot(t.x - pt.x, t.y - pt.y) >= 0.75 * L);
+  const x = beyond(a.c, M.neighbors(d, a.c.id).map((n) => /** @type {M.Atom} */ (M.findAtom(d, n))));
   if (!free(x)) return null;
-  const h1 = beyond(x, [c]), h2 = beyond(x, [c, h1]);
-  return { pi: pis[0], h, c, x, hs: free(h1) && free(h2) ? [h1, h2] : null, cation: /** @type {Item['cation']} */ (['primary', 'primary', 'secondary', 'tertiary'][n]) };
+  const h1 = beyond(x, [a.c]), h2 = beyond(x, [a.c, h1]);
+  return { ...a, x, hs: free(h1) && free(h2) ? [h1, h2] : null };
 }
 /** @typedef {NonNullable<ReturnType<typeof addition>>} Addition */
 
@@ -238,7 +225,7 @@ export function series(level, seed, count = 10) {
   for (let chunk = 0; items.length < count; chunk++) {
     if (chunk > 50) throw new Error(`mechanism: no ${level} after ${chunk} chunks`);
     for (const { doc: d, name } of namingSeries('alkenes', seed * 53 + chunk, 10).items) {
-      const a = items.length < count && !seen.has(name) ? addition(d) : null;
+      const a = items.length < count && !seen.has(name) ? addition(d, reaction) : null;
       // An oxonium needs room for its two H.
       if (!a || (reaction === 'hydration' && !a.hs)) continue;
       seen.add(name);
